@@ -225,6 +225,28 @@ select option{background:var(--bg);}
 ::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-thumb{background:var(--card2);border-radius:2px;}
 
+/* MODAL CADASTRO RÁPIDO */
+.modal-overlay{
+  position:fixed;inset:0;z-index:99998;
+  background:rgba(0,0,0,0.85);
+  display:flex;align-items:flex-end;justify-content:center;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.modal-overlay.hidden{display:none!important;}
+.modal-box{
+  background:var(--card);border-radius:20px 20px 0 0;
+  padding:24px 20px 32px;width:100%;
+  border-top:3px solid var(--amarelo);
+  animation:slideUp 0.3s ease;
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-title{
+  font-family:'Bebas Neue',sans-serif;font-size:26px;
+  color:var(--amarelo);letter-spacing:2px;
+  margin-bottom:4px;text-align:center;
+}
+.modal-sub{font-size:13px;color:var(--txt2);text-align:center;margin-bottom:20px;line-height:1.5;}
+
 /* TUTORIAL ONBOARDING — iOS + Android */
 .tutorial-overlay{
   position:fixed;top:0;left:0;width:100%;height:100%;
@@ -239,16 +261,24 @@ select option{background:var(--bg);}
 .tutorial-slides{
   flex:1;min-height:0;
   display:flex;flex-direction:row;
-  overflow:hidden;
-  transition:transform 0.35s cubic-bezier(.4,0,.2,1);
+  overflow-x:scroll;overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  scroll-behavior:smooth;
+  background:var(--bg);
 }
+.tutorial-slides::-webkit-scrollbar{display:none;}
 .tutorial-slide{
   flex:0 0 100%;width:100%;
+  scroll-snap-align:start;
+  scroll-snap-stop:always;
   display:flex;flex-direction:column;
   align-items:center;justify-content:center;
   padding:20px 24px 8px;text-align:center;
   overflow-y:auto;-webkit-overflow-scrolling:touch;
   box-sizing:border-box;
+  background:var(--bg);
 }
 .tutorial-emoji{font-size:60px;margin-bottom:14px;line-height:1;flex-shrink:0;}
 .tutorial-title{
@@ -615,6 +645,16 @@ select option{background:var(--bg);}
         <div id="apiStatusAdmin" class="text-sm mt8" style="display:none;text-align:center"></div>
 
         <div class="divider"></div>
+        <div class="card-title">💳 Participantes Cadastrados</div>
+        <div class="card-sub">Nome, WhatsApp e chave Pix de quem se cadastrou. Use para pagar os prêmios.</div>
+        <button class="btn btn-gray" onclick="carregarParticipantes()" style="margin-bottom:10px;font-size:12px;padding:10px">
+          🔄 Carregar participantes
+        </button>
+        <div id="participantesList" style="font-size:12px;color:var(--txt3);text-align:center;padding:8px">
+          Clique para carregar
+        </div>
+
+        <div class="divider"></div>
         <div class="card-title">🔐 Segurança</div>
         <div class="card-sub">Seus links de acesso:</div>
         <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:8px">
@@ -632,6 +672,32 @@ select option{background:var(--bg);}
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- MODAL CADASTRO RÁPIDO -->
+<div class="modal-overlay hidden" id="modalCadastro">
+  <div class="modal-box">
+    <div class="modal-title">Quem é você? 👋</div>
+    <div class="modal-sub">Cadastro único — preencha uma vez e pronto.</div>
+
+    <label>Seu nome <span style="color:var(--danger)">*</span></label>
+    <input type="text" id="modalNome" placeholder="Como te chamam?" maxlength="30">
+
+    <label>WhatsApp <span style="color:var(--danger)">*</span></label>
+    <input type="tel" id="modalWhats" placeholder="(11) 99999-9999" maxlength="20">
+
+    <label>Sua chave Pix <span style="color:var(--txt3);font-size:10px;font-weight:400;text-transform:none;letter-spacing:0">(para receber prêmios)</span></label>
+    <input type="text" id="modalPix" placeholder="CPF, email, celular ou chave aleatória"
+      oninput="detectarTipoPix(this.value)" autocomplete="off" autocorrect="off" spellcheck="false">
+    <div id="pixTipoDetectado" style="font-size:11px;margin-top:-10px;margin-bottom:12px;min-height:16px;color:var(--verde);font-weight:600"></div>
+
+    <button class="btn btn-amarelo" onclick="confirmarCadastroModal()" style="touch-action:manipulation">
+      ⚽ Entrar no Bolão Bradesco
+    </button>
+    <button onclick="fecharModal()" style="display:block;width:100%;margin-top:10px;background:none;border:none;color:var(--txt3);font-size:12px;padding:8px;cursor:pointer;font-family:'Inter',sans-serif;">
+      Agora não
+    </button>
+  </div>
+</div>
 
 <!-- TUTORIAL ONBOARDING -->
 <div class="tutorial-overlay" id="tutorialOverlay">
@@ -1093,6 +1159,11 @@ function renderFormPalpite(){
         </div>`).join('')}
       <button class="btn btn-azul" onclick="enviarMata()">Enviar Palpites ⚽</button>
     `;
+    // Pre-fill from modal if available
+    const sNome=sessionStorage.getItem('cadastro_nome');
+    const sWhats=sessionStorage.getItem('cadastro_whats');
+    if(sNome){const f=document.getElementById('mNome');if(f)f.value=sNome;}
+    if(sWhats){const f=document.getElementById('mWhats');if(f)f.value=sWhats;}
   } else {
     const j=cfgUnico.jogoAtivo;
     if(!j){ card.innerHTML=`<div class="modo-tag unico">⚡ Jogo Extra</div><div class="empty"><div class="empty-icon">⚡</div><div class="empty-text">Nenhum jogo extra ativo.<br>Aguarde o link do organizador!</div></div>`; return; }
@@ -1113,6 +1184,11 @@ function renderFormPalpite(){
       ${cfgUnico.tbBonus&&cfgUnico.bonusQ?`<label>${cfgUnico.bonusQ}</label><input type="text" id="uBonus" placeholder="Sua resposta" maxlength="60">`:''}
       <button class="btn btn-verde" onclick="enviarUnico()">Enviar Palpite ⚽</button>
     `;
+    // Pre-fill from modal if available
+    const sNome2=sessionStorage.getItem('cadastro_nome');
+    const sWhats2=sessionStorage.getItem('cadastro_whats');
+    if(sNome2){const f=document.getElementById('uNome');if(f)f.value=sNome2;}
+    if(sWhats2){const f=document.getElementById('uWhats');if(f)f.value=sWhats2;}
   }
 }
 
@@ -1978,6 +2054,31 @@ function goTab(screen,tabEl){
 // ═══════════════════════════════════════
 // API KEY ADMIN
 // ═══════════════════════════════════════
+async function carregarParticipantes(){
+  const c = document.getElementById('participantesList');
+  c.innerHTML='<div style="text-align:center;padding:12px;color:var(--txt3)">Carregando...</div>';
+  try{
+    const {data, error} = await sb.from('participantes').select('*').order('created_at');
+    if(error) throw error;
+    if(!data.length){
+      c.innerHTML='<div style="text-align:center;padding:12px;color:var(--txt3)">Nenhum participante ainda</div>';
+      return;
+    }
+    c.innerHTML=data.map(p=>`
+      <div style="background:var(--card2);border-radius:10px;padding:10px;margin-bottom:8px;border:1px solid var(--border)">
+        <div style="font-weight:700;font-size:13px;color:var(--txt)">${p.nome}</div>
+        <div style="color:var(--txt2);margin-top:2px">📱 ${p.whats}</div>
+        ${p.pix_chave
+          ?`<div style="color:var(--amarelo);margin-top:4px;font-family:monospace;font-size:11px">
+              💳 ${p.pix_tipo}: ${p.pix_chave}
+            </div>`
+          :`<div style="color:var(--txt3);margin-top:4px;font-size:11px">💳 Pix não informado</div>`}
+      </div>`).join('');
+  } catch(e){
+    c.innerHTML=`<div style="text-align:center;padding:12px;color:var(--danger)">Erro: ${e.message}<br><small>Verifique se a tabela participantes foi criada no Supabase.</small></div>`;
+  }
+}
+
 async function salvarApiKeyAdmin(){
   const key=document.getElementById('apiKeyInputAdmin')?.value.trim();
   if(!key) return toast('Cole a API key primeiro','err');
@@ -2234,6 +2335,113 @@ function getCountryFlag(name){
 }
 
 // ═══════════════════════════════════════
+// MODAL CADASTRO RÁPIDO
+// ═══════════════════════════════════════
+
+function detectarTipoPix(valor){
+  const v = valor.trim();
+  const el = document.getElementById('pixTipoDetectado');
+  if(!v){ el.textContent=''; return null; }
+
+  // Email — contains @
+  if(v.includes('@') && v.includes('.')){
+    el.textContent='✅ Email detectado';
+    el.style.color='var(--verde)';
+    return 'Email';
+  }
+
+  const nums = v.replace(/\D/g,'');
+
+  // CPF — 11 digits, not starting with 0
+  if(nums.length === 11 && !v.includes('-') && parseInt(nums[0]) > 0){
+    // Basic CPF validation — first digit not 0
+    el.textContent='✅ CPF detectado';
+    el.style.color='var(--verde)';
+    return 'CPF';
+  }
+
+  // Phone — 10 or 11 digits
+  if(nums.length === 10 || nums.length === 11){
+    el.textContent='✅ Celular detectado';
+    el.style.color='var(--verde)';
+    return 'Celular';
+  }
+
+  // Random key — UUID format (32+ chars with hyphens)
+  if(v.length >= 32){
+    el.textContent='✅ Chave aleatória detectada';
+    el.style.color='var(--verde)';
+    return 'Aleatória';
+  }
+
+  el.textContent='⏳ Continue digitando...';
+  el.style.color='var(--txt3)';
+  return null;
+}
+
+function abrirModalCadastro(){
+  document.getElementById('modalCadastro').classList.remove('hidden');
+  setTimeout(()=>{
+    const f = document.getElementById('modalNome');
+    if(f) f.focus();
+  }, 400);
+}
+
+function fecharModal(){
+  document.getElementById('modalCadastro').classList.add('hidden');
+  goTab('palpitar', document.querySelector('.nav-tab'));
+}
+
+async function confirmarCadastroModal(){
+  const nome = document.getElementById('modalNome')?.value.trim();
+  const whats = document.getElementById('modalWhats')?.value.trim();
+  const pix = document.getElementById('modalPix')?.value.trim();
+
+  if(!nome){ toast('Digite seu nome!','err'); return; }
+  const whatsLimpo = whats.replace(/\D/g,'');
+  if(!whats || whatsLimpo.length < 10){ toast('Digite seu WhatsApp com DDD!','err'); return; }
+
+  const pixTipo = detectarTipoPix(pix||'') || 'Outro';
+
+  // Save to participantes table in Supabase
+  if(pix){
+    try{
+      await sb.from('participantes').upsert({
+        nome,
+        whats: whatsLimpo,
+        pix_tipo: pixTipo,
+        pix_chave: pix,
+      }, { onConflict: 'whats' });
+    } catch(e){
+      console.log('Participante já cadastrado ou erro:', e);
+    }
+  }
+
+  // Store in session for form pre-fill
+  sessionStorage.setItem('cadastro_nome', nome);
+  sessionStorage.setItem('cadastro_whats', whats);
+
+  // Close modal
+  document.getElementById('modalCadastro').classList.add('hidden');
+  goTab('palpitar', document.querySelector('.nav-tab'));
+
+  // Pre-fill form and highlight
+  setTimeout(()=>{
+    ['mNome','uNome'].forEach(id=>{ const f=document.getElementById(id); if(f) f.value=nome; });
+    ['mWhats','uWhats'].forEach(id=>{ const f=document.getElementById(id); if(f) f.value=whats; });
+
+    const form = document.getElementById('formCard');
+    if(form){
+      form.scrollIntoView({behavior:'smooth', block:'start'});
+      form.style.transition='box-shadow 0.3s';
+      form.style.boxShadow='0 0 0 3px var(--amarelo)';
+      setTimeout(()=>{ form.style.boxShadow=''; }, 2000);
+    }
+    toast(`Bem-vindo, ${nome}! Agora é só palpitar 👇`,'ok');
+  }, 300);
+}
+
+// ═══════════════════════════════════════
 // TUTORIAL ONBOARDING
 // ═══════════════════════════════════════
 let tutorialSlide = 0;
@@ -2265,17 +2473,18 @@ function tutorialInit(){
 function tutorialGoTo(idx){
   tutorialSlide = idx;
   const slides = document.getElementById('tutorialSlides');
-  slides.style.transform = `translateX(-${idx * 100}vw)`;
+
+  // Use native scroll instead of transform — more reliable on iOS/Android
+  const slideWidth = slides.offsetWidth || window.innerWidth;
+  slides.scrollTo({ left: idx * slideWidth, behavior: 'smooth' });
 
   // Update dots
   const dots = document.querySelectorAll('.tutorial-dot');
-  dots.forEach((d,i)=>d.classList.toggle('active', i===idx));
+  dots.forEach((d,i) => d.classList.toggle('active', i === idx));
 
-  // Update buttons
+  // Update button
   const btn = document.getElementById('tutorialNext');
-
   if(idx === TUTORIAL_TOTAL - 1){
-    // Last slide — CTA to register
     btn.textContent = '⚽ Fazer meu Cadastro!';
     btn.style.fontSize = '16px';
   } else {
@@ -2301,34 +2510,36 @@ function tutorialFinish(goToPalpitar=true){
   sessionStorage.setItem('bolao_tutorial_seen','1');
   document.getElementById('tutorialOverlay').classList.add('hidden');
   if(goToPalpitar){
-    // Go to palpitar tab and scroll to form
-    goTab('palpitar', document.querySelector('.nav-tab'));
-    setTimeout(()=>{
-      const form = document.getElementById('formCard');
-      if(form) form.scrollIntoView({behavior:'smooth', block:'start'});
-    }, 300);
+    // Open quick registration modal
+    setTimeout(()=> abrirModalCadastro(), 200);
   }
 }
 
 
 
-// Swipe support for tutorial — only on slides area, not footer
+// Sync dots with native scroll position
 (function(){
-  let startX = 0;
-  let startY = 0;
   const slidesEl = document.getElementById('tutorialSlides');
-  slidesEl.addEventListener('touchstart', e=>{
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-  }, {passive:true});
-  slidesEl.addEventListener('touchend', e=>{
-    const diffX = startX - e.changedTouches[0].clientX;
-    const diffY = Math.abs(startY - e.changedTouches[0].clientY);
-    // Only register horizontal swipe if clearly horizontal (not scroll)
-    if(Math.abs(diffX) > 60 && diffY < 30){
-      if(diffX > 0 && tutorialSlide < TUTORIAL_TOTAL-1) tutorialNext();
-      else if(diffX < 0 && tutorialSlide > 0) tutorialGoTo(tutorialSlide-1);
-    }
+  let scrollTimer = null;
+  slidesEl.addEventListener('scroll', ()=>{
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(()=>{
+      const slideWidth = slidesEl.offsetWidth || window.innerWidth;
+      const idx = Math.round(slidesEl.scrollLeft / slideWidth);
+      if(idx !== tutorialSlide && idx >= 0 && idx < TUTORIAL_TOTAL){
+        tutorialSlide = idx;
+        const dots = document.querySelectorAll('.tutorial-dot');
+        dots.forEach((d,i) => d.classList.toggle('active', i === idx));
+        const btn = document.getElementById('tutorialNext');
+        if(idx === TUTORIAL_TOTAL - 1){
+          btn.textContent = '⚽ Fazer meu Cadastro!';
+          btn.style.fontSize = '16px';
+        } else {
+          btn.textContent = 'Próximo →';
+          btn.style.fontSize = '14px';
+        }
+      }
+    }, 80);
   }, {passive:true});
 })();
 
