@@ -1076,9 +1076,20 @@ function updateHeader(){
     document.getElementById('hTeam2').textContent=j?j.t2:'Aguardando';
     const r=resultadoUnico;
     const rValid=r&&r.g1!==null&&r.g2!==null;
-    document.getElementById('hScore').textContent=rValid?`${r.g1}×${r.g2}`:'?×?';
-    document.getElementById('hScoreLbl').textContent=rValid?'Resultado Final':'Aguardando';
-    document.getElementById('hDate').textContent=j?`${j.date} · ${j.time}`:'Configure no Admin';
+    // If result exists, show neutral state — game is over
+    if(rValid){
+      document.getElementById('hFlag1').textContent='⚡';
+      document.getElementById('hTeam1').textContent='Jogo Extra';
+      document.getElementById('hFlag2').textContent='🏁';
+      document.getElementById('hTeam2').textContent='Encerrado';
+      document.getElementById('hScore').textContent=`${r.g1}×${r.g2}`;
+      document.getElementById('hScoreLbl').textContent='Resultado Final';
+      document.getElementById('hDate').textContent=j?`${j.t1} × ${j.t2}`:'—';
+    } else {
+      document.getElementById('hScore').textContent='?×?';
+      document.getElementById('hScoreLbl').textContent=j?'Aguardando':'Configure no Admin';
+      document.getElementById('hDate').textContent=j?`${j.date} · ${j.time}`:'Configure no Admin';
+    }
     const ativos=palpitesUnico.filter(p=>p.status==='ativo');
     const pend=palpitesUnico.filter(p=>p.status==='pendente');
     document.getElementById('stTotal').textContent=palpitesUnico.length;
@@ -2007,11 +2018,12 @@ async function apurarUnico(){
   const g2=parseInt(document.getElementById('uResG2').value)||0;
   const bonus_ans=document.getElementById('unicoBonusResVal')?.value.trim()||'';
   await sb.from('resultado_unico').upsert({id:1,g1,g2,bonus_ans,updated_at:new Date().toISOString()});
+  const j=cfgUnico.jogoAtivo;
   cfgUnico.aceitar=false;
+  cfgUnico.jogoAtivo=null; // Clear active game after result
   await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
   resultadoUnico={g1,g2,bonus_ans};
   updateHeader();
-  const j=cfgUnico.jogoAtivo;
   await addFeed('🏆',`Resultado jogo extra: ${j?.f1||''}${g1}×${g2}${j?.f2||''}`);
   if('Notification'in window&&Notification.permission==='granted') new Notification('Bolão Copa 2026 — Encerrado!',{body:`Resultado: ${g1} × ${g2}`});
   toast('Resultado apurado! 🏆','ok');
@@ -2127,13 +2139,12 @@ async function carregarParticipantes(){
   const c = document.getElementById('participantesList');
   c.innerHTML='<div style="text-align:center;padding:12px;color:var(--txt3)">Carregando...</div>';
   try{
-    const {data, error} = await sb.from('participantes').select('*').order('created_at');
-    if(error){
-      c.innerHTML=`<div style="padding:12px;color:var(--danger);font-size:12px">
-        ⚠️ Erro: ${error.message}
-      </div>`;
-      return;
-    }
+    // Use secure serverless function instead of direct Supabase access
+    const r = await fetch('/api/participantes', {
+      headers: { 'x-master-key': 'tharaujo2026' }
+    });
+    if(!r.ok) throw new Error('Erro '+r.status);
+    const data = await r.json();
     if(!data || !data.length){
       c.innerHTML='<div style="text-align:center;padding:12px;color:var(--txt3)">Nenhum participante ainda.</div>';
       return;
@@ -2170,6 +2181,34 @@ async function carregarParticipantes(){
   }
 }
 
+async function togglePago(id, whats, pago){
+  try{
+    const r = await fetch('/api/participantes', {
+      method: 'PATCH',
+      headers: {
+        'x-master-key': 'tharaujo2026',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ id, pago })
+    });
+    if(!r.ok) throw new Error('Erro '+r.status);
+    if(pago){
+      const whatsLimpo = whats.replace(/\D/g,'');
+      const mataPend = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo && p.status==='pendente');
+      if(mataPend){
+        await sb.from('palpites_mata').update({status:'ativo'}).eq('id', mataPend.id);
+        toast(`${mataPend.nome} ativado no Mata-Mata! ✓`,'ok');
+      }
+      const unicoPend = palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo && p.status==='pendente');
+      if(unicoPend) await sb.from('palpites_unico').update({status:'ativo'}).eq('id', unicoPend.id);
+    }
+    await carregarParticipantes();
+    toast(pago ? '✓ Pagamento confirmado!' : 'Pagamento desmarcado','ok');
+  } catch(e){
+    toast('Erro: '+e.message,'err');
+  }
+}
+
 function copiarPix(chave, nome){
   navigator.clipboard?.writeText(chave).then(()=>{
     toast(`Chave Pix de ${nome} copiada! 📋`,'ok');
@@ -2182,30 +2221,7 @@ function copiarPix(chave, nome){
   });
 }
 
-async function togglePago(id, whats, pago){
-  try{
-    await sb.from('participantes').update({pago}).eq('id', id);
-    // If marking as paid, also auto-activate any pending palpites for this whats
-    if(pago){
-      const whatsLimpo = whats.replace(/\D/g,'');
-      // Auto-activate mata palpite
-      const mataPend = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo && p.status==='pendente');
-      if(mataPend){
-        await sb.from('palpites_mata').update({status:'ativo'}).eq('id', mataPend.id);
-        toast(`${mataPend.nome} ativado no Mata-Mata! ✓`,'ok');
-      }
-      // Auto-activate unico palpite
-      const unicoPend = palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo && p.status==='pendente');
-      if(unicoPend){
-        await sb.from('palpites_unico').update({status:'ativo'}).eq('id', unicoPend.id);
-      }
-    }
-    await carregarParticipantes();
-    toast(pago ? '✓ Pagamento confirmado!' : 'Pagamento desmarcado','ok');
-  } catch(e){
-    toast('Erro ao atualizar: '+e.message,'err');
-  }
-}
+
 
 function shareConviteGeral(){
   const base = window.location.href.split('?')[0];
