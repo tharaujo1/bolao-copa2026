@@ -3113,14 +3113,13 @@ async function loginInit(){
   setTimeout(()=>{
     const input = document.getElementById('loginWhats');
     if(input){
-      const savedWhats = lsWhats || sessionStorage.getItem('cadastro_whats');
+      const savedWhats = localStorage.getItem('bolao_whats') || sessionStorage.getItem('cadastro_whats');
       if(savedWhats){
         input.value = savedWhats;
         input.style.color='var(--amarelo)';
         input.style.fontWeight='700';
-        // Show hint
         const status = document.getElementById('loginStatus');
-        if(status) status.textContent = 'Toque em Entrar para continuar';
+        if(status) status.textContent = 'Toque em Entrar para continuar →';
       }
       input.focus();
     }
