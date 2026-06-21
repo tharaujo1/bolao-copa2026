@@ -8,14 +8,16 @@ export default async function handler(req, res) {
   const token = process.env.MP_ACCESS_TOKEN;
   if (!token) return res.status(500).json({ error: 'MP_ACCESS_TOKEN not configured' });
 
-  const { valor, nome, whats, descricao } = req.body;
+  const { valor, nome, whats, descricao, modo } = req.body;
   if (!valor || !nome || !whats) {
     return res.status(400).json({ error: 'valor, nome e whats são obrigatórios' });
   }
 
+  // external_reference: "11995564994|mata,unico" — survives intact through webhook
+  const externalRef = `${whats}|${modo || 'mata'}`;
+
   try {
-    // Create Pix payment via MP Orders API
-    const idempotencyKey = `bolao-${whats}-${Date.now()}`;
+    const idempotencyKey = `bolao-${whats}-${modo}-${Date.now()}`;
     
     const response = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
@@ -26,46 +28,34 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         transaction_amount: parseFloat(valor),
-        description: descricao || `Bolão Bradesco Copa 2026 — ${nome}`,
+        description: descricao || `Bolão Bradesco Copa 2026`,
         payment_method_id: 'pix',
+        external_reference: externalRef,
         payer: {
-          email: `${whats}@bolao.bradesco.app`,
+          email: `${whats}@bolao.app`,
           first_name: nome.split(' ')[0],
           last_name: nome.split(' ').slice(1).join(' ') || 'Participante',
-          identification: {
-            type: 'CPF',
-            number: '00000000000' // placeholder — not required for Pix
-          }
+          identification: { type: 'CPF', number: '00000000000' }
         },
-        notification_url: `https://bolao-copa2026-sigma.vercel.app/api/mp-webhook?whats=${whats}&valor=${valor}`,
-        metadata: {
-          whats,
-          nome,
-          valor,
-        }
+        notification_url: `https://bolao-copa2026-sigma.vercel.app/api/mp-webhook`,
+        metadata: { whats, nome, modo }
       })
     });
 
     const data = await response.json();
-
     if (!response.ok) {
-      console.error('MP Error:', data);
-      return res.status(response.status).json({ error: data.message || 'Erro no Mercado Pago', details: data });
+      return res.status(response.status).json({ error: data.message || 'Erro no Mercado Pago' });
     }
 
-    // Return QR code and copia e cola
     const pixData = data.point_of_interaction?.transaction_data;
-    
     return res.status(200).json({
       id: data.id,
       status: data.status,
       qr_code: pixData?.qr_code,
       qr_code_base64: pixData?.qr_code_base64,
-      ticket_url: pixData?.ticket_url,
     });
 
   } catch (error) {
-    console.error('Error creating Pix:', error);
     return res.status(500).json({ error: error.message });
   }
 }
