@@ -1,0 +1,73 @@
+const SUPA_URL = 'https://yyksiowovekyqkocqshq.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5a3Npb3dvdmVreXFrb2Nxc2hxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5OTE4MjMsImV4cCI6MjA5NzU2NzgyM30.KrTJDKOCGS16gz0k7oKsS3V3kjTJbnTzN22YtLle-kc';
+
+export default async function handler(req, res) {
+  // MP sends GET for validation and POST for notifications
+  if (req.method === 'GET') {
+    return res.status(200).send('OK');
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const body = req.body;
+    const { whats, valor } = req.query;
+
+    console.log('Webhook received:', JSON.stringify(body));
+    console.log('Query params:', { whats, valor });
+
+    // MP sends different notification types
+    const type = body.type || body.action;
+    const paymentId = body.data?.id || body.id;
+
+    if (type === 'payment' && paymentId) {
+      // Fetch payment details from MP
+      const token = process.env.MP_ACCESS_TOKEN;
+      const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const payment = await mpRes.json();
+
+      console.log('Payment status:', payment.status);
+
+      if (payment.status === 'approved') {
+        const whatsNum = whats || payment.metadata?.whats;
+        
+        if (whatsNum) {
+          // Mark participant as paid in Supabase
+          await fetch(`${SUPA_URL}/rest/v1/participantes?whats=eq.${whatsNum}`, {
+            method: 'PATCH',
+            headers: {
+              'apikey': SUPA_KEY,
+              'Authorization': `Bearer ${SUPA_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ pago: true })
+          });
+
+          // Auto-activate pending palpites
+          for (const table of ['palpites_mata', 'palpites_unico']) {
+            await fetch(`${SUPA_URL}/rest/v1/${table}?whats=eq.${whatsNum}&status=eq.pendente`, {
+              method: 'PATCH',
+              headers: {
+                'apikey': SUPA_KEY,
+                'Authorization': `Bearer ${SUPA_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ status: 'ativo' })
+            });
+          }
+
+          console.log(`✅ Participante ${whatsNum} ativado automaticamente!`);
+        }
+      }
+    }
+
+    return res.status(200).json({ received: true });
+  } catch (error) {
+    console.error('Webhook error:', error);
+    return res.status(200).json({ received: true }); // Always return 200 to MP
+  }
+}
