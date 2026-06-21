@@ -1062,6 +1062,26 @@ function setupRealtime(){
         feedList=data||[];renderFeed();
       });
     })
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'participantes'},({new: updated})=>{
+      // When participant is marked as paid via webhook
+      const myWhats = localStorage.getItem('bolao_whats') || sessionStorage.getItem('cadastro_whats');
+      if(myWhats && updated.whats === myWhats.replace(/\D/g,'') && updated.pago){
+        // Update payment screen if visible
+        const pixGerarWrap = document.getElementById('pixGerarWrap');
+        const pixQRWrap = document.getElementById('pixQRWrap');
+        const pixAguardandoWrap = document.getElementById('pixAguardandoWrap');
+        if(pixGerarWrap){
+          if(pixQRWrap) pixQRWrap.style.display='none';
+          if(pixAguardandoWrap) pixAguardandoWrap.style.display='none';
+          pixGerarWrap.style.display='block';
+          pixGerarWrap.innerHTML=`
+            <div style="font-size:48px;margin:12px 0">✅</div>
+            <div style="font-size:16px;color:var(--verde);font-weight:700;margin-bottom:6px">Pagamento confirmado!</div>
+            <div style="font-size:13px;color:var(--txt2)">Você está no bolão! 🎉</div>`;
+        }
+        toast('Pagamento confirmado! Bem-vindo ao bolão! 🎉','ok');
+      }
+    })
     .subscribe();
   realtimeSubs.push(sub);
 }
@@ -1559,23 +1579,9 @@ async function gerarPixMP(){
 
     toast('Pix gerado! Escaneie ou copie o código 📲','ok');
 
-    // Poll for payment confirmation every 10 seconds
-    const pollInterval = setInterval(async ()=>{
-      const ativo = modo==='mata'
-        ? palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whats.replace(/\D/g,'') && p.status==='ativo')
-        : palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whats.replace(/\D/g,'') && p.status==='ativo');
-      if(ativo){
-        clearInterval(pollInterval);
-        document.getElementById('pixQRWrap').style.display='none';
-        document.getElementById('pixAguardandoWrap').style.display='none';
-        document.getElementById('pixGerarWrap').style.display='block';
-        document.getElementById('pixGerarWrap').innerHTML=`<div style="font-size:32px;margin:12px 0">✅</div><div style="font-size:14px;color:var(--verde);font-weight:700">Pagamento confirmado!<br>Você está ativo no bolão.</div>`;
-        toast('Pagamento confirmado! Bem-vindo ao bolão! 🎉','ok');
-      }
-    }, 10000);
-
-    // Stop polling after 30 minutes
-    setTimeout(()=> clearInterval(pollInterval), 30*60*1000);
+    // Show aguardando state while waiting for webhook
+    document.getElementById('pixQRWrap').style.display='none';
+    document.getElementById('pixAguardandoWrap').style.display='block';
 
   } catch(e){
     if(btn){ btn.textContent='⚡ Gerar QR Code Pix'; btn.disabled=false; }
