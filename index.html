@@ -225,6 +225,89 @@ select option{background:var(--bg);}
 ::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-thumb{background:var(--card2);border-radius:2px;}
 
+/* TUTORIAL ONBOARDING */
+.tutorial-overlay{
+  position:fixed;inset:0;z-index:9000;
+  background:var(--bg);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.tutorial-overlay.hidden{display:none;}
+.tutorial-slides{
+  display:flex;flex:1;
+  transition:transform 0.35s cubic-bezier(.4,0,.2,1);
+}
+.tutorial-slide{
+  min-width:100vw;width:100vw;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:32px 24px;
+  text-align:center;
+}
+.tutorial-emoji{font-size:72px;margin-bottom:20px;line-height:1;}
+.tutorial-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:34px;letter-spacing:2px;
+  color:var(--amarelo);margin-bottom:12px;line-height:1.1;
+}
+.tutorial-text{
+  font-size:15px;color:var(--txt2);
+  line-height:1.6;max-width:320px;
+}
+.tutorial-text strong{color:var(--txt);}
+.tutorial-step{
+  display:flex;align-items:flex-start;gap:12px;
+  background:var(--card);border-radius:12px;
+  padding:14px;margin-top:12px;
+  text-align:left;width:100%;max-width:320px;
+  border:1px solid var(--border);
+}
+.tutorial-step-icon{font-size:24px;flex-shrink:0;}
+.tutorial-step-text{font-size:13px;color:var(--txt2);line-height:1.5;}
+.tutorial-step-text strong{color:var(--amarelo);display:block;margin-bottom:2px;}
+.tutorial-install{
+  background:var(--card);border-radius:12px;
+  padding:14px;margin-top:10px;
+  text-align:left;width:100%;max-width:320px;
+  border:1px solid var(--border);
+}
+.tutorial-install-title{
+  font-size:11px;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;color:var(--amarelo);margin-bottom:8px;
+}
+.tutorial-install-steps{
+  font-size:12px;color:var(--txt2);line-height:1.8;
+}
+.tutorial-dots{
+  display:flex;gap:6px;justify-content:center;
+  padding:16px 0 8px;
+}
+.tutorial-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--card2);transition:all 0.2s;
+}
+.tutorial-dot.active{background:var(--amarelo);width:20px;border-radius:4px;}
+.tutorial-footer{
+  padding:16px 24px 36px;
+  display:flex;gap:10px;
+  align-items:center;
+}
+.tutorial-btn-next{
+  flex:1;padding:14px;border-radius:12px;
+  background:var(--amarelo);color:#000;
+  font-size:15px;font-weight:700;
+  border:none;cursor:pointer;
+  font-family:'Inter',sans-serif;
+  text-transform:uppercase;letter-spacing:0.5px;
+}
+
+.tutorial-stripe{
+  height:4px;
+  background:linear-gradient(90deg,var(--verde) 0%,var(--amarelo) 50%,var(--verde) 100%);
+}
+.ios-share{display:inline-block;background:var(--azul-mid);color:#fff;border-radius:4px;padding:2px 6px;font-size:11px;font-weight:700;}
+.android-menu{display:inline-block;background:var(--verde);color:#fff;border-radius:4px;padding:2px 6px;font-size:11px;font-weight:700;}
+
 /* CLASSIFICAÇÃO */
 .group-card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid var(--border);}
 .group-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--amarelo);margin-bottom:10px;}
@@ -559,6 +642,127 @@ select option{background:var(--bg);}
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- TUTORIAL ONBOARDING -->
+<div class="tutorial-overlay" id="tutorialOverlay">
+  <div class="tutorial-stripe"></div>
+  <div class="tutorial-slides" id="tutorialSlides">
+
+    <!-- SLIDE 1: Boas-vindas -->
+    <div class="tutorial-slide">
+      <div class="tutorial-emoji">🇧🇷⚽🏆</div>
+      <div class="tutorial-title">Bolão Bradesco</div>
+      <div class="tutorial-text">
+        Bem-vindo ao bolão oficial do grupo!<br><br>
+        <strong>Copa do Mundo 2026</strong> — EUA, Canadá e México.<br><br>
+        Aqui você palpita, acompanha ao vivo e torce junto com o grupo.
+      </div>
+    </div>
+
+    <!-- SLIDE 2: Como funciona -->
+    <div class="tutorial-slide">
+      <div class="tutorial-emoji">🎯</div>
+      <div class="tutorial-title">Como Funciona</div>
+      <div class="tutorial-step">
+        <div class="tutorial-step-icon">🏆</div>
+        <div class="tutorial-step-text">
+          <strong>Bolão Mata-Mata</strong>
+          Grupo fechado. Você entra uma vez e palpita em cada fase — oitavas, quartas, semi e final. Pontuação acumulada com multiplicadores.
+        </div>
+      </div>
+      <div class="tutorial-step">
+        <div class="tutorial-step-icon">⚡</div>
+        <div class="tutorial-step-text">
+          <strong>Jogo Extra</strong>
+          Aposta pontual em um jogo específico. Quando o organizador liberar um jogo, você pode participar sem compromisso.
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: Passo a passo -->
+    <div class="tutorial-slide">
+      <div class="tutorial-emoji">📋</div>
+      <div class="tutorial-title">Passo a Passo</div>
+      <div class="tutorial-step">
+        <div class="tutorial-step-icon">1️⃣</div>
+        <div class="tutorial-step-text"><strong>Dê seu palpite</strong>Preencha nome, WhatsApp e seu palpite na aba Palpitar.</div>
+      </div>
+      <div class="tutorial-step">
+        <div class="tutorial-step-icon">2️⃣</div>
+        <div class="tutorial-step-text"><strong>Pague o Pix</strong>Transfira o valor de entrada na aba Pagar. Chave Pix disponível lá.</div>
+      </div>
+      <div class="tutorial-step">
+        <div class="tutorial-step-icon">3️⃣</div>
+        <div class="tutorial-step-text"><strong>Aguarde ativação</strong>O organizador confirma seu pagamento e ativa seu palpite.</div>
+      </div>
+      <div class="tutorial-step">
+        <div class="tutorial-step-icon">4️⃣</div>
+        <div class="tutorial-step-text"><strong>Acompanhe o ranking</strong>Veja sua posição e a pontuação de todos em tempo real.</div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: Instalar no celular -->
+    <div class="tutorial-slide">
+      <div class="tutorial-emoji">📱</div>
+      <div class="tutorial-title">Salve no Celular</div>
+      <div class="tutorial-text">Adicione o bolão à sua tela inicial para acessar como um app.</div>
+      <div class="tutorial-install">
+        <div class="tutorial-install-title">🍎 iPhone / iPad (Safari)</div>
+        <div class="tutorial-install-steps">
+          1. Toque em <span class="ios-share">⬆ Compartilhar</span><br>
+          2. Role e toque em <strong>"Adicionar à Tela de Início"</strong><br>
+          3. Toque em <strong>"Adicionar"</strong>
+        </div>
+      </div>
+      <div class="tutorial-install" style="margin-top:10px">
+        <div class="tutorial-install-title">🤖 Android (Chrome)</div>
+        <div class="tutorial-install-steps">
+          1. Toque em <span class="android-menu">⋮ Menu</span><br>
+          2. Toque em <strong>"Adicionar à tela inicial"</strong><br>
+          3. Confirme tocando em <strong>"Adicionar"</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: CTA Cadastro -->
+    <div class="tutorial-slide">
+      <div class="tutorial-emoji">🇧🇷🏆🇧🇷</div>
+      <div class="tutorial-title">Bora Jogar!</div>
+      <div class="tutorial-text">
+        Cadastre-se agora, pague o Pix e<br>
+        <strong>entre no Bolão Bradesco!</strong>
+      </div>
+      <div style="margin-top:20px;background:linear-gradient(135deg,var(--verde-escuro),var(--azul));border-radius:16px;padding:20px;max-width:320px;width:100%;border:1.5px solid var(--amarelo)">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--amarelo);margin-bottom:8px">O que vem a seguir:</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.8">
+          ⚽ Preencha nome e WhatsApp<br>
+          💰 Dê seu palpite<br>
+          📲 Pague o Pix<br>
+          ✅ Aguarde ativação<br>
+          🏆 Apareça no ranking!
+        </div>
+      </div>
+      <div style="margin-top:12px;font-size:11px;color:var(--txt3)">
+        💡 Use sempre o mesmo WhatsApp — é sua chave única no bolão.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DOTS -->
+  <div class="tutorial-dots" id="tutorialDots">
+    <div class="tutorial-dot active"></div>
+    <div class="tutorial-dot"></div>
+    <div class="tutorial-dot"></div>
+    <div class="tutorial-dot"></div>
+    <div class="tutorial-dot"></div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="tutorial-footer">
+    <button class="tutorial-btn-next" id="tutorialNext" onclick="tutorialNext()">Próximo →</button>
+  </div>
+</div>
 
 <script>
 // ═══════════════════════════════════════
@@ -2021,16 +2225,97 @@ function getCountryFlag(name){
 }
 
 // ═══════════════════════════════════════
+// TUTORIAL ONBOARDING
+// ═══════════════════════════════════════
+let tutorialSlide = 0;
+const TUTORIAL_TOTAL = 5;
+
+function tutorialInit(){
+  const seen = localStorage.getItem('bolao_tutorial_seen');
+  if(seen){
+    document.getElementById('tutorialOverlay').classList.add('hidden');
+    return;
+  }
+  // Show tutorial
+  tutorialGoTo(0);
+}
+
+function tutorialGoTo(idx){
+  tutorialSlide = idx;
+  const slides = document.getElementById('tutorialSlides');
+  slides.style.transform = `translateX(-${idx * 100}vw)`;
+
+  // Update dots
+  const dots = document.querySelectorAll('.tutorial-dot');
+  dots.forEach((d,i)=>d.classList.toggle('active', i===idx));
+
+  // Update buttons
+  const btn = document.getElementById('tutorialNext');
+
+  if(idx === TUTORIAL_TOTAL - 1){
+    // Last slide — CTA to register
+    btn.textContent = '⚽ Fazer meu Cadastro!';
+    btn.style.fontSize = '16px';
+  } else {
+    btn.textContent = 'Próximo →';
+    btn.style.fontSize = '14px';
+  }
+}
+
+function tutorialNext(){
+  if(tutorialSlide < TUTORIAL_TOTAL - 1){
+    tutorialGoTo(tutorialSlide + 1);
+  } else {
+    tutorialFinish(true); // Go to registration form
+  }
+}
+
+function tutorialSkip(){
+  tutorialFinish();
+}
+
+function tutorialFinish(goToPalpitar=true){
+  localStorage.setItem('bolao_tutorial_seen','1');
+  document.getElementById('tutorialOverlay').classList.add('hidden');
+  if(goToPalpitar){
+    // Go to palpitar tab and scroll to form
+    goTab('palpitar', document.querySelector('.nav-tab'));
+    setTimeout(()=>{
+      const form = document.getElementById('formCard');
+      if(form) form.scrollIntoView({behavior:'smooth', block:'start'});
+    }, 300);
+  }
+}
+
+
+
+// Swipe support for tutorial
+(function(){
+  let startX = 0;
+  document.getElementById('tutorialSlides').addEventListener('touchstart', e=>{
+    startX = e.touches[0].clientX;
+  }, {passive:true});
+  document.getElementById('tutorialSlides').addEventListener('touchend', e=>{
+    const diff = startX - e.changedTouches[0].clientX;
+    if(Math.abs(diff) > 50){
+      if(diff > 0 && tutorialSlide < TUTORIAL_TOTAL-1) tutorialNext();
+      else if(diff < 0 && tutorialSlide > 0) tutorialGoTo(tutorialSlide-1);
+    }
+  }, {passive:true});
+})();
+
+// ═══════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════
 readParams();
 loadAll().then(()=>{
   setupRealtime();
   if(apiKey){document.getElementById('apiKeyInput').value=apiKey;}
+  tutorialInit();
   if('Notification'in window&&Notification.permission==='default'){
     setTimeout(()=>{
       if(confirm('Ativar alertas de gol ao vivo?')) Notification.requestPermission();
-    },3000);
+    },5000);
   }
 });
 </script>
