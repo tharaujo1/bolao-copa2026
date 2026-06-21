@@ -684,15 +684,20 @@ select option{background:var(--bg);}
     <div class="modal-title">Quem é você? 👋</div>
     <div class="modal-sub">Cadastro único — preencha uma vez e pronto.</div>
 
+    <div style="font-size:11px;color:var(--txt3);margin-bottom:12px">Todos os campos são obrigatórios <span style="color:var(--danger)">*</span></div>
+
     <label>Seu nome <span style="color:var(--danger)">*</span></label>
-    <input type="text" id="modalNome" placeholder="Como te chamam?" maxlength="30">
+    <input type="text" id="modalNome" placeholder="Como te chamam?" maxlength="30"
+      onkeydown="if(event.key==='Enter'){document.getElementById('modalWhats').focus()}">
 
     <label>WhatsApp <span style="color:var(--danger)">*</span></label>
-    <input type="tel" id="modalWhats" placeholder="(11) 99999-9999" maxlength="20">
+    <input type="tel" id="modalWhats" placeholder="(11) 99999-9999" maxlength="20"
+      onkeydown="if(event.key==='Enter'){document.getElementById('modalPix').focus()}">
 
-    <label>Sua chave Pix <span style="color:var(--txt3);font-size:10px;font-weight:400;text-transform:none;letter-spacing:0">(para receber prêmios)</span></label>
+    <label>Chave Pix <span style="color:var(--danger)">*</span> <span style="color:var(--txt3);font-size:10px;font-weight:400;text-transform:none;letter-spacing:0">— para receber prêmios</span></label>
     <input type="text" id="modalPix" placeholder="CPF, email, celular ou chave aleatória"
-      oninput="detectarTipoPix(this.value)" autocomplete="off" autocorrect="off" spellcheck="false">
+      oninput="detectarTipoPix(this.value)" autocomplete="off" autocorrect="off" spellcheck="false"
+      onkeydown="if(event.key==='Enter'){confirmarCadastroModal()}">
     <div id="pixTipoDetectado" style="font-size:11px;margin-top:-10px;margin-bottom:12px;min-height:16px;color:var(--verde);font-weight:600"></div>
 
     <button class="btn btn-amarelo" onclick="confirmarCadastroModal()" style="touch-action:manipulation">
@@ -2422,11 +2427,29 @@ async function confirmarCadastroModal(){
   const whats = document.getElementById('modalWhats')?.value.trim();
   const pix = document.getElementById('modalPix')?.value.trim();
 
-  if(!nome){ toast('Digite seu nome!','err'); return; }
-  const whatsLimpo = whats.replace(/\D/g,'');
-  if(!whats || whatsLimpo.length < 10){ toast('Digite seu WhatsApp com DDD!','err'); return; }
-
-  const pixTipo = detectarTipoPix(pix||'') || 'Outro';
+  // Validate all fields
+  if(!nome){
+    toast('Digite seu nome!','err');
+    document.getElementById('modalNome')?.focus();
+    return;
+  }
+  const whatsLimpo = whats ? whats.replace(/\D/g,'') : '';
+  if(!whats || whatsLimpo.length < 10){
+    toast('Digite seu WhatsApp com DDD — ex: (11) 99999-9999','err');
+    document.getElementById('modalWhats')?.focus();
+    return;
+  }
+  if(!pix){
+    toast('Digite sua chave Pix para receber prêmios!','err');
+    document.getElementById('modalPix')?.focus();
+    return;
+  }
+  const pixTipo = detectarTipoPix(pix) || 'Outro';
+  if(pixTipo === 'Outro' && pix.length < 5){
+    toast('Chave Pix inválida. Verifique e tente novamente.','err');
+    document.getElementById('modalPix')?.focus();
+    return;
+  }
 
   // Save to participantes table in Supabase
   if(pix){
@@ -2447,6 +2470,9 @@ async function confirmarCadastroModal(){
   sessionStorage.setItem('cadastro_whats', whats);
   localStorage.setItem('bolao_nome', nome);
   localStorage.setItem('bolao_whats', whats);
+  // Mark tutorial as seen — registered users never see it again
+  localStorage.setItem('bolao_tutorial_seen','1');
+  sessionStorage.setItem('bolao_tutorial_seen','1');
 
   // Close modal
   document.getElementById('modalCadastro').classList.add('hidden');
@@ -2475,22 +2501,39 @@ let tutorialSlide = 0;
 const TUTORIAL_TOTAL = 5;
 
 function tutorialInit(){
-  // Check multiple storage locations for resilience
+  // Check 1: localStorage (persists between sessions)
   const lsSeen = localStorage.getItem('bolao_tutorial_seen');
-  const ssSeen = sessionStorage.getItem('bolao_tutorial_seen');
-
-  if(lsSeen || ssSeen){
+  if(lsSeen){
     document.getElementById('tutorialOverlay').classList.add('hidden');
     return;
   }
 
-  // Also skip if user already has a palpite registered (they clearly know the app)
-  const jaTemPalpite = palpitesMata.length > 0 || palpitesUnico.length > 0;
-  if(jaTemPalpite){
-    localStorage.setItem('bolao_tutorial_seen','1');
-    sessionStorage.setItem('bolao_tutorial_seen','1');
+  // Check 2: sessionStorage (current session)
+  const ssSeen = sessionStorage.getItem('bolao_tutorial_seen');
+  if(ssSeen){
     document.getElementById('tutorialOverlay').classList.add('hidden');
     return;
+  }
+
+  // Check 3: user already has name/whats stored locally = already registered
+  const jaTemNome = localStorage.getItem('bolao_nome');
+  if(jaTemNome){
+    localStorage.setItem('bolao_tutorial_seen','1');
+    document.getElementById('tutorialOverlay').classList.add('hidden');
+    return;
+  }
+
+  // Check 4: user already has a palpite in the database
+  const whatsLocal = localStorage.getItem('bolao_whats');
+  if(whatsLocal){
+    const whatsLimpo = whatsLocal.replace(/\D/g,'');
+    const jaMata = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
+    const jaUnico = palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
+    if(jaMata || jaUnico){
+      localStorage.setItem('bolao_tutorial_seen','1');
+      document.getElementById('tutorialOverlay').classList.add('hidden');
+      return;
+    }
   }
 
   // Show tutorial
