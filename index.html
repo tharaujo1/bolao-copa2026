@@ -1566,7 +1566,22 @@ async function renderPagOpcoes(){
     }
   } catch(e){}
 
-  const jaMataAtivo = jaPagou || palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===myWhats&&p.status==='ativo');
+  // Check individual payment fields
+  let pagoMata=false, pagoUnico=false, pagoUnico2=false;
+  try{
+    const r = await fetch('/api/participantes', {headers:{'x-master-key':'tharaujo2026'}});
+    if(r.ok){
+      const list = await r.json();
+      const me = list.find(p=>p.whats?.replace(/\D/g,'')===myWhats);
+      if(me){
+        pagoMata = !!(me.pago_mata || me.pago); // backward compat
+        pagoUnico = !!me.pago_unico;
+        pagoUnico2 = !!me.pago_unico2;
+      }
+    }
+  } catch(e){}
+
+  const jaMataAtivo = pagoMata || palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===myWhats&&p.status==='ativo');
   opcoes.push({
     id:'mata', label:'🏆 Mata-Mata', sub:'Todas as fases — Oitavas até a Final',
     valor:cfgMata.valor||50, jaAtivo:!!jaMataAtivo,
@@ -1575,7 +1590,7 @@ async function renderPagOpcoes(){
 
   if(cfgUnico.jogoAtivo){
     const j1=cfgUnico.jogoAtivo;
-    const jaU1=palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===myWhats&&(p.jogo_extra_id||'jogo1')==='jogo1'&&p.status==='ativo');
+    const jaU1 = pagoUnico || palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===myWhats&&(p.jogo_extra_id||'jogo1')==='jogo1'&&p.status==='ativo');
     opcoes.push({
       id:'unico', label:`⚡ Extra — ${j1.t1} × ${j1.t2}`, sub:`${j1.date} · ${j1.time}`,
       valor:cfgUnico.valor||10, jaAtivo:!!jaU1,
@@ -1585,7 +1600,7 @@ async function renderPagOpcoes(){
 
   if(cfgUnico2.jogoAtivo){
     const j2=cfgUnico2.jogoAtivo;
-    const jaU2=palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===myWhats&&p.jogo_extra_id==='jogo2'&&p.status==='ativo');
+    const jaU2 = pagoUnico2 || palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===myWhats&&p.jogo_extra_id==='jogo2'&&p.status==='ativo');
     opcoes.push({
       id:'unico2', label:`⚡ Extra 2 — ${j2.t1} × ${j2.t2}`, sub:`${j2.date} · ${j2.time}`,
       valor:cfgUnico2.valor||10, jaAtivo:!!jaU2,
@@ -1606,44 +1621,43 @@ async function renderPagOpcoes(){
       <div style="text-align:right;flex-shrink:0">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--amarelo)">R$ ${o.valor}</div>
         ${o.disponivel&&!o.jaAtivo
-          ?`<button id="chkBtn_${o.id}" onclick="toggleSelecao('${o.id}')"
-              style="margin-top:6px;width:32px;height:32px;border-radius:8px;border:2px solid var(--amarelo);
-              background:var(--bg);color:var(--amarelo);font-size:18px;font-weight:700;
+          ?`<div id="chkBtn_${o.id}" onclick="toggleSelecao('${o.id}')"
+              data-selected="0"
+              style="margin-top:6px;width:34px;height:34px;border-radius:8px;border:2.5px solid var(--amarelo);
+              background:var(--bg);color:transparent;font-size:20px;font-weight:900;
               cursor:pointer;display:flex;align-items:center;justify-content:center;
-              font-family:'Inter',sans-serif;touch-action:manipulation;transition:all 0.15s">
-              &nbsp;
-            </button>`
+              font-family:'Inter',sans-serif;touch-action:manipulation;transition:background 0.15s,color 0.15s;
+              user-select:none;-webkit-user-select:none">✓</div>`
           :''}
       </div>
     </div>`).join('');
 
-  // Restore previous selections
-  ['mata','unico','unico2'].forEach(id=>{
-    if(window._selecoes && window._selecoes[id]){
-      const btn = document.getElementById(`chkBtn_${id}`);
-      if(btn){ btn.style.background='var(--amarelo)'; btn.style.color='#000'; btn.textContent='✓'; btn.dataset.selected='1'; }
-    }
-  });
-  atualizarTotal();
+  // Don't reset _selecoes on re-render
+  if(!window._selecoes) window._selecoes={};
+  // Restore previous selections visually
+  setTimeout(()=>{
+    ['mata','unico','unico2'].forEach(id=>{
+      if(window._selecoes[id]){
+        const btn = document.getElementById(`chkBtn_${id}`);
+        if(btn){ btn.style.background='var(--amarelo)'; btn.style.color='#000'; btn.textContent='✓'; btn.dataset.selected='1'; }
+      }
+    });
+    atualizarTotal();
+  }, 50);
 }
 
 function toggleSelecao(id){
-  if(!window._selecoes) window._selecoes={};
   const btn = document.getElementById(`chkBtn_${id}`);
   if(!btn) return;
   const selected = btn.dataset.selected === '1';
   if(selected){
     btn.style.background='var(--bg)';
-    btn.style.color='var(--amarelo)';
-    btn.textContent=' ';
+    btn.style.color='transparent';
     btn.dataset.selected='0';
-    window._selecoes[id]=false;
   } else {
     btn.style.background='var(--amarelo)';
     btn.style.color='#000';
-    btn.textContent='✓';
     btn.dataset.selected='1';
-    window._selecoes[id]=true;
   }
   atualizarTotal();
 }
@@ -1651,10 +1665,10 @@ function toggleSelecao(id){
 function toggleChkBox(id){ toggleSelecao(id); }
 
 function atualizarTotal(){
-  if(!window._selecoes) window._selecoes={};
   let total=0;
   ['mata','unico','unico2'].forEach(id=>{
-    if(window._selecoes[id]){
+    const btn = document.getElementById(`chkBtn_${id}`);
+    if(btn?.dataset.selected==='1'){
       if(id==='mata') total+=cfgMata.valor||50;
       else if(id==='unico') total+=cfgUnico.valor||10;
       else if(id==='unico2') total+=cfgUnico2.valor||10;
@@ -1662,8 +1676,8 @@ function atualizarTotal(){
   });
   const totalEl=document.getElementById('pagTotal');
   if(totalEl) totalEl.textContent=`R$ ${total}`;
-  const btn=document.getElementById('btnGerarPix');
-  if(btn) btn.disabled=total===0;
+  const gerarBtn=document.getElementById('btnGerarPix');
+  if(gerarBtn) gerarBtn.disabled=total===0;
 }
 
 function voltarSelecao(){
@@ -1713,9 +1727,9 @@ async function gerarPixMP(){
   // Collect selected bolões
   const selecionados = [];
   let totalValor = 0;
-  if(!window._selecoes) window._selecoes={};
   ['mata','unico','unico2'].forEach(id=>{
-    if(window._selecoes[id]){
+    const chkBtn = document.getElementById(`chkBtn_${id}`);
+    if(chkBtn?.dataset.selected==='1'){
       selecionados.push(id);
       if(id==='mata') totalValor += cfgMata.valor||50;
       else if(id==='unico') totalValor += cfgUnico.valor||10;
@@ -2487,15 +2501,28 @@ async function carregarParticipantes(){
     }
     c.innerHTML=data.map(p=>`
       <div style="background:var(--card2);border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid ${p.pago?'var(--verde)':'var(--border)'}">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <div style="font-weight:700;font-size:14px;color:var(--txt)">${p.nome}</div>
-          <button onclick="togglePago('${p.id}','${p.whats}',${!p.pago})"
-            style="background:${p.pago?'var(--verde)':'var(--card)'};color:${p.pago?'#fff':'var(--txt3)'};
-            border:1.5px solid ${p.pago?'var(--verde)':'var(--border)'};border-radius:20px;
-            padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;
-            font-family:'Inter',sans-serif;touch-action:manipulation">
-            ${p.pago?'✓ Pago':'Pago?'}
-          </button>
+        <div style="margin-bottom:8px">
+          <div style="font-weight:700;font-size:14px;color:var(--txt);margin-bottom:6px">${p.nome}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button onclick="togglePago('${p.id}','${p.whats}','pago_mata',${!(p.pago_mata||p.pago)})"
+              style="background:${(p.pago_mata||p.pago)?'var(--azul)':'var(--card)'};color:${(p.pago_mata||p.pago)?'#fff':'var(--txt3)'};
+              border:1.5px solid ${(p.pago_mata||p.pago)?'var(--azul)':'var(--border)'};border-radius:20px;
+              padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;touch-action:manipulation">
+              🏆 ${(p.pago_mata||p.pago)?'✓ Mata':'Mata?'}
+            </button>
+            ${cfgUnico.jogoAtivo?`<button onclick="togglePago('${p.id}','${p.whats}','pago_unico',${!p.pago_unico})"
+              style="background:${p.pago_unico?'var(--verde)':'var(--card)'};color:${p.pago_unico?'#fff':'var(--txt3)'};
+              border:1.5px solid ${p.pago_unico?'var(--verde)':'var(--border)'};border-radius:20px;
+              padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;touch-action:manipulation">
+              ⚡ ${p.pago_unico?'✓ ':''} ${cfgUnico.jogoAtivo.t1} × ${cfgUnico.jogoAtivo.t2}
+            </button>`:''}
+            ${cfgUnico2.jogoAtivo?`<button onclick="togglePago('${p.id}','${p.whats}','pago_unico2',${!p.pago_unico2})"
+              style="background:${p.pago_unico2?'var(--verde)':'var(--card)'};color:${p.pago_unico2?'#fff':'var(--txt3)'};
+              border:1.5px solid ${p.pago_unico2?'var(--verde)':'var(--border)'};border-radius:20px;
+              padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;touch-action:manipulation">
+              ⚡ ${p.pago_unico2?'✓ ':''} ${cfgUnico2.jogoAtivo.t1} × ${cfgUnico2.jogoAtivo.t2}
+            </button>`:''}
+          </div>
         </div>
         <div style="color:var(--txt2);font-size:12px">📱 ${p.whats}</div>
         ${p.pix_chave
@@ -2517,29 +2544,34 @@ async function carregarParticipantes(){
   }
 }
 
-async function togglePago(id, whats, pago){
+async function togglePago(id, whats, campo, valor){
+  // campo: 'pago_mata', 'pago_unico', 'pago_unico2' or 'pago' (legacy)
   try{
+    const update = { [campo]: valor };
+    if(campo==='pago_mata'||campo==='pago') update.pago = valor; // keep backward compat
     const r = await fetch('/api/participantes', {
       method: 'PATCH',
-      headers: {
-        'x-master-key': 'tharaujo2026',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ id, pago })
+      headers: { 'x-master-key': 'tharaujo2026', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, ...update })
     });
     if(!r.ok) throw new Error('Erro '+r.status);
-    if(pago){
+    if(valor){
       const whatsLimpo = whats.replace(/\D/g,'');
-      const mataPend = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo && p.status==='pendente');
-      if(mataPend){
-        await sb.from('palpites_mata').update({status:'ativo'}).eq('id', mataPend.id);
-        toast(`${mataPend.nome} ativado no Mata-Mata! ✓`,'ok');
+      if(campo==='pago_mata'||campo==='pago'){
+        const mataPend = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo&&p.status==='pendente');
+        if(mataPend){ await sb.from('palpites_mata').update({status:'ativo'}).eq('id',mataPend.id); }
       }
-      const unicoPend = palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo && p.status==='pendente');
-      if(unicoPend) await sb.from('palpites_unico').update({status:'ativo'}).eq('id', unicoPend.id);
+      if(campo==='pago_unico'){
+        const u1Pend = palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo&&(p.jogo_extra_id||'jogo1')==='jogo1'&&p.status==='pendente');
+        if(u1Pend){ await sb.from('palpites_unico').update({status:'ativo'}).eq('id',u1Pend.id); }
+      }
+      if(campo==='pago_unico2'){
+        const u2Pend = palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo&&p.jogo_extra_id==='jogo2'&&p.status==='pendente');
+        if(u2Pend){ await sb.from('palpites_unico').update({status:'ativo'}).eq('id',u2Pend.id); }
+      }
     }
     await carregarParticipantes();
-    toast(pago ? '✓ Pagamento confirmado!' : 'Pagamento desmarcado','ok');
+    toast(valor ? '✓ Pagamento confirmado!' : 'Pagamento desmarcado','ok');
   } catch(e){
     toast('Erro: '+e.message,'err');
   }
@@ -3279,30 +3311,31 @@ let tutorialSlide = 0;
 const TUTORIAL_TOTAL = 1;
 function tutorialGoTo(idx){ tutorialSlide=idx; }
 function tutorialNext(){ verificarLogin(); }
-function tutorialInit(){ loginInit(); }
+function tutorialInit(){ /* handled by loginInit on startup */ }
 
 async function loginInit(){
-  // Check localStorage first for quick login
   const lsNome = localStorage.getItem('bolao_nome');
   const lsWhats = localStorage.getItem('bolao_whats');
 
+  // If we have localStorage data, trust it and skip login
+  // (The API verify was causing issues with timeouts)
   if(lsNome && lsWhats){
-    // Verify still valid via secure API
-    try{
-      const r = await fetch(`/api/login?whats=${lsWhats.replace(/\D/g,'')}`);
-      if(r.ok){
-        const result = await r.json();
-        const found = result.found ? result : null;
-        if(found){
-          sessionStorage.setItem('cadastro_nome', lsNome);
-          sessionStorage.setItem('cadastro_whats', lsWhats);
-          document.getElementById('tutorialOverlay').classList.add('hidden');
-          enableNav();
-          showWelcomeBanner();
-          return;
-        }
-      }
-    } catch(e){ /* show login */ }
+    sessionStorage.setItem('cadastro_nome', lsNome);
+    sessionStorage.setItem('cadastro_whats', lsWhats);
+    document.getElementById('tutorialOverlay').classList.add('hidden');
+    enableNav();
+    showWelcomeBanner();
+    return;
+  }
+
+  // No localStorage — try sessionStorage
+  const ssNome = sessionStorage.getItem('cadastro_nome');
+  const ssWhats = sessionStorage.getItem('cadastro_whats');
+  if(ssNome && ssWhats){
+    document.getElementById('tutorialOverlay').classList.add('hidden');
+    enableNav();
+    showWelcomeBanner();
+    return;
   }
 
   // Show login screen — block all navigation until complete
@@ -3341,10 +3374,11 @@ function enableNav(){
 // INIT
 // ═══════════════════════════════════════
 readParams();
+// Run login check immediately — before data loads
+loginInit();
 loadAll().then(()=>{
   setupRealtime();
   if(apiKey){document.getElementById('apiKeyInput').value=apiKey;}
-  tutorialInit();
   showWelcomeBanner();
   if('Notification'in window&&Notification.permission==='default'){
     setTimeout(()=>{
