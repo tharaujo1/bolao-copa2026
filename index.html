@@ -227,15 +227,17 @@ select option{background:var(--bg);}
 
 /* TUTORIAL ONBOARDING */
 .tutorial-overlay{
-  position:fixed;inset:0;z-index:9000;
+  position:fixed;inset:0;z-index:99999;
   background:var(--bg);
   display:flex;flex-direction:column;
   overflow:hidden;
 }
-.tutorial-overlay.hidden{display:none;}
+.tutorial-overlay.hidden{display:none!important;}
 .tutorial-slides{
   display:flex;flex:1;
   transition:transform 0.35s cubic-bezier(.4,0,.2,1);
+  overflow:hidden;
+  touch-action:pan-y;
 }
 .tutorial-slide{
   min-width:100vw;width:100vw;
@@ -243,6 +245,8 @@ select option{background:var(--bg);}
   align-items:center;justify-content:center;
   padding:32px 24px;
   text-align:center;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
 }
 .tutorial-emoji{font-size:72px;margin-bottom:20px;line-height:1;}
 .tutorial-title{
@@ -291,6 +295,9 @@ select option{background:var(--bg);}
   padding:16px 24px 36px;
   display:flex;gap:10px;
   align-items:center;
+  position:relative;
+  z-index:100000;
+  flex-shrink:0;
 }
 .tutorial-btn-next{
   flex:1;padding:14px;border-radius:12px;
@@ -299,6 +306,9 @@ select option{background:var(--bg);}
   border:none;cursor:pointer;
   font-family:'Inter',sans-serif;
   text-transform:uppercase;letter-spacing:0.5px;
+  position:relative;z-index:100000;
+  -webkit-tap-highlight-color:rgba(0,0,0,0.1);
+  touch-action:manipulation;
 }
 
 .tutorial-stripe{
@@ -2250,11 +2260,24 @@ let tutorialSlide = 0;
 const TUTORIAL_TOTAL = 5;
 
 function tutorialInit(){
-  const seen = localStorage.getItem('bolao_tutorial_seen');
-  if(seen){
+  // Check multiple storage locations for resilience
+  const lsSeen = localStorage.getItem('bolao_tutorial_seen');
+  const ssSeen = sessionStorage.getItem('bolao_tutorial_seen');
+
+  if(lsSeen || ssSeen){
     document.getElementById('tutorialOverlay').classList.add('hidden');
     return;
   }
+
+  // Also skip if user already has a palpite registered (they clearly know the app)
+  const jaTemPalpite = palpitesMata.length > 0 || palpitesUnico.length > 0;
+  if(jaTemPalpite){
+    localStorage.setItem('bolao_tutorial_seen','1');
+    sessionStorage.setItem('bolao_tutorial_seen','1');
+    document.getElementById('tutorialOverlay').classList.add('hidden');
+    return;
+  }
+
   // Show tutorial
   tutorialGoTo(0);
 }
@@ -2295,6 +2318,7 @@ function tutorialSkip(){
 
 function tutorialFinish(goToPalpitar=true){
   localStorage.setItem('bolao_tutorial_seen','1');
+  sessionStorage.setItem('bolao_tutorial_seen','1');
   document.getElementById('tutorialOverlay').classList.add('hidden');
   if(goToPalpitar){
     // Go to palpitar tab and scroll to form
@@ -2308,17 +2332,22 @@ function tutorialFinish(goToPalpitar=true){
 
 
 
-// Swipe support for tutorial
+// Swipe support for tutorial — only on slides area, not footer
 (function(){
   let startX = 0;
-  document.getElementById('tutorialSlides').addEventListener('touchstart', e=>{
+  let startY = 0;
+  const slidesEl = document.getElementById('tutorialSlides');
+  slidesEl.addEventListener('touchstart', e=>{
     startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
   }, {passive:true});
-  document.getElementById('tutorialSlides').addEventListener('touchend', e=>{
-    const diff = startX - e.changedTouches[0].clientX;
-    if(Math.abs(diff) > 50){
-      if(diff > 0 && tutorialSlide < TUTORIAL_TOTAL-1) tutorialNext();
-      else if(diff < 0 && tutorialSlide > 0) tutorialGoTo(tutorialSlide-1);
+  slidesEl.addEventListener('touchend', e=>{
+    const diffX = startX - e.changedTouches[0].clientX;
+    const diffY = Math.abs(startY - e.changedTouches[0].clientY);
+    // Only register horizontal swipe if clearly horizontal (not scroll)
+    if(Math.abs(diffX) > 60 && diffY < 30){
+      if(diffX > 0 && tutorialSlide < TUTORIAL_TOTAL-1) tutorialNext();
+      else if(diffX < 0 && tutorialSlide > 0) tutorialGoTo(tutorialSlide-1);
     }
   }, {passive:true});
 })();
