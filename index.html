@@ -408,7 +408,11 @@ select option{background:var(--bg);}
   <div class="card" id="formCard">
     <div class="loading"><span class="loading-spinner">⚽</span>Carregando...</div>
   </div>
-  <div class="card" id="ptsCard"><div class="card-title">Pontuação</div><div id="ptsBody"></div></div>
+  <div class="card" id="ptsCard">
+    <div class="card-title">Pontuação</div>
+    <div id="ptsBody"></div>
+    <div id="ptsExtraInfo"></div>
+  </div>
   <div class="card"><div class="card-title">Desempate</div><div id="tbBody"></div></div>
 </div>
 
@@ -1252,14 +1256,40 @@ function calcUnico(g1p,g2p,g1r,g2r){
 
 function renderPtsBody(){
   const b=document.getElementById('ptsBody');
+  const extra=document.getElementById('ptsExtraInfo');
   if(modo==='mata'){
     b.innerHTML=`<table class="pts-table">
       <tr><th>Acerto</th><th>Oitavas</th><th>Quartas</th><th>Semi</th><th>Final</th></tr>
       <tr><td>Placar exato</td><td class="pts-num">10</td><td class="pts-num">15</td><td class="pts-num">20</td><td class="pts-num">20</td></tr>
       <tr><td>Venc.+saldo</td><td class="pts-num">6</td><td class="pts-num">9</td><td class="pts-num">12</td><td class="pts-num">12</td></tr>
       <tr><td>Vencedor</td><td class="pts-num">3</td><td class="pts-num">5</td><td class="pts-num">6</td><td class="pts-num">6</td></tr>
-    </table>
-    <div class="text-sm mt8">Quartas ×1,5 · Semi e Final ×2. Vantagem de começo se sustenta.</div>`;
+    </table>`;
+    if(extra) extra.innerHTML=`
+      <div class="divider"></div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--amarelo);margin-bottom:8px">Como funciona</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:10px;font-size:12px;color:var(--txt2);align-items:flex-start">
+          <span style="font-size:16px;flex-shrink:0">🎯</span>
+          <span><strong style="color:var(--txt)">Placar exato</strong> — você acertou o resultado certinho. Ex: Brasil 2×1 Argentina e o jogo terminou 2×1. <strong style="color:var(--amarelo)">10 pts</strong></span>
+        </div>
+        <div style="display:flex;gap:10px;font-size:12px;color:var(--txt2);align-items:flex-start">
+          <span style="font-size:16px;flex-shrink:0">✅</span>
+          <span><strong style="color:var(--txt)">Vencedor + saldo</strong> — acertou quem ganhou e a diferença de gols. Ex: você chutou 2×0, jogo terminou 3×1 (diferença de 2 em ambos). <strong style="color:var(--amarelo)">6 pts</strong></span>
+        </div>
+        <div style="display:flex;gap:10px;font-size:12px;color:var(--txt2);align-items:flex-start">
+          <span style="font-size:16px;flex-shrink:0">🏅</span>
+          <span><strong style="color:var(--txt)">Só o vencedor</strong> — acertou quem ganhou mas errou o saldo. Ex: você chutou 1×0, jogo terminou 3×1. <strong style="color:var(--amarelo)">3 pts</strong></span>
+        </div>
+        <div style="display:flex;gap:10px;font-size:12px;color:var(--txt2);align-items:flex-start">
+          <span style="font-size:16px;flex-shrink:0">✖️</span>
+          <span><strong style="color:var(--txt)">Errou o vencedor</strong> — chutou um time e ganhou o outro, ou previu empate e não empatou. <strong style="color:var(--amarelo)">0 pts</strong></span>
+        </div>
+      </div>
+      <div style="background:var(--azul-pale);border-radius:10px;padding:10px;margin-top:10px;font-size:12px;color:var(--txt2)">
+        <strong style="color:#7BA7FF">Multiplicadores por fase:</strong><br>
+        Oitavas ×1 · Quartas ×1,5 · Semifinal ×2 · Final ×2<br>
+        <span style="font-size:11px;color:var(--txt3)">Quem foi bem nas oitavas mantém vantagem nas fases seguintes.</span>
+      </div>`;
   } else {
     b.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
       <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--verde)">10</div><div style="font-size:11px;color:var(--txt2);margin-top:2px">Placar exato</div></div>
@@ -1267,6 +1297,31 @@ function renderPtsBody(){
       <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--verde)">3</div><div style="font-size:11px;color:var(--txt2);margin-top:2px">Vencedor certo</div></div>
       <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--verde)">1</div><div style="font-size:11px;color:var(--txt2);margin-top:2px">Empate previsto</div></div>
     </div>`;
+    if(extra) extra.innerHTML=`
+      <div class="divider"></div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--amarelo);margin-bottom:8px">Exemplos</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:10px;font-size:12px;color:var(--txt2);align-items:flex-start">
+          <span style="font-size:16px;flex-shrink:0">🎯</span>
+          <span>Você chutou <strong style="color:var(--txt)">2×1</strong>, jogo terminou <strong style="color:var(--txt)">2×1</strong> → <strong style="color:var(--amarelo)">10 pts</strong></span>
+        </div>
+        <div style="display:flex;gap:10px;font-size:12px;color:var(--txt2);align-items:flex-start">
+          <span style="font-size:16px;flex-shrink:0">✅</span>
+          <span>Você chutou <strong style="color:var(--txt)">2×0</strong>, jogo terminou <strong style="color:var(--txt)">3×1</strong> (mesma diferença) → <strong style="color:var(--amarelo)">6 pts</strong></span>
+        </div>
+        <div style="display:flex;gap:10px;font-size:12px;color:var(--txt2);align-items:flex-start">
+          <span style="font-size:16px;flex-shrink:0">🏅</span>
+          <span>Você chutou <strong style="color:var(--txt)">1×0</strong>, jogo terminou <strong style="color:var(--txt)">3×1</strong> → <strong style="color:var(--amarelo)">3 pts</strong></span>
+        </div>
+        <div style="display:flex;gap:10px;font-size:12px;color:var(--txt2);align-items:flex-start">
+          <span style="font-size:16px;flex-shrink:0">🤝</span>
+          <span>Você chutou <strong style="color:var(--txt)">1×1</strong> e jogo empatou em qualquer placar → <strong style="color:var(--amarelo)">1 pt</strong></span>
+        </div>
+        <div style="display:flex;gap:10px;font-size:12px;color:var(--txt2);align-items:flex-start">
+          <span style="font-size:16px;flex-shrink:0">✖️</span>
+          <span>Errou o vencedor ou previu empate mas não empatou → <strong style="color:var(--amarelo)">0 pts</strong></span>
+        </div>
+      </div>`;
   }
 }
 
@@ -2097,13 +2152,34 @@ async function carregarParticipantes(){
         </div>
         <div style="color:var(--txt2);font-size:12px">📱 ${p.whats}</div>
         ${p.pix_chave
-          ?`<div style="color:var(--amarelo);margin-top:4px;font-family:monospace;font-size:11px">💳 ${p.pix_tipo||'Pix'}: ${p.pix_chave}</div>`
+          ?`<div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+              <div style="flex:1;color:var(--amarelo);font-family:monospace;font-size:11px;word-break:break-all">💳 ${p.pix_tipo||'Pix'}: ${p.pix_chave}</div>
+              <button onclick="copiarPix('${p.pix_chave}','${p.nome}')"
+                style="flex-shrink:0;background:var(--amarelo-pale);border:1px solid var(--border2);
+                color:var(--amarelo);border-radius:8px;padding:5px 10px;font-size:11px;
+                font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;
+                touch-action:manipulation;white-space:nowrap">
+                📋 Copiar
+              </button>
+            </div>`
           :`<div style="color:var(--txt3);margin-top:4px;font-size:11px">💳 Pix não informado</div>`}
         <div style="color:var(--txt3);font-size:10px;margin-top:4px">${new Date(p.created_at).toLocaleDateString('pt-BR')} ${new Date(p.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
       </div>`).join('');
   } catch(e){
     c.innerHTML=`<div style="text-align:center;padding:12px;color:var(--danger)">Erro: ${e.message}</div>`;
   }
+}
+
+function copiarPix(chave, nome){
+  navigator.clipboard?.writeText(chave).then(()=>{
+    toast(`Chave Pix de ${nome} copiada! 📋`,'ok');
+  }).catch(()=>{
+    const t=document.createElement('textarea');
+    t.value=chave;document.body.appendChild(t);
+    t.select();document.execCommand('copy');
+    document.body.removeChild(t);
+    toast(`Chave Pix de ${nome} copiada! 📋`,'ok');
+  });
 }
 
 async function togglePago(id, whats, pago){
@@ -2133,25 +2209,34 @@ async function togglePago(id, whats, pago){
 
 function shareConviteGeral(){
   const base = window.location.href.split('?')[0];
+  const valor_mata = cfgMata.valor || 50;
+  const valor_unico = cfgUnico.valor || 10;
   const msg = `🇧🇷⚽🏆 *BOLÃO BRADESCO — COPA 2026*
 
 Galera, montei um bolão da Copa pra gente competir!
 
-*Como funciona:*
+*Dois bolões disponíveis:*
 
-⚡ *Jogo Extra* — já disponível! Aposta pontual em jogos específicos da fase de grupos. Quando liberar um jogo, você entra e palpita.
+🏆 *Mata-Mata — R$ ${valor_mata} por pessoa*
+Grupo fechado. Palpite em todas as fases — oitavas, quartas, semifinal e final. Pontuação acumulada com multiplicadores. Abre quando a fase de grupos terminar.
 
-🏆 *Mata-Mata* — abre quando a fase de grupos terminar e os classificados estiverem definidos. Aí vocês palpitam em todas as fases até a final.
+⚡ *Jogo Extra — R$ ${valor_unico} por pessoa (opcional)*
+Aposta pontual em jogos específicos. Quando eu liberar, você entra ou não — sem compromisso.
 
-📡 Placares ao vivo em tempo real via API oficial
-📊 Classificação de todos os grupos atualizada automaticamente
-🏅 Ranking do bolão atualizado na hora
-📱 Instala no celular como um app de verdade
+*Como pontuar:*
+🎯 Placar exato → 10 pts
+✅ Vencedor + mesmo saldo de gols → 6 pts
+🏅 Só o vencedor → 3 pts
+🤝 Previu empate e empatou → 1 pt
+_(No Mata-Mata: Quartas ×1,5 · Semi e Final ×2)_
+
+📡 Placares ao vivo em tempo real
+📊 Classificação automática dos grupos
+🏅 Ranking atualizado na hora
+📱 Instala no celular como app
 
 👇 Entra, faz o cadastro e já fica na fila:
-${base}
-
-Qualquer bug que encontrar me avisa 😄 ainda tô ajustando alguns detalhes!`;
+${base}`;
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
 }
 
