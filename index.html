@@ -466,6 +466,13 @@ select option{background:var(--bg);}
         <label>Chave</label><input type="text" id="mataPixChave">
         <label>Nome</label><input type="text" id="mataPixNome">
         <label>Banco</label><input type="text" id="mataPixBanco">
+        <div class="toggle-row" style="margin-top:12px">
+          <div class="toggle-info">
+            <div class="toggle-label">Inscrições abertas</div>
+            <div class="toggle-sub">Feche antes de abrir os palpites para fixar o grupo</div>
+          </div>
+          <button class="toggle on" id="tbMataInscricoes" onclick="this.classList.toggle('on')"></button>
+        </div>
         <button class="btn btn-amarelo mt8" onclick="salvarCfgMata()">Salvar Configurações</button>
         <button class="btn btn-danger" onclick="limparMata()">⚠️ Limpar palpites</button>
       </div>
@@ -864,6 +871,10 @@ function renderFormPalpite(){
   if(isMata){
     const fase=FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
     const jogosAtivos=(cfgMata.jogosAtivos||[]).map(id=>fase?.jogos.find(j=>j.id===id)).filter(Boolean);
+    if(cfgMata.inscricoesAbertas===false && !palpitesMata.find(p=>p.status==='pendente'||p.status==='ativo')){
+      card.innerHTML=`<div class="modo-tag mata">🏆 Bolão Mata-Mata</div><div class="empty"><div class="empty-icon">🔒</div><div class="empty-text">Inscrições encerradas.<br>O grupo do mata-mata está fechado.</div></div>`;
+      return;
+    }
     if(!jogosAtivos.length){
       card.innerHTML=`<div class="modo-tag mata">🏆 Bolão Mata-Mata</div><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Aguardando o organizador abrir a fase.<br>Os palpites serão liberados fase a fase.</div></div>`;
       return;
@@ -921,6 +932,7 @@ async function enviarMata(){
   if(!whats) return toast('Digite seu WhatsApp — é obrigatório!','err');
   const whatsLimpo=whats.replace(/\D/g,'');
   if(whatsLimpo.length<10) return toast('WhatsApp inválido. Use DDD + número.','err');
+  if(cfgMata.inscricoesAbertas===false) return toast('Inscrições encerradas! O grupo do mata-mata já está fechado.','err');
   if(palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo)) return toast('Este WhatsApp já está cadastrado!','err');
   if(palpitesMata.find(p=>p.nome.toLowerCase()===nome.toLowerCase())) return toast('Este nome já está cadastrado!','err');
   const fase=FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
@@ -1169,45 +1181,81 @@ function renderFeed(){
 // ═══════════════════════════════════════
 // API AO VIVO
 // ═══════════════════════════════════════
+function getBrazilDateStr(){
+  // Returns today's date in Brazil timezone (UTC-3)
+  const now = new Date();
+  const brazil = new Date(now.getTime() - 3*60*60*1000);
+  return brazil.toISOString().split('T')[0];
+}
+
+function formatKickoff(utcDate){
+  if(!utcDate) return '';
+  const d = new Date(utcDate);
+  // Convert to Brazil time (UTC-3)
+  const brazil = new Date(d.getTime() - 3*60*60*1000);
+  return brazil.toISOString().substring(11,16).replace(':','h');
+}
+
 async function fetchAllToday(manual=false){
   const c=document.getElementById('todayGamesDisplay');
   if(!apiKey){
     c.innerHTML='<div class="empty"><div class="empty-text">Configure a API Key no Admin → ⚙️ Geral</div></div>';
     return;
   }
-  const today=new Date().toISOString().split('T')[0];
+  const today=getBrazilDateStr();
   try{
-    const res=await fetch(`/api/football?key=${apiKey}&path=matches&dateFrom=${today}&dateTo=${today}&competitions=2000`);
-    if(!res.ok){ c.innerHTML='<div class="empty"><div class="empty-text">Erro ao buscar jogos</div></div>'; return; }
-    const data=await res.json();
-    const matches=(data.matches||[]);
-    if(!matches.length){
-      c.innerHTML='<div class="empty"><div class="empty-text">Nenhum jogo hoje 📅</div></div>';
+    const res=await fetch(`/api/football?key=${apiKey}&path=competitions/WC/matches&dateFrom=${today}&dateTo=${today}`);
+    if(!res.ok){
+      // Fallback: try generic matches endpoint
+      const res2=await fetch(`/api/football?key=${apiKey}&path=matches&dateFrom=${today}&dateTo=${today}`);
+      if(!res2.ok){ c.innerHTML='<div class="empty"><div class="empty-text">Erro ao buscar jogos ('+res.status+')</div></div>'; return; }
+      const data2=await res2.json();
+      renderTodayGames(c, (data2.matches||[]).filter(m=>m.competition?.code==='WC'), manual);
       return;
     }
-    c.innerHTML=matches.map(m=>{
-      const s=m.score?.fullTime||m.score?.halfTime||{};
-      const g1=s.home??'—', g2=s.away??'—';
-      const status=m.status;
-      const statusLabel=status==='IN_PLAY'?'🔴 Ao Vivo':status==='FINISHED'?'✅ Encerrado':status==='PAUSED'?'⏸️ Intervalo':'📅 Agendado';
-      const scoreColor=status==='IN_PLAY'?'var(--danger)':status==='FINISHED'?'var(--txt2)':'var(--amarelo)';
-      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
-        <div style="flex:1;text-align:right">
-          <div style="font-size:13px;font-weight:700">${m.homeTeam?.shortName||m.homeTeam?.name||'?'}</div>
-          <div style="font-size:10px;color:var(--txt3)">${m.homeTeam?.tla||''}</div>
-        </div>
-        <div style="text-align:center;min-width:80px">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:${scoreColor}">${g1} × ${g2}</div>
-          <div style="font-size:9px;color:var(--txt3);margin-top:2px">${statusLabel}</div>
-        </div>
-        <div style="flex:1;text-align:left">
-          <div style="font-size:13px;font-weight:700">${m.awayTeam?.shortName||m.awayTeam?.name||'?'}</div>
-          <div style="font-size:10px;color:var(--txt3)">${m.awayTeam?.tla||''}</div>
-        </div>
-      </div>`;
-    }).join('');
-    if(manual) toast('Jogos atualizados!','ok');
+    const data=await res.json();
+    renderTodayGames(c, data.matches||[], manual);
   }catch(e){ c.innerHTML='<div class="empty"><div class="empty-text">Erro de conexão</div></div>'; }
+}
+
+function renderTodayGames(c, matches, manual){
+  if(!matches.length){
+    c.innerHTML='<div class="empty"><div class="empty-text">Nenhum jogo da Copa hoje 📅</div></div>';
+    return;
+  }
+  // Sort: live first, then scheduled, then finished
+  const order = {IN_PLAY:0, PAUSED:1, SCHEDULED:2, TIMED:2, FINISHED:3};
+  matches.sort((a,b)=>(order[a.status]??9)-(order[b.status]??9));
+
+  c.innerHTML=matches.map(m=>{
+    const s=m.score?.fullTime||m.score?.halfTime||{};
+    const g1=s.home; const g2=s.away;
+    const status=m.status;
+    const isLive=status==='IN_PLAY'||status==='PAUSED';
+    const isDone=status==='FINISHED';
+    const hasScore=g1!==null&&g1!==undefined&&isDone||isLive;
+    const kickoff=formatKickoff(m.utcDate);
+    const f1=getCountryFlag(m.homeTeam?.name||'');
+    const f2=getCountryFlag(m.awayTeam?.name||'');
+    const statusLabel=isLive?'🔴 Ao Vivo':isDone?'✅ Encerrado':status==='PAUSED'?'⏸️ Intervalo':`📅 ${kickoff}`;
+    const scoreColor=isLive?'var(--danger)':isDone?'var(--txt2)':'var(--txt3)';
+
+    return `<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1;text-align:right">
+        <div style="font-size:13px;font-weight:700">${f1} ${m.homeTeam?.shortName||m.homeTeam?.name||'?'}</div>
+      </div>
+      <div style="text-align:center;min-width:72px">
+        ${hasScore
+          ?`<div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:${scoreColor}">${g1??0} × ${g2??0}</div>`
+          :`<div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--txt3)">× </div>`}
+        <div style="font-size:9px;color:${isLive?'var(--danger)':isDone?'var(--txt3)':'var(--amarelo)'};margin-top:1px;font-weight:700">${statusLabel}</div>
+      </div>
+      <div style="flex:1;text-align:left">
+        <div style="font-size:13px;font-weight:700">${m.awayTeam?.shortName||m.awayTeam?.name||'?'} ${f2}</div>
+      </div>
+    </div>`;
+  }).join('');
+  if(manual) toast('Jogos atualizados!','ok');
 }
 
 async function fetchLive(manual=false){
@@ -1463,6 +1511,7 @@ function loadCfgMata(){
   document.getElementById('mataPixChave').value=cfgMata.pixChave||'';
   document.getElementById('mataPixNome').value=cfgMata.pixNome||'';
   document.getElementById('mataPixBanco').value=cfgMata.pixBanco||'';
+  setT('tbMataInscricoes', cfgMata.inscricoesAbertas!==false);
 }
 
 async function salvarCfgMata(){
@@ -1475,9 +1524,10 @@ async function salvarCfgMata(){
     pixChave:document.getElementById('mataPixChave').value.trim(),
     pixNome:document.getElementById('mataPixNome').value.trim(),
     pixBanco:document.getElementById('mataPixBanco').value.trim(),
+    inscricoesAbertas:getT('tbMataInscricoes'),
   };
   await sb.from('config').upsert({id:'mata',dados:cfgMata,updated_at:new Date().toISOString()});
-  updateHeader();updatePixDisplay();toast('Configurações salvas!','ok');
+  updateHeader();updatePixDisplay();renderFormPalpite();toast('Configurações salvas!','ok');
 }
 
 async function limparMata(){
