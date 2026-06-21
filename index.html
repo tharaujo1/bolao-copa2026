@@ -1318,8 +1318,8 @@ async function enviarUnico(){
   let statusInicialU = 'pendente';
   try{
     const whatsLimpoU = whats.replace(/\D/g,'');
-    const {data:partU} = await sb.from('participantes').select('pago').eq('whats',whatsLimpoU).single();
-    if(partU?.pago) statusInicialU = 'ativo';
+    const {data:partU} = await sb.from('participantes').select('pago,pago_unico').eq('whats',whatsLimpoU).single();
+    if(partU?.pago_unico || partU?.pago) statusInicialU = 'ativo';
   } catch(e){}
 
   const {error}=await sb.from('palpites_unico').insert({nome,whats,g1,g2,bonus,status:statusInicialU,ts:Date.now()});
@@ -1650,14 +1650,17 @@ function toggleSelecao(id){
   const btn = document.getElementById(`chkBtn_${id}`);
   if(!btn) return;
   const selected = btn.dataset.selected === '1';
+  if(!window._selecoes) window._selecoes={};
   if(selected){
     btn.style.background='var(--bg)';
     btn.style.color='transparent';
     btn.dataset.selected='0';
+    window._selecoes[id]=false;
   } else {
     btn.style.background='var(--amarelo)';
     btn.style.color='#000';
     btn.dataset.selected='1';
+    window._selecoes[id]=true;
   }
   atualizarTotal();
 }
@@ -2232,8 +2235,8 @@ function isFutureGame(dateStr, timeStr){
   // Convert game time from Brasília to UTC
   const gameUTC = new Date(Date.UTC(2026, month-1, day, gameHour+3, gameMin));
   const nowUTC = new Date();
-  // Game hasn't started yet = future (give 5 min grace after kickoff)
-  return gameUTC > new Date(nowUTC.getTime() - 5*60*1000);
+  // Game hasn't started yet = future (40 min grace for testing)
+  return gameUTC > new Date(nowUTC.getTime() - 40*60*1000);
 }
 
 function filtroUnico(fase,el){
