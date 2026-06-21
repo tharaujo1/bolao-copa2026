@@ -492,26 +492,32 @@ select option{background:var(--bg);}
 
 <!-- PAGAR -->
 <div class="screen" id="screen-pagar">
-  <div class="mode-banner" style="margin-bottom:12px">
-    <div class="mode-pill mata" id="pagMata" onclick="switchMode('mata');goTab('pagar',document.querySelectorAll('.nav-tab')[3])">🏆 Mata-Mata</div>
-    <div class="mode-pill unico" id="pagUnico" onclick="switchMode('unico');goTab('pagar',document.querySelectorAll('.nav-tab')[3])">⚡ Jogo Extra</div>
-  </div>
-  <div class="pix-hero" id="pixHero">
-    <div class="pix-label-sm">Valor da entrada</div>
-    <div class="pix-valor" id="pixValor">—</div>
-    <div class="pix-nome" id="pixNome">—</div>
-    <div class="pix-banco" id="pixBanco">—</div>
 
-    <!-- Estado inicial: gerar Pix -->
-    <div id="pixGerarWrap">
-      <div class="pix-key" id="pixKey" style="font-size:12px;color:var(--txt3)">Clique para gerar seu Pix</div>
-      <button class="btn btn-amarelo" onclick="gerarPixMP()" id="btnGerarPix" style="margin-top:8px;touch-action:manipulation">
-        ⚡ Gerar QR Code Pix
-      </button>
+  <!-- SELEÇÃO DE BOLÕES -->
+  <div class="card gold" id="pagSelecaoCard">
+    <div class="card-title">Selecione os bolões que quer entrar</div>
+    <div id="pagOpcoes">
+      <!-- Renderizado dinamicamente -->
     </div>
+    <div class="divider"></div>
+    <div class="flex-between" style="margin-bottom:12px">
+      <div style="font-size:13px;color:var(--txt2)">Total a pagar</div>
+      <div id="pagTotal" style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--amarelo)">R$ 0</div>
+    </div>
+    <button class="btn btn-amarelo" onclick="gerarPixMP()" id="btnGerarPix" style="touch-action:manipulation" disabled>
+      ⚡ Gerar QR Code Pix
+    </button>
+  </div>
+
+  <!-- PIX HERO -->
+  <div class="pix-hero" id="pixHero" style="display:none">
+    <div class="pix-label-sm">Valor total</div>
+    <div class="pix-valor" id="pixValor">—</div>
+    <div class="pix-nome" id="pixNome">Thiago Gonçalves de Araújo</div>
+    <div class="pix-banco" id="pixBanco">Email · Bradesco</div>
 
     <!-- Estado: QR Code gerado -->
-    <div id="pixQRWrap" style="display:none">
+    <div id="pixQRWrap">
       <div style="background:#fff;border-radius:12px;padding:12px;margin:12px auto;width:fit-content">
         <img id="pixQRImg" src="" alt="QR Code Pix" style="width:180px;height:180px;display:block">
       </div>
@@ -525,8 +531,12 @@ select option{background:var(--bg);}
     <div id="pixAguardandoWrap" style="display:none">
       <div style="font-size:32px;margin:12px 0">⏳</div>
       <div style="font-size:13px;color:var(--txt2)">Aguardando confirmação do pagamento...</div>
-      <div style="font-size:11px;color:var(--txt3);margin-top:6px">Você será ativado automaticamente assim que o pagamento for confirmado.</div>
+      <div style="font-size:11px;color:var(--txt3);margin-top:6px">Você será ativado automaticamente assim que o Pix for confirmado.</div>
     </div>
+
+    <button onclick="voltarSelecao()" style="background:none;border:none;color:var(--txt3);font-size:12px;padding:8px;cursor:pointer;font-family:'Inter',sans-serif;width:100%;margin-top:8px">
+      ← Voltar
+    </button>
   </div>
   <div class="card">
     <div class="card-title">Como pagar</div>
@@ -555,9 +565,10 @@ select option{background:var(--bg);}
       <button class="btn btn-amarelo" onclick="checkAdmin()">Entrar</button>
     </div>
     <div id="adminPanel" style="display:none">
-      <div class="mode-banner" style="margin-bottom:16px;flex-wrap:wrap;gap:6px">
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
         <div class="mode-pill mata active" id="admMata" onclick="adminMode('mata')" style="flex:1;min-width:80px">🏆 Mata-Mata</div>
-        <div class="mode-pill unico" id="admUnico" onclick="adminMode('unico')" style="flex:1;min-width:80px">⚡ Jogo Extra</div>
+        <div class="mode-pill unico" id="admUnico" onclick="adminMode('unico')" style="flex:1;min-width:80px">⚡ Extra 1</div>
+        <div class="mode-pill unico" id="admUnico2" onclick="adminMode('unico2')" style="flex:1;min-width:80px">⚡ Extra 2</div>
         <div class="mode-pill unico" id="admGeral" onclick="adminMode('geral')" style="flex:1;min-width:80px;background:rgba(100,60,0,0.4);border-color:rgba(200,120,0,0.4);color:#FFB74D">⚙️ Geral</div>
       </div>
 
@@ -666,6 +677,39 @@ select option{background:var(--bg);}
         <button class="btn btn-amarelo mt8" onclick="salvarCfgUnico()">Salvar Configurações</button>
         <button class="btn btn-danger" onclick="limparUnico()">⚠️ Limpar palpites</button>
 
+      </div>
+
+      <!-- JOGO EXTRA 2 PANEL -->
+      <div id="admUnico2Panel" style="display:none">
+        <div class="card-title">Jogo Ativo — Extra 2</div>
+        <div class="phase-tabs" id="admUnico2PhaseTabs"></div>
+        <div id="admUnico2List"></div>
+        <button class="btn btn-verde mt8" onclick="ativarJogoUnico2()">Ativar Jogo Extra 2 ✓</button>
+        <div class="divider"></div>
+        <div class="card-title">Link para Compartilhar</div>
+        <div style="background:var(--bg);border-radius:10px;padding:12px;font-size:12px;font-family:monospace;color:var(--amarelo);word-break:break-all;margin-bottom:10px" id="shareLinkTxt2">—</div>
+        <button class="share-btn" onclick="shareWA2()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Compartilhar Extra 2
+        </button>
+        <div class="divider"></div>
+        <div class="card-title">Resultado — Extra 2</div>
+        <div class="placar-row">
+          <div class="pl-team"><div class="pl-flag" id="uResF1b">🏴</div><div class="pl-name" id="uResT1b">Time A</div><input type="number" id="uResG1b" value="0" min="0" max="20"></div>
+          <div class="pl-vs">✕</div>
+          <div class="pl-team"><div class="pl-flag" id="uResF2b">🏴</div><div class="pl-name" id="uResT2b">Time B</div><input type="number" id="uResG2b" value="0" min="0" max="20"></div>
+        </div>
+        <button class="btn btn-verde" onclick="apurarUnico2()">Apurar Resultado ⚽</button>
+        <button class="btn btn-gray" onclick="limparResUnico2()">Limpar Resultado</button>
+        <div class="divider"></div>
+        <div class="card-title">Aprovação — Extra 2</div>
+        <div id="admPendUnico2"><div class="loading"><span class="loading-spinner">⚽</span></div></div>
+        <div class="divider"></div>
+        <div class="card-title">Configurações</div>
+        <label>Valor entrada (R$)</label><input type="number" id="unico2Valor" value="10">
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Aceitar palpites</div></div><button class="toggle on" id="tbU2Aceitar" onclick="this.classList.toggle('on')"></button></div>
+        <button class="btn btn-amarelo mt8" onclick="salvarCfgUnico2()">Salvar Configurações</button>
+        <button class="btn btn-danger" onclick="limparUnico2()">⚠️ Limpar palpites</button>
       </div>
 
       <!-- GERAL PANEL -->
@@ -949,9 +993,10 @@ let modo = 'mata';
 let adminUnlocked = false;
 let adminModo = 'mata';
 let cfgMata = {};
-let cfgUnico = {};
+let cfgUnico = {};  // jogo1 (legacy)
+let cfgUnico2 = {}; // jogo2
 let palpitesMata = [];
-let palpitesUnico = [];
+let palpitesUnico = [];  // all unico palpites (both games)
 let resultadosMata = {};
 let resultadoUnico = null;
 let feedList = [];
@@ -1004,6 +1049,7 @@ async function loadAll(){
     ]);
     cfgMata = cfgs?.find(c=>c.id==='mata')?.dados||{valor:20,p1:60,p2:25,p3:15,pixChave:'',pixNome:'',pixBanco:'',pixTipo:'CPF',faseAtiva:'oitavas',jogosAtivos:[],adminPwd:'copa2026'};
     cfgUnico = cfgs?.find(c=>c.id==='unico')?.dados||{valor:10,p1:70,p2:20,p3:10,pixChave:'',pixNome:'',pixBanco:'',pixTipo:'CPF',aceitar:true,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true,adminPwd:'copa2026'};
+    cfgUnico2 = cfgs?.find(c=>c.id==='unico2')?.dados||{valor:10,p1:70,p2:20,p3:10,aceitar:false,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true};
     palpitesMata = pm||[];
     palpitesUnico = pu||[];
     resultadosMata = Object.fromEntries((rm||[]).map(r=>[r.jogo_id,{g1:r.g1,g2:r.g2}]));
@@ -1503,21 +1549,91 @@ function renderRanking(){
 // PIX / PAGAR
 // ═══════════════════════════════════════
 function updatePixDisplay(){
-  const cfg=modo==='mata'?cfgMata:cfgUnico;
-  document.getElementById('pixValor').textContent='R$ '+(cfg.valor||'—');
-  document.getElementById('pixValorInline').textContent='R$ '+Number(cfg.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
-  document.getElementById('pixNome').textContent=cfg.pixNome||'—';
-  document.getElementById('pixBanco').textContent=(cfg.pixTipo?cfg.pixTipo+' · ':'')+( cfg.pixBanco||'—');
-  document.getElementById('pixKey').textContent=cfg.pixChave||'Configure no Admin';
-  document.getElementById('pagMata').classList.toggle('active',modo==='mata');
-  document.getElementById('pagUnico').classList.toggle('active',modo==='unico');
-  document.getElementById('pagTitle').textContent=modo==='mata'?'Participantes — Mata-Mata':'Participantes — Jogo Extra';
+  renderPagOpcoes();
 }
 
+function renderPagOpcoes(){
+  const myWhats = (localStorage.getItem('bolao_whats')||sessionStorage.getItem('cadastro_whats')||'').replace(/\D/g,'');
+  const opcoes = [];
+
+  const jaMataAtivo = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===myWhats&&p.status==='ativo');
+  opcoes.push({
+    id:'mata', label:'🏆 Mata-Mata', sub:'Todas as fases — Oitavas até a Final',
+    valor:cfgMata.valor||50, jaAtivo:!!jaMataAtivo,
+    disponivel:!jaMataAtivo,
+  });
+
+  if(cfgUnico.jogoAtivo){
+    const j1=cfgUnico.jogoAtivo;
+    const jaU1=palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===myWhats&&(p.jogo_extra_id||'jogo1')==='jogo1'&&p.status==='ativo');
+    opcoes.push({
+      id:'unico', label:`⚡ Extra — ${j1.t1} × ${j1.t2}`, sub:`${j1.date} · ${j1.time}`,
+      valor:cfgUnico.valor||10, jaAtivo:!!jaU1,
+      disponivel:cfgUnico.aceitar&&!jaU1,
+    });
+  }
+
+  if(cfgUnico2.jogoAtivo){
+    const j2=cfgUnico2.jogoAtivo;
+    const jaU2=palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===myWhats&&p.jogo_extra_id==='jogo2'&&p.status==='ativo');
+    opcoes.push({
+      id:'unico2', label:`⚡ Extra 2 — ${j2.t1} × ${j2.t2}`, sub:`${j2.date} · ${j2.time}`,
+      valor:cfgUnico2.valor||10, jaAtivo:!!jaU2,
+      disponivel:cfgUnico2.aceitar&&!jaU2,
+    });
+  }
+
+  const c=document.getElementById('pagOpcoes');
+  if(!c) return;
+  c.innerHTML=opcoes.map(o=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700;color:${o.jaAtivo?'var(--verde)':'var(--txt)'}">${o.label} ${o.jaAtivo?'✅':''}</div>
+        <div style="font-size:11px;color:var(--txt3);margin-top:2px">${o.sub}</div>
+        ${o.jaAtivo?'<div style="font-size:11px;color:var(--verde);margin-top:2px">Você já está ativo</div>':''}
+        ${!o.disponivel&&!o.jaAtivo?'<div style="font-size:11px;color:var(--txt3);margin-top:2px">Inscrições fechadas</div>':''}
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--amarelo)">R$ ${o.valor}</div>
+        ${o.disponivel&&!o.jaAtivo?`<input type="checkbox" id="chk_${o.id}" onchange="atualizarTotal()" style="width:22px;height:22px;margin-top:6px;accent-color:var(--amarelo);cursor:pointer">`:''}
+      </div>
+    </div>`).join('');
+  atualizarTotal();
+}
+
+function atualizarTotal(){
+  let total=0;
+  const modos=[];
+  ['mata','unico','unico2'].forEach(id=>{
+    const chk=document.getElementById(`chk_${id}`);
+    if(chk?.checked){
+      if(id==='mata') total+=cfgMata.valor||50;
+      else if(id==='unico') total+=cfgUnico.valor||10;
+      else if(id==='unico2') total+=cfgUnico2.valor||10;
+      modos.push(id);
+    }
+  });
+  const totalEl=document.getElementById('pagTotal');
+  if(totalEl) totalEl.textContent=`R$ ${total}`;
+  const btn=document.getElementById('btnGerarPix');
+  if(btn) btn.disabled=total===0;
+}
+
+function voltarSelecao(){
+  document.getElementById('pixHero').style.display='none';
+  document.getElementById('pagSelecaoCard').style.display='block';
+  renderPagOpcoes();
+}
+
+
 function renderPagList(){
-  updatePixDisplay();
-  const lista=modo==='mata'?palpitesMata:palpitesUnico;
+  renderPagOpcoes();
+  // Also update participants list
+  const lista=modo==='mata'?palpitesMata:palpitesUnico.filter(p=>(p.jogo_extra_id||'jogo1')==='jogo1');
   const c=document.getElementById('pagList');
+  if(!c) return;
+  const title=document.getElementById('pagTitle');
+  if(title) title.textContent=modo==='mata'?'Participantes — Mata-Mata':'Participantes — Jogo Extra';
   if(!lista.length){c.innerHTML='<div class="empty"><div class="empty-text">Nenhum participante ainda</div></div>';return;}
   c.innerHTML=lista.map(p=>`<div class="part-item" style="align-items:center">
     <div class="part-avatar">${p.nome[0].toUpperCase()}</div>
@@ -1547,11 +1663,26 @@ async function gerarPixMP(){
   const whats = localStorage.getItem('bolao_whats') || sessionStorage.getItem('cadastro_whats');
   if(!nome || !whats){ toast('Faça seu cadastro primeiro!','err'); return; }
 
-  const cfg = modo==='mata' ? cfgMata : cfgUnico;
-  const valor = cfg.valor || (modo==='mata' ? 50 : 10);
-  const descricao = modo==='mata'
-    ? `Bolão Bradesco — Mata-Mata Copa 2026`
-    : `Bolão Bradesco — Jogo Extra Copa 2026`;
+  // Collect selected bolões
+  const selecionados = [];
+  let totalValor = 0;
+  ['mata','unico','unico2'].forEach(id=>{
+    const chk = document.getElementById(`chk_${id}`);
+    if(chk?.checked){
+      selecionados.push(id);
+      if(id==='mata') totalValor += cfgMata.valor||50;
+      else if(id==='unico') totalValor += cfgUnico.valor||10;
+      else if(id==='unico2') totalValor += cfgUnico2.valor||10;
+    }
+  });
+
+  if(!selecionados.length){ toast('Selecione pelo menos um bolão!','err'); return; }
+
+  const descricao = selecionados.map(id=>{
+    if(id==='mata') return 'Mata-Mata';
+    if(id==='unico') return `Extra(${cfgUnico.jogoAtivo?.t1}×${cfgUnico.jogoAtivo?.t2})`;
+    if(id==='unico2') return `Extra2(${cfgUnico2.jogoAtivo?.t1}×${cfgUnico2.jogoAtivo?.t2})`;
+  }).join('+');
 
   const btn = document.getElementById('btnGerarPix');
   if(btn){ btn.textContent='Gerando...'; btn.disabled=true; }
@@ -1560,7 +1691,13 @@ async function gerarPixMP(){
     const res = await fetch('/api/mp-pix', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ valor, nome, whats, descricao })
+      body: JSON.stringify({
+        valor: totalValor,
+        nome,
+        whats: whats.replace(/\D/g,''),
+        descricao: `Bolão Bradesco — ${descricao}`,
+        modo: selecionados.join(','), // e.g. "mata,unico" or "unico2"
+      })
     });
     const data = await res.json();
 
@@ -1568,20 +1705,23 @@ async function gerarPixMP(){
       throw new Error(data.error || 'Erro ao gerar Pix');
     }
 
-    // Show QR Code
-    document.getElementById('pixGerarWrap').style.display='none';
+    // Show Pix hero
+    document.getElementById('pagSelecaoCard').style.display='none';
+    document.getElementById('pixHero').style.display='block';
+    document.getElementById('pixValor').textContent='R$ '+totalValor;
     document.getElementById('pixQRWrap').style.display='block';
+    document.getElementById('pixAguardandoWrap').style.display='none';
 
     if(data.qr_code_base64){
       document.getElementById('pixQRImg').src=`data:image/png;base64,${data.qr_code_base64}`;
     }
-    document.getElementById('pixCopiaCola').textContent = data.qr_code || '—';
+    document.getElementById('pixCopiaCola').textContent = data.qr_code||'—';
 
     toast('Pix gerado! Escaneie ou copie o código 📲','ok');
 
-    // Show aguardando state while waiting for webhook
-    document.getElementById('pixQRWrap').style.display='none';
-    document.getElementById('pixAguardandoWrap').style.display='block';
+    // After payment confirmed → show aguardando
+    document.getElementById('pixQRWrap').style.display='block';
+    document.getElementById('pixAguardandoWrap').style.display='none';
 
   } catch(e){
     if(btn){ btn.textContent='⚡ Gerar QR Code Pix'; btn.disabled=false; }
@@ -1589,9 +1729,7 @@ async function gerarPixMP(){
   }
 }
 
-// ═══════════════════════════════════════
-// FEED
-// ═══════════════════════════════════════
+
 async function addFeed(icon,texto){
   const hora=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
   await sb.from('feed').insert({icon,texto,hora});
@@ -1837,16 +1975,21 @@ function checkAdmin(){
 
 function adminMode(m){
   adminModo=m;
-  document.getElementById('admMata').classList.toggle('active',m==='mata');
-  document.getElementById('admUnico').classList.toggle('active',m==='unico');
-  const geralEl=document.getElementById('admGeral');
-  if(geralEl) geralEl.classList.toggle('active',m==='geral');
+  ['admMata','admUnico','admUnico2','admGeral'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.classList.toggle('active', id===`adm${m.charAt(0).toUpperCase()+m.slice(1)}`||
+      (m==='mata'&&id==='admMata')||(m==='unico'&&id==='admUnico')||
+      (m==='unico2'&&id==='admUnico2')||(m==='geral'&&id==='admGeral'));
+  });
   document.getElementById('admMataPanel').style.display=m==='mata'?'block':'none';
   document.getElementById('admUnicoPanel').style.display=m==='unico'?'block':'none';
+  const u2p=document.getElementById('admUnico2Panel');
+  if(u2p) u2p.style.display=m==='unico2'?'block':'none';
   const geralPanel=document.getElementById('admGeralPanel');
   if(geralPanel) geralPanel.style.display=m==='geral'?'block':'none';
   if(m==='mata'){renderAdminPhase();renderAdminPend();loadCfgMata();renderResultadoSel();}
   else if(m==='unico'){renderAdminUnicoPhase();renderAdminPendUnico();loadCfgUnico();updateShareLink();updateUnicoResFields();}
+  else if(m==='unico2'){renderAdminUnico2Phase();renderAdminPendUnico2();loadCfgUnico2();updateShareLink2();updateUnico2ResFields();}
   else if(m==='geral'){
     const base=window.location.href.split('?')[0];
     const lp=document.getElementById('linkPublico');
@@ -2226,7 +2369,7 @@ function goTab(screen,tabEl){
   if(screen==='palpitar') showWelcomeBanner();
   if(screen==='ranking') renderRanking();
   if(screen==='classificacao') loadClassificacao();
-  if(screen==='pagar'){updatePixDisplay();renderPagList();}
+  if(screen==='pagar'){renderPagList();renderPagOpcoes();}
   if(screen==='aovivo'){renderFeed();fetchAllToday();if(apiKey) fetchLive();}
   if(screen==='admin'&&adminUnlocked) adminMode(adminModo);
 }
@@ -2353,6 +2496,150 @@ _(No Mata-Mata: Quartas ×1,5 · Semi e Final ×2)_
 👇 Entra, faz o cadastro e já fica na fila:
 ${base}`;
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
+}
+
+// ── ÚNICO 2 ADMIN ──
+let selectedUnico2Idx = null;
+
+function renderAdminUnico2Phase(){
+  const fases=[...new Set(GRUPOS_JOGOS.map(j=>j.fase))];
+  const fasesComJogos=fases.filter(f=>GRUPOS_JOGOS.some(j=>j.fase===f&&isFutureGame(j.date)));
+  const c=document.getElementById('admUnico2PhaseTabs');
+  if(!fasesComJogos.length){
+    c.innerHTML='';
+    document.getElementById('admUnico2List').innerHTML='<div class="empty"><div class="empty-text">Nenhum jogo futuro disponível.</div></div>';
+    return;
+  }
+  c.innerHTML=fasesComJogos.map((f,i)=>`<button class="ptab ${i===0?'active':''}" onclick="filtroUnico2('${f}',this)">${f}</button>`).join('');
+  filtroUnico2(fasesComJogos[0],c.querySelector('.ptab'));
+}
+
+function filtroUnico2(fase,el){
+  document.querySelectorAll('#admUnico2PhaseTabs .ptab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const jogos=GRUPOS_JOGOS.filter(j=>j.fase===fase&&isFutureGame(j.date));
+  const c=document.getElementById('admUnico2List');
+  if(!jogos.length){c.innerHTML='<div class="empty"><div class="empty-text">Nenhum jogo futuro nesta fase</div></div>';return;}
+  c.innerHTML=jogos.map(j=>{
+    const gi=GRUPOS_JOGOS.indexOf(j);
+    const isSel=cfgUnico2.jogoAtivo&&cfgUnico2.jogoAtivo.t1===j.t1&&cfgUnico2.jogoAtivo.t2===j.t2;
+    return `<div class="match-sel ${isSel?'selected':''}" onclick="selJogoUnico2(${gi},this)">
+      <div class="match-sel-flags">${j.f1} ${j.f2}</div>
+      <div class="match-sel-info"><div class="match-sel-name">${j.t1} × ${j.t2}</div><div class="match-sel-date">${j.date} · ${j.time}</div></div>
+      <div class="match-sel-check">✓</div>
+    </div>`;
+  }).join('');
+}
+
+function selJogoUnico2(idx,el){
+  selectedUnico2Idx=idx;
+  document.querySelectorAll('#admUnico2List .match-sel').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function ativarJogoUnico2(){
+  if(selectedUnico2Idx===null) return toast('Selecione um jogo','err');
+  const j=GRUPOS_JOGOS[selectedUnico2Idx];
+  cfgUnico2.jogoAtivo={...j};
+  cfgUnico2.aceitar=true;
+  await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
+  updateShareLink2();updateUnico2ResFields();
+  await addFeed('⚡',`Jogo Extra 2 aberto: ${j.t1} × ${j.t2}`);
+  toast(`Jogo Extra 2: ${j.t1} × ${j.t2}`,'ok');
+}
+
+function updateShareLink2(){
+  const link=getShareLink();
+  const j=cfgUnico2.jogoAtivo;
+  const el=document.getElementById('shareLinkTxt2');
+  if(el) el.textContent=j?`${link}  (${j.t1} × ${j.t2})`:link;
+}
+
+function shareWA2(){
+  const link=getShareLink();
+  const j=cfgUnico2.jogoAtivo;
+  const msg=j
+    ?`⚡ *Bolão Jogo Extra 2 — Copa 2026* ⚽
+
+*${j.t1} ${j.f1} × ${j.f2} ${j.t2}*
+📅 ${j.date} · ${j.time}
+💰 Entrada: R$ ${cfgUnico2.valor||10}
+
+Dê seu palpite:
+${link}`
+    :`⚽ *Bolão Copa 2026*
+${link}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
+}
+
+function updateUnico2ResFields(){
+  const j=cfgUnico2.jogoAtivo;
+  if(!j) return;
+  const f1=document.getElementById('uResF1b');const t1=document.getElementById('uResT1b');
+  const f2=document.getElementById('uResF2b');const t2=document.getElementById('uResT2b');
+  if(f1) f1.textContent=j.f1;if(t1) t1.textContent=j.t1;
+  if(f2) f2.textContent=j.f2;if(t2) t2.textContent=j.t2;
+}
+
+function renderAdminPendUnico2(){
+  const c=document.getElementById('admPendUnico2');
+  const j=cfgUnico2.jogoAtivo;
+  const palpites=palpitesUnico.filter(p=>p.jogo_extra_id==='jogo2');
+  if(!palpites.length){c.innerHTML='<div class="empty"><div class="empty-text">Nenhum palpite ainda</div></div>';return;}
+  c.innerHTML=palpites.map(p=>`<div class="part-item">
+    <div class="part-avatar">${p.nome[0].toUpperCase()}</div>
+    <div class="part-info">
+      <div class="part-name">${p.nome}</div>
+      <div class="part-meta">${j?.f1||''}${p.g1}×${p.g2}${j?.f2||''} · ${p.whats||''}</div>
+      <span class="badge ${p.status==='ativo'?'badge-verde':p.status==='rejeitado'?'badge-danger':'badge-warning'} mt8">${p.status==='ativo'?'✓ Ativo':p.status==='rejeitado'?'Rejeitado':'⏳ Pendente'}</span>
+    </div>
+    <div class="part-actions">
+      ${p.status!=='ativo'?`<button class="btn-aprovar" onclick="aprovarUnico('${p.id}')">✓ Ativar</button>`:''}
+      ${p.status!=='rejeitado'?`<button class="btn-rejeitar" onclick="rejeitarUnico('${p.id}')">✗ Rejeitar</button>`:''}
+    </div>
+  </div>`).join('');
+}
+
+function loadCfgUnico2(){
+  document.getElementById('unico2Valor').value=cfgUnico2.valor||10;
+  setT('tbU2Aceitar',cfgUnico2.aceitar!==false);
+}
+
+async function salvarCfgUnico2(){
+  cfgUnico2={...cfgUnico2,
+    valor:parseFloat(document.getElementById('unico2Valor').value)||10,
+    aceitar:getT('tbU2Aceitar'),
+  };
+  await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
+  toast('Configurações salvas!','ok');
+}
+
+async function apurarUnico2(){
+  const g1=parseInt(document.getElementById('uResG1b').value)||0;
+  const g2=parseInt(document.getElementById('uResG2b').value)||0;
+  const j=cfgUnico2.jogoAtivo;
+  // Store result in resultado_unico with jogo_extra_id='jogo2'
+  await sb.from('resultado_unico').upsert({id:2,g1,g2,bonus_ans:'',jogo_extra_id:'jogo2',updated_at:new Date().toISOString()});
+  cfgUnico2.aceitar=false;
+  cfgUnico2.jogoAtivo=null;
+  await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
+  await addFeed('🏆',`Resultado Extra 2: ${j?.f1||''}${g1}×${g2}${j?.f2||''}`);
+  toast('Resultado apurado! 🏆','ok');
+}
+
+async function limparResUnico2(){
+  await sb.from('resultado_unico').delete().eq('id',2);
+  cfgUnico2.aceitar=true;
+  await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
+  toast('Resultado limpo','info');
+}
+
+async function limparUnico2(){
+  if(!confirm('Limpar palpites do Jogo Extra 2?')) return;
+  await sb.from('palpites_unico').delete().eq('jogo_extra_id','jogo2');
+  cfgUnico2.aceitar=false;cfgUnico2.jogoAtivo=null;
+  await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
+  toast('Palpites limpos','info');
 }
 
 async function salvarApiKeyAdmin(){
