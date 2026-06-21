@@ -307,7 +307,16 @@ select option{background:var(--bg);}
 <div class="screen" id="screen-aovivo">
   <div class="card gold">
     <div class="flex-between" style="margin-bottom:12px">
-      <div class="card-title" style="margin-bottom:0">Partida Atual</div>
+      <div class="card-title" style="margin-bottom:0">Jogos de Hoje</div>
+      <button onclick="fetchAllToday(true)" style="background:none;border:none;color:var(--amarelo);font-size:12px;cursor:pointer;font-weight:700">↻ Atualizar</button>
+    </div>
+    <div id="todayGamesDisplay">
+      <div class="empty"><div class="empty-text">Carregando jogos de hoje...</div></div>
+    </div>
+  </div>
+  <div class="card gold">
+    <div class="flex-between" style="margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:0">Bolão Ativo</div>
       <div class="badge badge-cinza" id="liveStatus">Aguardando</div>
     </div>
     <div id="liveDisplay" style="text-align:center;padding:8px 0;font-size:13px;color:var(--txt3)">Selecione um jogo no Admin</div>
@@ -315,7 +324,6 @@ select option{background:var(--bg);}
   <div class="card">
     <div class="flex-between" style="margin-bottom:10px">
       <div class="card-title" style="margin-bottom:0">Feed de Eventos</div>
-      <button onclick="fetchLive(true)" style="background:none;border:none;color:var(--amarelo);font-size:12px;cursor:pointer;font-weight:700">↻ Atualizar</button>
     </div>
     <div id="feedContainer"><div class="empty"><div class="empty-text">Nenhum evento ainda</div></div></div>
   </div>
@@ -362,9 +370,10 @@ select option{background:var(--bg);}
       <button class="btn btn-amarelo" onclick="checkAdmin()">Entrar</button>
     </div>
     <div id="adminPanel" style="display:none">
-      <div class="mode-banner" style="margin-bottom:16px">
-        <div class="mode-pill mata active" id="admMata" onclick="adminMode('mata')">🏆 Mata-Mata</div>
-        <div class="mode-pill unico" id="admUnico" onclick="adminMode('unico')">⚡ Jogo Extra</div>
+      <div class="mode-banner" style="margin-bottom:16px;flex-wrap:wrap;gap:6px">
+        <div class="mode-pill mata active" id="admMata" onclick="adminMode('mata')" style="flex:1;min-width:80px">🏆 Mata-Mata</div>
+        <div class="mode-pill unico" id="admUnico" onclick="adminMode('unico')" style="flex:1;min-width:80px">⚡ Jogo Extra</div>
+        <div class="mode-pill unico" id="admGeral" onclick="adminMode('geral')" style="flex:1;min-width:80px;background:rgba(100,60,0,0.4);border-color:rgba(200,120,0,0.4);color:#FFB74D">⚙️ Geral</div>
       </div>
 
       <!-- MATA-MATA PANEL -->
@@ -456,15 +465,30 @@ select option{background:var(--bg);}
         <button class="btn btn-amarelo mt8" onclick="salvarCfgUnico()">Salvar Configurações</button>
         <button class="btn btn-danger" onclick="limparUnico()">⚠️ Limpar palpites</button>
 
-      <div class="divider"></div>
-      <div class="card-title">📡 API Ao Vivo</div>
-      <div class="card-sub">Chave football-data.org para placares em tempo real. Visível apenas aqui no Admin.</div>
-      <label>API Key</label>
-      <input type="text" id="apiKeyInputAdmin" placeholder="Cole sua key aqui...">
-      <button class="btn btn-verde" onclick="salvarApiKeyAdmin()">Salvar e Testar</button>
-      <div id="apiStatusAdmin" class="text-sm mt8" style="display:none;text-align:center"></div>
-
       </div>
+
+      <!-- GERAL PANEL -->
+      <div id="admGeralPanel" style="display:none">
+        <div class="card-title">📡 API Ao Vivo</div>
+        <div class="card-sub">Chave football-data.org para placares em tempo real. Usada em ambos os bolões.</div>
+        <label>API Key — football-data.org</label>
+        <input type="text" id="apiKeyInputAdmin" placeholder="Cole sua key aqui...">
+        <button class="btn btn-verde" onclick="salvarApiKeyAdmin()">Salvar e Testar Conexão</button>
+        <div id="apiStatusAdmin" class="text-sm mt8" style="display:none;text-align:center"></div>
+
+        <div class="divider"></div>
+        <div class="card-title">🔐 Segurança</div>
+        <div class="card-sub">Seus links de acesso:</div>
+        <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:8px">
+          <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Link público (amigos)</div>
+          <div style="font-size:12px;font-family:monospace;color:var(--amarelo);word-break:break-all" id="linkPublico">—</div>
+        </div>
+        <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:8px">
+          <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Seu link de Admin (guarde com segurança)</div>
+          <div style="font-size:12px;font-family:monospace;color:#EF5350;word-break:break-all" id="linkAdmin">—</div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1002,6 +1026,47 @@ function renderFeed(){
 // ═══════════════════════════════════════
 // API AO VIVO
 // ═══════════════════════════════════════
+async function fetchAllToday(manual=false){
+  const c=document.getElementById('todayGamesDisplay');
+  if(!apiKey){
+    c.innerHTML='<div class="empty"><div class="empty-text">Configure a API Key no Admin → ⚙️ Geral</div></div>';
+    return;
+  }
+  const today=new Date().toISOString().split('T')[0];
+  try{
+    const res=await fetch(`/api/football?key=${apiKey}&path=matches&dateFrom=${today}&dateTo=${today}`);
+    if(!res.ok){ c.innerHTML='<div class="empty"><div class="empty-text">Erro ao buscar jogos</div></div>'; return; }
+    const data=await res.json();
+    const matches=(data.matches||[]);
+    if(!matches.length){
+      c.innerHTML='<div class="empty"><div class="empty-text">Nenhum jogo hoje 📅</div></div>';
+      return;
+    }
+    c.innerHTML=matches.map(m=>{
+      const s=m.score?.fullTime||m.score?.halfTime||{};
+      const g1=s.home??'—', g2=s.away??'—';
+      const status=m.status;
+      const statusLabel=status==='IN_PLAY'?'🔴 Ao Vivo':status==='FINISHED'?'✅ Encerrado':status==='PAUSED'?'⏸️ Intervalo':'📅 Agendado';
+      const scoreColor=status==='IN_PLAY'?'var(--danger)':status==='FINISHED'?'var(--txt2)':'var(--amarelo)';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1;text-align:right">
+          <div style="font-size:13px;font-weight:700">${m.homeTeam?.shortName||m.homeTeam?.name||'?'}</div>
+          <div style="font-size:10px;color:var(--txt3)">${m.homeTeam?.tla||''}</div>
+        </div>
+        <div style="text-align:center;min-width:80px">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:${scoreColor}">${g1} × ${g2}</div>
+          <div style="font-size:9px;color:var(--txt3);margin-top:2px">${statusLabel}</div>
+        </div>
+        <div style="flex:1;text-align:left">
+          <div style="font-size:13px;font-weight:700">${m.awayTeam?.shortName||m.awayTeam?.name||'?'}</div>
+          <div style="font-size:10px;color:var(--txt3)">${m.awayTeam?.tla||''}</div>
+        </div>
+      </div>`;
+    }).join('');
+    if(manual) toast('Jogos atualizados!','ok');
+  }catch(e){ c.innerHTML='<div class="empty"><div class="empty-text">Erro de conexão</div></div>'; }
+}
+
 async function fetchLive(manual=false){
   if(!apiKey) return;
   const today=new Date().toISOString().split('T')[0];
@@ -1083,10 +1148,23 @@ function adminMode(m){
   adminModo=m;
   document.getElementById('admMata').classList.toggle('active',m==='mata');
   document.getElementById('admUnico').classList.toggle('active',m==='unico');
+  const geralEl=document.getElementById('admGeral');
+  if(geralEl) geralEl.classList.toggle('active',m==='geral');
   document.getElementById('admMataPanel').style.display=m==='mata'?'block':'none';
   document.getElementById('admUnicoPanel').style.display=m==='unico'?'block':'none';
+  const geralPanel=document.getElementById('admGeralPanel');
+  if(geralPanel) geralPanel.style.display=m==='geral'?'block':'none';
   if(m==='mata'){renderAdminPhase();renderAdminPend();loadCfgMata();renderResultadoSel();}
-  else{renderAdminUnicoPhase();renderAdminPendUnico();loadCfgUnico();updateShareLink();updateUnicoResFields();}
+  else if(m==='unico'){renderAdminUnicoPhase();renderAdminPendUnico();loadCfgUnico();updateShareLink();updateUnicoResFields();}
+  else if(m==='geral'){
+    const base=window.location.href.split('?')[0];
+    const lp=document.getElementById('linkPublico');
+    const la=document.getElementById('linkAdmin');
+    if(lp) lp.textContent=base;
+    if(la) la.textContent=base+'?master=tharaujo2026';
+    const adminKeyEl=document.getElementById('apiKeyInputAdmin');
+    if(adminKeyEl) adminKeyEl.value=apiKey||'';
+  }
 }
 
 // ── MATA-MATA ADMIN ──
@@ -1230,17 +1308,38 @@ async function limparMata(){
 
 // ── ÚNICO ADMIN ──
 function renderAdminUnicoPhase(){
-  const fases=[...new Set(GRUPOS_JOGOS.map(j=>j.fase))];
+  // Only show group stage phases that have at least one future game
+  const todasFases=[...new Set(GRUPOS_JOGOS.map(j=>j.fase))];
+  const fases=todasFases.filter(f=>GRUPOS_JOGOS.some(j=>j.fase===f&&isFutureGame(j.date)));
   const c=document.getElementById('admUnicoPhaseTabs');
+  if(!fases.length){
+    c.innerHTML='';
+    document.getElementById('admUnicoList').innerHTML='<div class="empty"><div class="empty-icon">🏁</div><div class="empty-text">Todos os jogos de grupos já aconteceram.<br>Use o Mata-Mata para as fases seguintes.</div></div>';
+    return;
+  }
   c.innerHTML=fases.map((f,i)=>`<button class="ptab ${i===0?'active':''}" onclick="filtroUnico('${f}',this)">${f}</button>`).join('');
   filtroUnico(fases[0],c.querySelector('.ptab'));
+}
+
+function isFutureGame(dateStr){
+  // dateStr format: DD/MM
+  const [day,month] = dateStr.split('/').map(Number);
+  const gameDate = new Date(2026, month-1, day);
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  return gameDate >= today;
 }
 
 function filtroUnico(fase,el){
   document.querySelectorAll('#admUnicoPhaseTabs .ptab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
-  const jogos=GRUPOS_JOGOS.filter(j=>j.fase===fase);
-  document.getElementById('admUnicoList').innerHTML=jogos.map((j,i)=>{
+  const jogos=GRUPOS_JOGOS.filter(j=>j.fase===fase && isFutureGame(j.date));
+  const c=document.getElementById('admUnicoList');
+  if(!jogos.length){
+    c.innerHTML='<div class="empty"><div class="empty-text">Nenhum jogo futuro nesta fase</div></div>';
+    return;
+  }
+  c.innerHTML=jogos.map((j,i)=>{
     const gi=GRUPOS_JOGOS.indexOf(j);
     const isSel=cfgUnico.jogoAtivo&&cfgUnico.jogoAtivo.t1===j.t1&&cfgUnico.jogoAtivo.t2===j.t2;
     return `<div class="match-sel ${isSel?'selected':''}" onclick="selJogoUnico(${gi},this)">
@@ -1405,7 +1504,7 @@ function goTab(screen,tabEl){
   if(tabEl) tabEl.classList.add('active');
   if(screen==='ranking') renderRanking();
   if(screen==='pagar'){updatePixDisplay();renderPagList();}
-  if(screen==='aovivo'){renderFeed();if(apiKey) fetchLive();}
+  if(screen==='aovivo'){renderFeed();fetchAllToday();if(apiKey) fetchLive();}
   if(screen==='admin'&&adminUnlocked) adminMode(adminModo);
 }
 
