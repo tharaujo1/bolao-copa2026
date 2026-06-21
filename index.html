@@ -496,13 +496,37 @@ select option{background:var(--bg);}
     <div class="mode-pill mata" id="pagMata" onclick="switchMode('mata');goTab('pagar',document.querySelectorAll('.nav-tab')[3])">🏆 Mata-Mata</div>
     <div class="mode-pill unico" id="pagUnico" onclick="switchMode('unico');goTab('pagar',document.querySelectorAll('.nav-tab')[3])">⚡ Jogo Extra</div>
   </div>
-  <div class="pix-hero">
+  <div class="pix-hero" id="pixHero">
     <div class="pix-label-sm">Valor da entrada</div>
     <div class="pix-valor" id="pixValor">—</div>
     <div class="pix-nome" id="pixNome">—</div>
     <div class="pix-banco" id="pixBanco">—</div>
-    <div class="pix-key" id="pixKey">Configure no Admin</div>
-    <button class="copy-btn" onclick="copyPix()">📋 Copiar chave Pix</button>
+
+    <!-- Estado inicial: gerar Pix -->
+    <div id="pixGerarWrap">
+      <div class="pix-key" id="pixKey" style="font-size:12px;color:var(--txt3)">Clique para gerar seu Pix</div>
+      <button class="btn btn-amarelo" onclick="gerarPixMP()" id="btnGerarPix" style="margin-top:8px;touch-action:manipulation">
+        ⚡ Gerar QR Code Pix
+      </button>
+    </div>
+
+    <!-- Estado: QR Code gerado -->
+    <div id="pixQRWrap" style="display:none">
+      <div style="background:#fff;border-radius:12px;padding:12px;margin:12px auto;width:fit-content">
+        <img id="pixQRImg" src="" alt="QR Code Pix" style="width:180px;height:180px;display:block">
+      </div>
+      <div style="font-size:11px;color:var(--txt2);margin-bottom:8px">ou copie o código:</div>
+      <div class="pix-key" id="pixCopiaCola" style="font-size:10px;word-break:break-all;cursor:pointer" onclick="copiarCopiaCola()">—</div>
+      <button class="copy-btn" onclick="copiarCopiaCola()">📋 Copiar código Pix</button>
+      <div style="font-size:11px;color:var(--txt3);margin-top:8px">⏰ QR Code válido por 30 minutos</div>
+    </div>
+
+    <!-- Estado: aguardando confirmação -->
+    <div id="pixAguardandoWrap" style="display:none">
+      <div style="font-size:32px;margin:12px 0">⏳</div>
+      <div style="font-size:13px;color:var(--txt2)">Aguardando confirmação do pagamento...</div>
+      <div style="font-size:11px;color:var(--txt3);margin-top:6px">Você será ativado automaticamente assim que o pagamento for confirmado.</div>
+    </div>
   </div>
   <div class="card">
     <div class="card-title">Como pagar</div>
@@ -1488,6 +1512,75 @@ function copyPix(){
   navigator.clipboard?.writeText(cfg.pixChave).then(()=>toast('Chave copiada! 📋','ok')).catch(()=>{
     const t=document.createElement('textarea');t.value=cfg.pixChave;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);toast('Chave copiada! 📋','ok');
   });
+}
+
+function copiarCopiaCola(){
+  const codigo = document.getElementById('pixCopiaCola')?.textContent;
+  if(!codigo || codigo==='—') return toast('Nenhum código gerado','err');
+  navigator.clipboard?.writeText(codigo).then(()=>toast('Código copiado! Cole no seu banco 📋','ok')).catch(()=>{
+    const t=document.createElement('textarea');t.value=codigo;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);toast('Código copiado! 📋','ok');
+  });
+}
+
+async function gerarPixMP(){
+  const nome = localStorage.getItem('bolao_nome') || sessionStorage.getItem('cadastro_nome');
+  const whats = localStorage.getItem('bolao_whats') || sessionStorage.getItem('cadastro_whats');
+  if(!nome || !whats){ toast('Faça seu cadastro primeiro!','err'); return; }
+
+  const cfg = modo==='mata' ? cfgMata : cfgUnico;
+  const valor = cfg.valor || (modo==='mata' ? 50 : 10);
+  const descricao = modo==='mata'
+    ? `Bolão Bradesco — Mata-Mata Copa 2026`
+    : `Bolão Bradesco — Jogo Extra Copa 2026`;
+
+  const btn = document.getElementById('btnGerarPix');
+  if(btn){ btn.textContent='Gerando...'; btn.disabled=true; }
+
+  try{
+    const res = await fetch('/api/mp-pix', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ valor, nome, whats, descricao })
+    });
+    const data = await res.json();
+
+    if(!res.ok || !data.qr_code){
+      throw new Error(data.error || 'Erro ao gerar Pix');
+    }
+
+    // Show QR Code
+    document.getElementById('pixGerarWrap').style.display='none';
+    document.getElementById('pixQRWrap').style.display='block';
+
+    if(data.qr_code_base64){
+      document.getElementById('pixQRImg').src=`data:image/png;base64,${data.qr_code_base64}`;
+    }
+    document.getElementById('pixCopiaCola').textContent = data.qr_code || '—';
+
+    toast('Pix gerado! Escaneie ou copie o código 📲','ok');
+
+    // Poll for payment confirmation every 10 seconds
+    const pollInterval = setInterval(async ()=>{
+      const ativo = modo==='mata'
+        ? palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whats.replace(/\D/g,'') && p.status==='ativo')
+        : palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whats.replace(/\D/g,'') && p.status==='ativo');
+      if(ativo){
+        clearInterval(pollInterval);
+        document.getElementById('pixQRWrap').style.display='none';
+        document.getElementById('pixAguardandoWrap').style.display='none';
+        document.getElementById('pixGerarWrap').style.display='block';
+        document.getElementById('pixGerarWrap').innerHTML=`<div style="font-size:32px;margin:12px 0">✅</div><div style="font-size:14px;color:var(--verde);font-weight:700">Pagamento confirmado!<br>Você está ativo no bolão.</div>`;
+        toast('Pagamento confirmado! Bem-vindo ao bolão! 🎉','ok');
+      }
+    }, 10000);
+
+    // Stop polling after 30 minutes
+    setTimeout(()=> clearInterval(pollInterval), 30*60*1000);
+
+  } catch(e){
+    if(btn){ btn.textContent='⚡ Gerar QR Code Pix'; btn.disabled=false; }
+    toast('Erro: '+e.message,'err');
+  }
 }
 
 // ═══════════════════════════════════════
@@ -2556,18 +2649,26 @@ async function verificarLogin(){
   status.textContent = '';
 
   try{
-    const {data} = await sb.from('participantes').select('nome,whats').eq('whats', whatsLimpo).single();
-    if(data){
+    // Use secure serverless function to check — avoids RLS issues
+    const r = await fetch(`/api/login?whats=${whatsLimpo}`);
+    
+    let found = null;
+    if(r.ok){
+      const result = await r.json();
+      found = result.found ? result : null;
+    }
+
+    if(found){
       // Already registered — log in
-      status.textContent = `✅ Olá, ${data.nome}! Entrando...`;
-      localStorage.setItem('bolao_nome', data.nome);
-      localStorage.setItem('bolao_whats', data.whats);
-      sessionStorage.setItem('cadastro_nome', data.nome);
-      sessionStorage.setItem('cadastro_whats', data.whats);
+      status.textContent = `✅ Olá, ${found.nome}! Entrando...`;
+      localStorage.setItem('bolao_nome', found.nome);
+      localStorage.setItem('bolao_whats', found.whats);
+      sessionStorage.setItem('cadastro_nome', found.nome);
+      sessionStorage.setItem('cadastro_whats', found.whats);
       setTimeout(()=>{
         document.getElementById('tutorialOverlay').classList.add('hidden');
         showWelcomeBanner();
-        toast(`Bem-vindo de volta, ${data.nome}! 👋`,'ok');
+        toast(`Bem-vindo de volta, ${found.nome}! 👋`,'ok');
       }, 800);
     } else {
       // New user — show registration form
@@ -2578,7 +2679,8 @@ async function verificarLogin(){
       setTimeout(()=>{ document.getElementById('loginNome')?.focus(); }, 200);
     }
   } catch(e){
-    // New user (not found = exception from .single())
+    console.error('Login error:', e);
+    // On error, show registration form
     btn.textContent = 'Entrar →';
     btn.disabled = false;
     document.getElementById('loginStep1').style.display='none';
@@ -2644,18 +2746,21 @@ async function loginInit(){
   const lsWhats = localStorage.getItem('bolao_whats');
 
   if(lsNome && lsWhats){
-    // Verify still valid in Supabase
+    // Verify still valid via secure API
     try{
-      const {data} = await sb.from('participantes').select('nome').eq('whats', lsWhats).single();
-      if(data){
-        // Valid — skip login screen
-        sessionStorage.setItem('cadastro_nome', lsNome);
-        sessionStorage.setItem('cadastro_whats', lsWhats);
-        document.getElementById('tutorialOverlay').classList.add('hidden');
-        showWelcomeBanner();
-        return;
+      const r = await fetch(`/api/login?whats=${lsWhats.replace(/\D/g,'')}`);
+      if(r.ok){
+        const result = await r.json();
+        const found = result.found ? result : null;
+        if(found){
+          sessionStorage.setItem('cadastro_nome', lsNome);
+          sessionStorage.setItem('cadastro_whats', lsWhats);
+          document.getElementById('tutorialOverlay').classList.add('hidden');
+          showWelcomeBanner();
+          return;
+        }
       }
-    } catch(e){ /* not found, show login */ }
+    } catch(e){ /* show login */ }
   }
 
   // Show login screen
