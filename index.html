@@ -400,6 +400,11 @@ select option{background:var(--bg);}
       <div class="stat"><div class="stat-val" id="stBolada">—</div><div class="stat-lbl">Bolada</div></div>
     </div>
   </div>
+  <div id="welcomeBanner" style="display:none;background:linear-gradient(135deg,var(--verde-escuro),var(--azul));border-radius:14px;padding:14px 16px;margin-bottom:12px;border:1.5px solid var(--amarelo);display:none">
+    <div style="font-size:11px;color:rgba(255,255,255,0.6);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px">Bem-vindo de volta 👋</div>
+    <div id="welcomeName" style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--amarelo);letter-spacing:2px"></div>
+    <div id="welcomeSub" style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:2px"></div>
+  </div>
   <div class="card" id="formCard">
     <div class="loading"><span class="loading-spinner">⚽</span>Carregando...</div>
   </div>
@@ -1159,9 +1164,9 @@ function renderFormPalpite(){
         </div>`).join('')}
       <button class="btn btn-azul" onclick="enviarMata()">Enviar Palpites ⚽</button>
     `;
-    // Pre-fill from modal if available
-    const sNome=sessionStorage.getItem('cadastro_nome');
-    const sWhats=sessionStorage.getItem('cadastro_whats');
+    // Pre-fill from modal/localStorage
+    const sNome=sessionStorage.getItem('cadastro_nome')||localStorage.getItem('bolao_nome');
+    const sWhats=sessionStorage.getItem('cadastro_whats')||localStorage.getItem('bolao_whats');
     if(sNome){const f=document.getElementById('mNome');if(f)f.value=sNome;}
     if(sWhats){const f=document.getElementById('mWhats');if(f)f.value=sWhats;}
   } else {
@@ -1184,9 +1189,9 @@ function renderFormPalpite(){
       ${cfgUnico.tbBonus&&cfgUnico.bonusQ?`<label>${cfgUnico.bonusQ}</label><input type="text" id="uBonus" placeholder="Sua resposta" maxlength="60">`:''}
       <button class="btn btn-verde" onclick="enviarUnico()">Enviar Palpite ⚽</button>
     `;
-    // Pre-fill from modal if available
-    const sNome2=sessionStorage.getItem('cadastro_nome');
-    const sWhats2=sessionStorage.getItem('cadastro_whats');
+    // Pre-fill from modal/localStorage
+    const sNome2=sessionStorage.getItem('cadastro_nome')||localStorage.getItem('bolao_nome');
+    const sWhats2=sessionStorage.getItem('cadastro_whats')||localStorage.getItem('bolao_whats');
     if(sNome2){const f=document.getElementById('uNome');if(f)f.value=sNome2;}
     if(sWhats2){const f=document.getElementById('uWhats');if(f)f.value=sWhats2;}
   }
@@ -1646,6 +1651,25 @@ async function salvarApiKey(){
 function switchMode(m){
   modo=m;
   updateHeader();renderFormPalpite();renderPtsBody();renderTbBody();updatePixDisplay();renderPagList();
+  showWelcomeBanner();
+}
+
+function showWelcomeBanner(){
+  const nome = sessionStorage.getItem('cadastro_nome') || localStorage.getItem('bolao_nome');
+  const banner = document.getElementById('welcomeBanner');
+  const nameEl = document.getElementById('welcomeName');
+  const subEl = document.getElementById('welcomeSub');
+  if(!banner) return;
+  if(nome){
+    nameEl.textContent = nome.toUpperCase();
+    // Fun subtitle based on time of day
+    const h = new Date().getHours();
+    const greeting = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+    subEl.textContent = `${greeting}! Pronto para palpitar? 🇧🇷`;
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
 }
 
 // ═══════════════════════════════════════
@@ -2044,6 +2068,7 @@ function goTab(screen,tabEl){
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('screen-'+screen).classList.add('active');
   if(tabEl) tabEl.classList.add('active');
+  if(screen==='palpitar') showWelcomeBanner();
   if(screen==='ranking') renderRanking();
   if(screen==='classificacao') loadClassificacao();
   if(screen==='pagar'){updatePixDisplay();renderPagList();}
@@ -2417,9 +2442,11 @@ async function confirmarCadastroModal(){
     }
   }
 
-  // Store in session for form pre-fill
+  // Store in session and localStorage for pre-fill and welcome
   sessionStorage.setItem('cadastro_nome', nome);
   sessionStorage.setItem('cadastro_whats', whats);
+  localStorage.setItem('bolao_nome', nome);
+  localStorage.setItem('bolao_whats', whats);
 
   // Close modal
   document.getElementById('modalCadastro').classList.add('hidden');
@@ -2551,6 +2578,7 @@ loadAll().then(()=>{
   setupRealtime();
   if(apiKey){document.getElementById('apiKeyInput').value=apiKey;}
   tutorialInit();
+  showWelcomeBanner();
   if('Notification'in window&&Notification.permission==='default'){
     setTimeout(()=>{
       if(confirm('Ativar alertas de gol ao vivo?')) Notification.requestPermission();
