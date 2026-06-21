@@ -47,8 +47,17 @@ export default async function handler(req, res) {
         }
 
         if (whats) {
-          // Mark as paid
+          // Mark as paid (legacy field)
           await supaRequest(`participantes?whats=eq.${whats}`, 'PATCH', { pago: true });
+
+          // Gravar campos específicos por bolão
+          const pagoFields = {};
+          if (modos.includes('mata')) pagoFields.pago_mata = true;
+          if (modos.includes('unico')) pagoFields.pago_unico = true;
+          if (modos.includes('unico2')) pagoFields.pago_unico2 = true;
+          if (Object.keys(pagoFields).length > 0) {
+            await supaRequest(`participantes?whats=eq.${whats}`, 'PATCH', pagoFields);
+          }
 
           // Activate each selected bolão
           for (const modo of modos) {
