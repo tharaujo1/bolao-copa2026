@@ -1406,19 +1406,38 @@ async function fetchAllToday(manual=false){
     c.innerHTML='<div class="empty"><div class="empty-text">Configure a API Key no Admin → ⚙️ Geral</div></div>';
     return;
   }
-  const today=getBrazilDateStr();
+
+  // Brazil is UTC-3. To catch all games played on Brazil's "today":
+  // - A game at 00h Brazil = 03h UTC same day
+  // - A game at 23h Brazil = 02h UTC next day
+  // So we need to fetch UTC today AND UTC tomorrow, then filter by Brazil date
+  const now = new Date();
+  const brazilNow = new Date(now.getTime() - 3*60*60*1000);
+  const brazilToday = brazilNow.toISOString().split('T')[0];
+
+  // Fetch UTC today and tomorrow to cover full Brazil day
+  const utcToday = now.toISOString().split('T')[0];
+  const utcTomorrow = new Date(now.getTime() + 24*60*60*1000).toISOString().split('T')[0];
+
   try{
-    const res=await fetch(`/api/football?key=${apiKey}&path=competitions/WC/matches&dateFrom=${today}&dateTo=${today}`);
+    const res=await fetch(`/api/football?key=${apiKey}&path=competitions/WC/matches&dateFrom=${utcToday}&dateTo=${utcTomorrow}`);
     if(!res.ok){
-      // Fallback: try generic matches endpoint
-      const res2=await fetch(`/api/football?key=${apiKey}&path=matches&dateFrom=${today}&dateTo=${today}`);
-      if(!res2.ok){ c.innerHTML='<div class="empty"><div class="empty-text">Erro ao buscar jogos ('+res.status+')</div></div>'; return; }
-      const data2=await res2.json();
-      renderTodayGames(c, (data2.matches||[]).filter(m=>m.competition?.code==='WC'), manual);
+      c.innerHTML=`<div class="empty"><div class="empty-text">Erro ao buscar jogos (${res.status})</div></div>`;
       return;
     }
     const data=await res.json();
-    renderTodayGames(c, data.matches||[], manual);
+    const allMatches = data.matches||[];
+
+    // Filter: only games whose Brazil date matches today
+    const todayMatches = allMatches.filter(m=>{
+      if(!m.utcDate) return false;
+      const gameUTC = new Date(m.utcDate);
+      const gameBrazil = new Date(gameUTC.getTime() - 3*60*60*1000);
+      const gameBrazilDate = gameBrazil.toISOString().split('T')[0];
+      return gameBrazilDate === brazilToday;
+    });
+
+    renderTodayGames(c, todayMatches, manual);
   }catch(e){ c.innerHTML='<div class="empty"><div class="empty-text">Erro de conexão</div></div>'; }
 }
 
