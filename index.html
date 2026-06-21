@@ -2546,21 +2546,18 @@ ${base}`;
 let selectedUnico2Idx = null;
 
 function renderAdminUnico2Phase(){
+  const c=document.getElementById('admUnico2PhaseTabs');
   const fases=[...new Set(GRUPOS_JOGOS.map(j=>j.fase))];
   const fasesComJogos=fases.filter(f=>GRUPOS_JOGOS.some(j=>j.fase===f&&isFutureGame(j.date)));
-  const c=document.getElementById('admUnico2PhaseTabs');
-  if(!fasesComJogos.length){
-    c.innerHTML='';
-    document.getElementById('admUnico2List').innerHTML='<div class="empty"><div class="empty-text">Nenhum jogo futuro disponível.</div></div>';
-    return;
-  }
-  c.innerHTML=fasesComJogos.map((f,i)=>`<button class="ptab ${i===0?'active':''}" onclick="filtroUnico2('${f}',this)">${f}</button>`).join('');
-  filtroUnico2(fasesComJogos[0],c.querySelector('.ptab'));
+  c.innerHTML=`<button class="ptab active" onclick="renderSmartJogos('unico2');document.querySelectorAll('#admUnico2PhaseTabs .ptab').forEach(t=>t.classList.remove('active'));this.classList.add('active')">📅 Hoje/Amanhã</button>`+
+    fasesComJogos.map(f=>`<button class="ptab" onclick="filtroUnico2('${f}',this)">${f}</button>`).join('');
+  renderSmartJogos('unico2');
 }
 
 function filtroUnico2(fase,el){
+  if(fase==='__smart__'){ renderSmartJogos('unico2'); return; }
   document.querySelectorAll('#admUnico2PhaseTabs .ptab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
+  if(el) el.classList.add('active');
   const jogos=GRUPOS_JOGOS.filter(j=>j.fase===fase&&isFutureGame(j.date));
   const c=document.getElementById('admUnico2List');
   if(!jogos.length){c.innerHTML='<div class="empty"><div class="empty-text">Nenhum jogo futuro nesta fase</div></div>';return;}
