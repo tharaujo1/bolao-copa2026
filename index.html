@@ -455,6 +455,15 @@ select option{background:var(--bg);}
         <label>Banco</label><input type="text" id="unicoPixBanco">
         <button class="btn btn-amarelo mt8" onclick="salvarCfgUnico()">Salvar Configurações</button>
         <button class="btn btn-danger" onclick="limparUnico()">⚠️ Limpar palpites</button>
+
+      <div class="divider"></div>
+      <div class="card-title">📡 API Ao Vivo</div>
+      <div class="card-sub">Chave football-data.org para placares em tempo real. Visível apenas aqui no Admin.</div>
+      <label>API Key</label>
+      <input type="text" id="apiKeyInputAdmin" placeholder="Cole sua key aqui...">
+      <button class="btn btn-verde" onclick="salvarApiKeyAdmin()">Salvar e Testar</button>
+      <div id="apiStatusAdmin" class="text-sm mt8" style="display:none;text-align:center"></div>
+
       </div>
     </div>
   </div>
@@ -1348,6 +1357,7 @@ function loadCfgUnico(){
   document.getElementById('unicoPixBanco').value=cfgUnico.pixBanco||'';
   document.getElementById('unicoBonusQ').value=cfgUnico.bonusQ||'';
   document.getElementById('apiKeyInput').value=apiKey||'';
+  const adminKeyEl=document.getElementById('apiKeyInputAdmin');if(adminKeyEl)adminKeyEl.value=apiKey||'';
   setT('tbU1',cfgUnico.tbGV);setT('tbU2',cfgUnico.tbTG);setT('tbU3',cfgUnico.tbGP);
   setT('tbUBonus',cfgUnico.tbBonus);setT('tbUOrdem',cfgUnico.tbOrdem);setT('tbUAceitar',cfgUnico.aceitar);
   document.getElementById('unicoBonusQWrap').style.display=cfgUnico.tbBonus?'block':'none';
@@ -1397,6 +1407,30 @@ function goTab(screen,tabEl){
   if(screen==='pagar'){updatePixDisplay();renderPagList();}
   if(screen==='aovivo'){renderFeed();if(apiKey) fetchLive();}
   if(screen==='admin'&&adminUnlocked) adminMode(adminModo);
+}
+
+// ═══════════════════════════════════════
+// API KEY ADMIN
+// ═══════════════════════════════════════
+async function salvarApiKeyAdmin(){
+  const key=document.getElementById('apiKeyInputAdmin')?.value.trim();
+  if(!key) return toast('Cole a API key primeiro','err');
+  apiKey=key;
+  localStorage.setItem('apiKey',apiKey);
+  const st=document.getElementById('apiStatusAdmin');
+  if(st){st.style.display='block';st.textContent='Testando...';st.style.color='var(--txt2)';}
+  try{
+    const res=await fetch(`/api/football?key=${apiKey}&path=competitions`);
+    if(res.ok){
+      if(st){st.textContent='✅ Conectado!';st.style.color='#6EC98A';}
+      toast('API conectada!','ok');
+      await addFeed('📡','API football-data.org conectada');
+    } else {
+      if(st){st.textContent='❌ Erro '+res.status;st.style.color='#EF5350';}
+    }
+  }catch(e){
+    if(st){st.textContent='❌ Sem conexão';st.style.color='#EF5350';}
+  }
 }
 
 // ═══════════════════════════════════════
