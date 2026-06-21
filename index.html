@@ -660,6 +660,14 @@ select option{background:var(--bg);}
         </div>
 
         <div class="divider"></div>
+        <div class="card-title">📲 Convite para o Grupo</div>
+        <div class="card-sub">Toque para compartilhar no WhatsApp:</div>
+        <button class="share-btn" onclick="shareConviteGeral()" style="margin-bottom:8px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Convidar para o Bolão
+        </button>
+
+        <div class="divider"></div>
         <div class="card-title">🔐 Segurança</div>
         <div class="card-sub">Seus links de acesso:</div>
         <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:8px">
@@ -2057,12 +2065,16 @@ async function salvarCfgUnico(){
 }
 
 async function limparUnico(){
-  if(!confirm('Limpar palpites do jogo extra?')) return;
+  if(!confirm('Limpar palpites e resultado do jogo extra?')) return;
   await sb.from('palpites_unico').delete().neq('id','00000000-0000-0000-0000-000000000000');
   await sb.from('resultado_unico').upsert({id:1,g1:null,g2:null,bonus_ans:'',updated_at:new Date().toISOString()});
-  palpitesUnico=[];resultadoUnico=null;cfgUnico.aceitar=true;
-  updateHeader();renderFormPalpite();renderAdminPendUnico();renderPagList();
-  toast('Palpites limpos','info');
+  // Also clear active game
+  cfgUnico.jogoAtivo = null;
+  cfgUnico.aceitar = true;
+  await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
+  palpitesUnico=[];resultadoUnico=null;
+  updateHeader();renderFormPalpite();renderAdminPendUnico();renderPagList();updateShareLink();updateUnicoResFields();
+  toast('Jogo extra limpo','info');
 }
 
 // ═══════════════════════════════════════
@@ -2089,9 +2101,19 @@ async function carregarParticipantes(){
   c.innerHTML='<div style="text-align:center;padding:12px;color:var(--txt3)">Carregando...</div>';
   try{
     const {data, error} = await sb.from('participantes').select('*').order('created_at');
-    if(error) throw error;
-    if(!data.length){
-      c.innerHTML='<div style="text-align:center;padding:12px;color:var(--txt3)">Nenhum participante ainda</div>';
+    if(error){
+      // RLS blocking read — show instructions to fix
+      c.innerHTML=`<div style="padding:12px;color:var(--danger);font-size:12px">
+        ⚠️ Erro de permissão: ${error.message}<br><br>
+        <strong style="color:var(--amarelo)">Rode este SQL no Supabase para corrigir:</strong><br>
+        <code style="background:var(--bg);padding:8px;border-radius:6px;display:block;margin-top:8px;font-size:10px;color:var(--txt);word-break:break-all">
+          CREATE POLICY "anon_read" ON participantes FOR SELECT TO anon USING (true);
+        </code>
+      </div>`;
+      return;
+    }
+    if(!data || !data.length){
+      c.innerHTML='<div style="text-align:center;padding:12px;color:var(--txt3)">Nenhum participante cadastrado ainda.</div>';
       return;
     }
     c.innerHTML=data.map(p=>`
@@ -2099,14 +2121,37 @@ async function carregarParticipantes(){
         <div style="font-weight:700;font-size:13px;color:var(--txt)">${p.nome}</div>
         <div style="color:var(--txt2);margin-top:2px">📱 ${p.whats}</div>
         ${p.pix_chave
-          ?`<div style="color:var(--amarelo);margin-top:4px;font-family:monospace;font-size:11px">
-              💳 ${p.pix_tipo}: ${p.pix_chave}
-            </div>`
+          ?`<div style="color:var(--amarelo);margin-top:4px;font-family:monospace;font-size:11px">💳 ${p.pix_tipo||'Pix'}: ${p.pix_chave}</div>`
           :`<div style="color:var(--txt3);margin-top:4px;font-size:11px">💳 Pix não informado</div>`}
+        <div style="color:var(--txt3);font-size:10px;margin-top:4px">${new Date(p.created_at).toLocaleDateString('pt-BR')} ${new Date(p.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
       </div>`).join('');
   } catch(e){
-    c.innerHTML=`<div style="text-align:center;padding:12px;color:var(--danger)">Erro: ${e.message}<br><small>Verifique se a tabela participantes foi criada no Supabase.</small></div>`;
+    c.innerHTML=`<div style="text-align:center;padding:12px;color:var(--danger)">Erro: ${e.message}</div>`;
   }
+}
+
+function shareConviteGeral(){
+  const base = window.location.href.split('?')[0];
+  const msg = `🇧🇷⚽🏆 *BOLÃO BRADESCO — COPA 2026*
+
+Galera, montei um bolão da Copa pra gente competir!
+
+*Como funciona:*
+
+⚡ *Jogo Extra* — já disponível! Aposta pontual em jogos específicos da fase de grupos. Quando liberar um jogo, você entra e palpita.
+
+🏆 *Mata-Mata* — abre quando a fase de grupos terminar e os classificados estiverem definidos. Aí vocês palpitam em todas as fases até a final.
+
+📡 Placares ao vivo em tempo real via API oficial
+📊 Classificação de todos os grupos atualizada automaticamente
+🏅 Ranking do bolão atualizado na hora
+📱 Instala no celular como um app de verdade
+
+👇 Entra, faz o cadastro e já fica na fila:
+${base}
+
+Qualquer bug que encontrar me avisa 😄 ainda tô ajustando alguns detalhes!`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
 }
 
 async function salvarApiKeyAdmin(){
@@ -2410,6 +2455,9 @@ function detectarTipoPix(valor){
 }
 
 function abrirModalCadastro(){
+  // Mark tutorial as seen as soon as modal opens
+  localStorage.setItem('bolao_tutorial_seen','1');
+  sessionStorage.setItem('bolao_tutorial_seen','1');
   document.getElementById('modalCadastro').classList.remove('hidden');
   setTimeout(()=>{
     const f = document.getElementById('modalNome');
@@ -2452,17 +2500,24 @@ async function confirmarCadastroModal(){
   }
 
   // Save to participantes table in Supabase
-  if(pix){
-    try{
-      await sb.from('participantes').upsert({
-        nome,
-        whats: whatsLimpo,
-        pix_tipo: pixTipo,
-        pix_chave: pix,
-      }, { onConflict: 'whats' });
-    } catch(e){
-      console.log('Participante já cadastrado ou erro:', e);
+  try{
+    const payload = {
+      nome,
+      whats: whatsLimpo,
+      pix_tipo: pixTipo,
+      pix_chave: pix || null,
+    };
+    const { error: upsertError } = await sb
+      .from('participantes')
+      .upsert(payload, { onConflict: 'whats' });
+    if(upsertError){
+      console.error('Erro ao salvar participante:', upsertError);
+      // Try plain insert as fallback
+      const { error: insertError } = await sb.from('participantes').insert(payload);
+      if(insertError) console.error('Insert também falhou:', insertError);
     }
+  } catch(e){
+    console.error('Exceção ao salvar participante:', e);
   }
 
   // Store in session and localStorage for pre-fill and welcome
