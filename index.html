@@ -567,8 +567,7 @@ select option{background:var(--bg);}
     <div id="adminPanel" style="display:none">
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
         <div class="mode-pill mata active" id="admMata" onclick="adminMode('mata')" style="flex:1;min-width:80px">🏆 Mata-Mata</div>
-        <div class="mode-pill unico" id="admUnico" onclick="adminMode('unico')" style="flex:1;min-width:80px">⚡ Extra 1</div>
-        <div class="mode-pill unico" id="admUnico2" onclick="adminMode('unico2')" style="flex:1;min-width:80px">⚡ Extra 2</div>
+        <div class="mode-pill unico" id="admUnico" onclick="adminMode('unico')" style="flex:1;min-width:80px">⚡ Jogo Extra</div>
         <div class="mode-pill unico" id="admGeral" onclick="adminMode('geral')" style="flex:1;min-width:80px;background:rgba(100,60,0,0.4);border-color:rgba(200,120,0,0.4);color:#FFB74D">⚙️ Geral</div>
       </div>
 
@@ -626,10 +625,11 @@ select option{background:var(--bg);}
 
       <!-- ÚNICO PANEL -->
       <div id="admUnicoPanel" style="display:none">
-        <div class="card-title">Jogo Ativo</div>
-        <div class="phase-tabs" id="admUnicoPhaseTabs"></div>
+        <div class="card-title">Jogos Extras Ativos</div>
+        <div style="font-size:11px;color:var(--txt3);margin-bottom:10px">Máximo 2 simultâneos · Toque para ativar ou desativar</div>
+        <div id="admJogosAtivos" style="margin-bottom:12px"></div>
+        <div class="card-title" style="margin-top:4px">Jogos de Hoje / Amanhã</div>
         <div id="admUnicoList"></div>
-        <button class="btn btn-verde mt8" onclick="ativarJogoUnico()">Ativar Jogo Extra ✓</button>
         <div class="divider"></div>
         <div class="card-title">Link para Compartilhar</div>
         <div style="background:var(--bg);border-radius:10px;padding:12px;font-size:12px;font-family:monospace;color:var(--amarelo);word-break:break-all;margin-bottom:10px" id="shareLinkTxt">—</div>
@@ -682,9 +682,8 @@ select option{background:var(--bg);}
       <!-- JOGO EXTRA 2 PANEL -->
       <div id="admUnico2Panel" style="display:none">
         <div class="card-title">Jogo Ativo — Extra 2</div>
-        <div class="phase-tabs" id="admUnico2PhaseTabs"></div>
+        <div style="font-size:11px;color:var(--txt3);margin-bottom:10px">Toque no jogo para ativar imediatamente</div>
         <div id="admUnico2List"></div>
-        <button class="btn btn-verde mt8" onclick="ativarJogoUnico2()">Ativar Jogo Extra 2 ✓</button>
         <div class="divider"></div>
         <div class="card-title">Link para Compartilhar</div>
         <div style="background:var(--bg);border-radius:10px;padding:12px;font-size:12px;font-family:monospace;color:var(--amarelo);word-break:break-all;margin-bottom:10px" id="shareLinkTxt2">—</div>
@@ -2007,21 +2006,19 @@ function checkAdmin(){
 
 function adminMode(m){
   adminModo=m;
-  ['admMata','admUnico','admUnico2','admGeral'].forEach(id=>{
+  ['admMata','admUnico','admGeral'].forEach(id=>{
     const el=document.getElementById(id);
-    if(el) el.classList.toggle('active', id===`adm${m.charAt(0).toUpperCase()+m.slice(1)}`||
-      (m==='mata'&&id==='admMata')||(m==='unico'&&id==='admUnico')||
-      (m==='unico2'&&id==='admUnico2')||(m==='geral'&&id==='admGeral'));
+    if(el) el.classList.toggle('active',
+      (m==='mata'&&id==='admMata')||(m==='unico'&&id==='admUnico')||(m==='geral'&&id==='admGeral'));
   });
   document.getElementById('admMataPanel').style.display=m==='mata'?'block':'none';
   document.getElementById('admUnicoPanel').style.display=m==='unico'?'block':'none';
   const u2p=document.getElementById('admUnico2Panel');
-  if(u2p) u2p.style.display=m==='unico2'?'block':'none';
+  if(u2p) u2p.style.display='none'; // hidden — merged into unico
   const geralPanel=document.getElementById('admGeralPanel');
   if(geralPanel) geralPanel.style.display=m==='geral'?'block':'none';
   if(m==='mata'){renderAdminPhase();renderAdminPend();loadCfgMata();renderResultadoSel();}
-  else if(m==='unico'){renderAdminUnicoPhase();renderAdminPendUnico();loadCfgUnico();updateShareLink();updateUnicoResFields();}
-  else if(m==='unico2'){renderAdminUnico2Phase();renderAdminPendUnico2();loadCfgUnico2();updateShareLink2();updateUnico2ResFields();}
+  else if(m==='unico'){renderAdminUnicoUnificado();}
   else if(m==='geral'){
     const base=window.location.href.split('?')[0];
     const lp=document.getElementById('linkPublico');
@@ -2546,11 +2543,6 @@ ${base}`;
 let selectedUnico2Idx = null;
 
 function renderAdminUnico2Phase(){
-  const c=document.getElementById('admUnico2PhaseTabs');
-  const fases=[...new Set(GRUPOS_JOGOS.map(j=>j.fase))];
-  const fasesComJogos=fases.filter(f=>GRUPOS_JOGOS.some(j=>j.fase===f&&isFutureGame(j.date)));
-  c.innerHTML=`<button class="ptab active" onclick="renderSmartJogos('unico2');document.querySelectorAll('#admUnico2PhaseTabs .ptab').forEach(t=>t.classList.remove('active'));this.classList.add('active')">📅 Hoje/Amanhã</button>`+
-    fasesComJogos.map(f=>`<button class="ptab" onclick="filtroUnico2('${f}',this)">${f}</button>`).join('');
   renderSmartJogos('unico2');
 }
 
@@ -2571,6 +2563,165 @@ function filtroUnico2(fase,el){
     </div>`;
   }).join('');
 }
+function renderAdminUnicoUnificado(){
+  // Show active games
+  renderJogosAtivos();
+  // Show upcoming games list
+  renderSmartJogos('unified');
+  // Show pending palpites for both extras
+  renderAdminPendUnico();
+}
+
+function renderJogosAtivos(){
+  const c = document.getElementById('admJogosAtivos');
+  if(!c) return;
+  const ativos = [];
+  if(cfgUnico.jogoAtivo) ativos.push({cfg:'unico', j:cfgUnico.jogoAtivo, label:'Extra 1'});
+  if(cfgUnico2.jogoAtivo) ativos.push({cfg:'unico2', j:cfgUnico2.jogoAtivo, label:'Extra 2'});
+
+  if(!ativos.length){
+    c.innerHTML='<div style="font-size:12px;color:var(--txt3);padding:8px 0">Nenhum jogo extra ativo no momento</div>';
+    return;
+  }
+
+  c.innerHTML = ativos.map(({cfg,j,label})=>`
+    <div style="display:flex;align-items:center;gap:10px;background:rgba(0,200,100,0.1);border:1px solid var(--verde);border-radius:10px;padding:10px;margin-bottom:8px">
+      <div style="font-size:20px">${j.f1}${j.f2}</div>
+      <div style="flex:1">
+        <div style="font-size:12px;color:var(--verde);font-weight:700">${label} — ATIVO</div>
+        <div style="font-size:13px;color:var(--txt);font-weight:600">${j.t1} × ${j.t2}</div>
+        <div style="font-size:11px;color:var(--txt3)">${j.date} · ${j.time}</div>
+      </div>
+      <button onclick="desativarExtra('${cfg}')" style="background:var(--danger);color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;touch-action:manipulation">
+        ✕ Desativar
+      </button>
+    </div>`).join('');
+}
+
+async function desativarExtra(cfg){
+  if(cfg==='unico'){
+    cfgUnico.jogoAtivo=null; cfgUnico.aceitar=false;
+    await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
+  } else {
+    cfgUnico2.jogoAtivo=null; cfgUnico2.aceitar=false;
+    await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
+  }
+  toast('Jogo extra desativado','ok');
+  renderAdminUnicoUnificado();
+  updateHeader();
+}
+
+async function ativarJogoExtra(gi){
+  const j = GRUPOS_JOGOS[gi];
+  if(!j) return;
+
+  // Check if already active
+  const jaAtivo1 = cfgUnico.jogoAtivo?.t1===j.t1 && cfgUnico.jogoAtivo?.t2===j.t2;
+  const jaAtivo2 = cfgUnico2.jogoAtivo?.t1===j.t1 && cfgUnico2.jogoAtivo?.t2===j.t2;
+  if(jaAtivo1 || jaAtivo2){
+    await desativarExtra(jaAtivo1?'unico':'unico2');
+    return;
+  }
+
+  // Count active
+  const numAtivos = (cfgUnico.jogoAtivo?1:0) + (cfgUnico2.jogoAtivo?1:0);
+  if(numAtivos >= 2){
+    toast('Já tem 2 jogos extras ativos! Desative um antes de ativar outro.','err');
+    return;
+  }
+
+  // Activate in first available slot
+  if(!cfgUnico.jogoAtivo){
+    cfgUnico.jogoAtivo={...j}; cfgUnico.aceitar=true;
+    await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
+  } else {
+    cfgUnico2.jogoAtivo={...j}; cfgUnico2.aceitar=true;
+    await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
+  }
+
+  await addFeed('⚡',`Jogo Extra aberto: ${j.t1} × ${j.t2}`);
+  toast(`✓ ${j.t1} × ${j.t2} ativado!`,'ok');
+  renderAdminUnicoUnificado();
+  updateHeader();
+}
+
+function getJogosPorDias(diasAhead){
+  const now = new Date();
+  const brasilia = new Date(now.getTime() - 3*60*60*1000);
+  const datas = [];
+  for(let d=0; d<diasAhead; d++){
+    const day = new Date(brasilia);
+    day.setDate(day.getDate()+d);
+    datas.push(`${String(day.getDate()).padStart(2,'0')}/${String(day.getMonth()+1).padStart(2,'0')}`);
+  }
+  return GRUPOS_JOGOS.filter(j=>datas.includes(j.date)&&isFutureGame(j.date))
+    .sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
+}
+
+function renderSmartJogos(tipo){
+  const listId = 'admUnicoList';
+  const c = document.getElementById(listId);
+  if(!c) return;
+
+  let jogos = getJogosPorDias(1);
+  if(!jogos.length){
+    jogos = getJogosPorDias(3);
+  }
+  if(!jogos.length){
+    c.innerHTML='<div class="empty"><div class="empty-text">Nenhum jogo disponível nos próximos dias</div></div>';
+    return;
+  }
+
+  const porData = {};
+  jogos.forEach(j=>{ if(!porData[j.date]) porData[j.date]=[]; porData[j.date].push(j); });
+
+  c.innerHTML = Object.entries(porData).map(([data, jogosData])=>`
+    <div style="font-size:11px;color:var(--txt3);margin:10px 0 6px;text-transform:uppercase;letter-spacing:1px;font-weight:700">${data}</div>
+    ${jogosData.map(j=>{
+      const gi=GRUPOS_JOGOS.indexOf(j);
+      const isAtivo1=cfgUnico.jogoAtivo?.t1===j.t1&&cfgUnico.jogoAtivo?.t2===j.t2;
+      const isAtivo2=cfgUnico2.jogoAtivo?.t1===j.t1&&cfgUnico2.jogoAtivo?.t2===j.t2;
+      const isAtivo=isAtivo1||isAtivo2;
+      const label=isAtivo1?'✓ Extra 1':isAtivo2?'✓ Extra 2':'Ativar';
+      return `<div class="match-sel ${isAtivo?'selected':''}" onclick="ativarJogoExtra(${gi})" style="cursor:pointer">
+        <div class="match-sel-flags">${j.f1} ${j.f2}</div>
+        <div class="match-sel-info">
+          <div class="match-sel-name">${j.t1} × ${j.t2}</div>
+          <div class="match-sel-date">${j.time} · ${j.fase}</div>
+        </div>
+        <div class="match-sel-check" style="color:${isAtivo?'var(--verde)':'var(--txt3)'}">
+          ${label}
+        </div>
+      </div>`;
+    }).join('')}`
+  ).join('');
+}
+
+async function ativarJogoUnicoIdx(gi){
+  const j=GRUPOS_JOGOS[gi];
+  if(!j) return;
+  cfgUnico.jogoAtivo={...j};
+  cfgUnico.aceitar=true;
+  await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
+  updateShareLink(); updateUnicoResFields();
+  await addFeed('⚡',`Jogo Extra aberto: ${j.t1} × ${j.t2}`);
+  toast(`✓ Extra 1: ${j.t1} × ${j.t2} ativado!`,'ok');
+  renderSmartJogos('unico');
+}
+
+async function ativarJogoUnico2Idx(gi){
+  const j=GRUPOS_JOGOS[gi];
+  if(!j) return;
+  cfgUnico2.jogoAtivo={...j};
+  cfgUnico2.aceitar=true;
+  await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
+  updateShareLink2(); updateUnico2ResFields();
+  await addFeed('⚡',`Jogo Extra 2 aberto: ${j.t1} × ${j.t2}`);
+  toast(`✓ Extra 2: ${j.t1} × ${j.t2} ativado!`,'ok');
+  renderSmartJogos('unico2');
+}
+
+
 
 function selJogoUnico2(idx,el){
   selectedUnico2Idx=idx;
