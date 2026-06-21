@@ -2188,13 +2188,22 @@ function renderAdminUnicoPhase(){
   filtroUnico(fases[0],c.querySelector('.ptab'));
 }
 
-function isFutureGame(dateStr){
-  // dateStr format: DD/MM
+function isFutureGame(dateStr, timeStr){
+  // dateStr: DD/MM, timeStr: HHh or HH:MM (optional)
   const [day,month] = dateStr.split('/').map(Number);
-  const gameDate = new Date(2026, month-1, day);
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  return gameDate >= today;
+  // Game datetime in Brasília (UTC-3)
+  let gameHour = 23, gameMin = 59;
+  if(timeStr){
+    const t = timeStr.replace('h',':00').replace('H',':00');
+    const parts = t.split(':');
+    gameHour = parseInt(parts[0])||0;
+    gameMin = parseInt(parts[1])||0;
+  }
+  // Convert game time from Brasília to UTC
+  const gameUTC = new Date(Date.UTC(2026, month-1, day, gameHour+3, gameMin));
+  const nowUTC = new Date();
+  // Game hasn't started yet = future (give 5 min grace after kickoff)
+  return gameUTC > new Date(nowUTC.getTime() - 5*60*1000);
 }
 
 function filtroUnico(fase,el){
@@ -2654,7 +2663,7 @@ function getJogosPorDias(diasAhead){
     day.setDate(day.getDate()+d);
     datas.push(`${String(day.getDate()).padStart(2,'0')}/${String(day.getMonth()+1).padStart(2,'0')}`);
   }
-  return GRUPOS_JOGOS.filter(j=>datas.includes(j.date)&&isFutureGame(j.date))
+  return GRUPOS_JOGOS.filter(j=>datas.includes(j.date)&&isFutureGame(j.date,j.time))
     .sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
 }
 
