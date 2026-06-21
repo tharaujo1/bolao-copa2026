@@ -1240,26 +1240,28 @@ function renderFormPalpite(){
     if(!j){ card.innerHTML=`<div class="modo-tag unico">⚡ Jogo Extra</div><div class="empty"><div class="empty-icon">⚡</div><div class="empty-text">Nenhum jogo extra ativo.<br>Aguarde o link do organizador!</div></div>`; return; }
     if(resultadoUnico){ card.innerHTML=`<div class="modo-tag unico">⚡ Jogo Extra</div><div class="empty"><div class="empty-icon">🏁</div><div class="empty-text">Jogo encerrado. Veja o Ranking!</div></div>`; return; }
     if(!cfgUnico.aceitar){ card.innerHTML=`<div class="modo-tag unico">⚡ Jogo Extra</div><div class="empty"><div class="empty-icon">🔒</div><div class="empty-text">Palpites fechados.</div></div>`; return; }
+    const _uNome=sessionStorage.getItem('cadastro_nome')||localStorage.getItem('bolao_nome')||'';
+    const _uWhats=(sessionStorage.getItem('cadastro_whats')||localStorage.getItem('bolao_whats')||'').replace(/\D/g,'');
     card.innerHTML=`
       <div class="modo-tag unico">⚡ Jogo Extra</div>
       <div class="card-title">Seu Palpite</div>
-      <label>Seu nome</label>
-      <input type="text" id="uNome" placeholder="Como te chamam?" maxlength="30">
-      <label>WhatsApp <span style="color:var(--danger)">*</span> <span style="font-size:10px;color:var(--txt3)">(identificador único)</span></label>
-      <input type="tel" id="uWhats" placeholder="(11) 99999-9999" maxlength="20">
+      <div style="background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+        <div style="font-size:22px">👤</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--txt)">${_uNome}</div>
+          <div style="font-size:11px;color:var(--txt3)">${_uWhats}</div>
+        </div>
+      </div>
+      <input type="hidden" id="uNome" value="${_uNome}">
+      <input type="hidden" id="uWhats" value="${_uWhats}">
       <div class="placar-row">
-        <div class="pl-team"><div class="pl-flag">${j.f1}</div><div class="pl-name">${j.t1}</div><input type="number" id="uG1" value="0" min="0" max="20"></div>
+        <div class="pl-team"><div class="pl-flag">${j.f1}</div><div class="pl-name">${j.t1}</div><input type="number" id="uG1" value="" min="0" max="20" inputmode="numeric" placeholder="0" onclick="this.select()"></div>
         <div class="pl-vs">✕</div>
-        <div class="pl-team"><div class="pl-flag">${j.f2}</div><div class="pl-name">${j.t2}</div><input type="number" id="uG2" value="0" min="0" max="20"></div>
+        <div class="pl-team"><div class="pl-flag">${j.f2}</div><div class="pl-name">${j.t2}</div><input type="number" id="uG2" value="" min="0" max="20" inputmode="numeric" placeholder="0" onclick="this.select()"></div>
       </div>
       ${cfgUnico.tbBonus&&cfgUnico.bonusQ?`<label>${cfgUnico.bonusQ}</label><input type="text" id="uBonus" placeholder="Sua resposta" maxlength="60">`:''}
       <button class="btn btn-verde" onclick="enviarUnico()">Enviar Palpite ⚽</button>
     `;
-    // Pre-fill from modal/localStorage
-    const sNome2=sessionStorage.getItem('cadastro_nome')||localStorage.getItem('bolao_nome');
-    const sWhats2=sessionStorage.getItem('cadastro_whats')||localStorage.getItem('bolao_whats');
-    if(sNome2){const f=document.getElementById('uNome');if(f)f.value=sNome2;}
-    if(sWhats2){const f=document.getElementById('uWhats');if(f)f.value=sWhats2;}
   }
 }
 
@@ -1325,6 +1327,9 @@ async function enviarUnico(){
   const {error}=await sb.from('palpites_unico').insert({nome,whats,g1,g2,bonus,status:statusInicialU,ts:Date.now()});
   if(error) return toast('Erro ao salvar. Tente novamente.','err');
   await addFeed('⚡',`${nome} entrou no jogo extra`);
+  // Recarregar palpites para detectar duplicata e fechar formulario
+  const {data:puAtualizado}=await sb.from('palpites_unico').select('*').order('ts');
+  if(puAtualizado) palpitesUnico=puAtualizado;
   if(statusInicialU==='ativo'){
     toast(`${nome}, palpite enviado e ativado! ✓`,'ok');
   } else {
@@ -1590,11 +1595,15 @@ async function renderPagOpcoes(){
 
   if(cfgUnico.jogoAtivo){
     const j1=cfgUnico.jogoAtivo;
-    const jaU1 = pagoUnico || palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===myWhats&&(p.jogo_extra_id||'jogo1')==='jogo1'&&p.status==='ativo');
+    // Considera ativo se: pago_unico=true OU palpite com status ativo OU qualquer palpite existente (pendente vira ativo ao pagar)
+    const temPalpiteUnico = palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===myWhats&&(p.jogo_extra_id||'jogo1')==='jogo1');
+    const jaU1 = pagoUnico || (temPalpiteUnico&&temPalpiteUnico.status==='ativo');
+    const pendUnico = temPalpiteUnico&&temPalpiteUnico.status==='pendente';
     opcoes.push({
       id:'unico', label:`⚡ Extra — ${j1.t1} × ${j1.t2}`, sub:`${j1.date} · ${j1.time}`,
       valor:cfgUnico.valor||10, jaAtivo:!!jaU1,
-      disponivel:cfgUnico.aceitar&&!jaU1,
+      disponivel:(cfgUnico.aceitar&&!jaU1)||pendUnico,
+      pendente:!!pendUnico,
     });
   }
 
@@ -1616,7 +1625,8 @@ async function renderPagOpcoes(){
         <div style="font-size:15px;font-weight:700;color:${o.jaAtivo?'var(--verde)':'var(--txt)'}">${o.label}</div>
         <div style="font-size:11px;color:var(--txt3);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px">${o.sub}</div>
         ${o.jaAtivo?'<div style="font-size:12px;color:var(--verde);margin-top:4px;font-weight:600">✅ Você já está ativo neste bolão</div>':''}
-        ${!o.disponivel&&!o.jaAtivo?'<div style="font-size:11px;color:var(--txt3);margin-top:2px">Inscrições fechadas</div>':''}
+        ${o.pendente?'<div style="font-size:12px;color:var(--warning);margin-top:4px;font-weight:600">⚠️ Palpite enviado — pague o Pix para ativar</div>':''}
+        ${!o.disponivel&&!o.jaAtivo&&!o.pendente?'<div style="font-size:11px;color:var(--txt3);margin-top:2px">Inscrições fechadas</div>':''}
       </div>
       <div style="text-align:right;flex-shrink:0">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--amarelo)">R$ ${o.valor}</div>
