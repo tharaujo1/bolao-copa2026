@@ -4,16 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Bolão Copa 2026 🇧🇷</title>
-
-<link rel="shortcut icon" href="icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="icon.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icon.png">
-<link rel="apple-touch-icon" sizes="180x180" href="icon.png">
-
-<meta name="theme-color" content="#002776">
-<meta name="apple-mobile-web-app-title" content="Bolão 2026">
-<meta name="apple-mobile-web-app-capable" content="yes">
-
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -328,14 +318,6 @@ select option{background:var(--bg);}
       <button onclick="fetchLive(true)" style="background:none;border:none;color:var(--amarelo);font-size:12px;cursor:pointer;font-weight:700">↻ Atualizar</button>
     </div>
     <div id="feedContainer"><div class="empty"><div class="empty-text">Nenhum evento ainda</div></div></div>
-  </div>
-  <div class="card">
-    <div class="card-title">API football-data.org</div>
-    <div class="card-sub">Cole sua chave gratuita para ativar placares ao vivo.</div>
-    <label>API Key</label>
-    <input type="text" id="apiKeyInput" placeholder="Sua key aqui...">
-    <button class="btn btn-verde" onclick="salvarApiKey()">Salvar e Testar</button>
-    <div id="apiStatus" class="text-sm mt8" style="display:none;text-align:center"></div>
   </div>
 </div>
 
@@ -1015,7 +997,7 @@ async function fetchLive(manual=false){
   if(!apiKey) return;
   const today=new Date().toISOString().split('T')[0];
   try{
-    const res=await fetch(`https://api.football-data.org/v4/matches?dateFrom=${today}&dateTo=${today}`,{headers:{'X-Auth-Token':apiKey}});
+    const res=await fetch(`/api/football?key=${apiKey}&path=matches&dateFrom=${today}&dateTo=${today}`);
     if(!res.ok){if(manual)toast('Erro API: '+res.status,'err');return;}
     const data=await res.json();
     const matches=(data.matches||[]);
@@ -1061,7 +1043,7 @@ async function salvarApiKey(){
   const st=document.getElementById('apiStatus');
   st.style.display='block';st.textContent='Testando...';st.style.color='var(--txt2)';
   try{
-    const res=await fetch('https://api.football-data.org/v4/competitions',{headers:{'X-Auth-Token':apiKey}});
+    const res=await fetch(`/api/football?key=${apiKey}&path=competitions`);
     if(res.ok){st.textContent='✅ Conectado!';st.style.color='#6EC98A';toast('API conectada!','ok');await addFeed('📡','API football-data.org conectada');}
     else{st.textContent='❌ Erro '+res.status;st.style.color='#EF5350';}
   }catch(e){st.textContent='❌ Sem conexão';st.style.color='#EF5350';}
