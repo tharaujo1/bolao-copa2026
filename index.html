@@ -686,156 +686,105 @@ select option{background:var(--bg);}
 
 <div class="toast" id="toast"></div>
 
-<!-- MODAL CADASTRO RÁPIDO -->
-<div class="modal-overlay hidden" id="modalCadastro">
+<!-- modal removed -->
+<div class="modal-overlay hidden" id="modalCadastro" style="display:none!important">
   <div class="modal-box">
     <div class="modal-title">Quem é você? 👋</div>
     <div class="modal-sub">Cadastro único — preencha uma vez e pronto.</div>
 
-    <div style="font-size:11px;color:var(--txt3);margin-bottom:12px">Todos os campos são obrigatórios <span style="color:var(--danger)">*</span></div>
+    <!-- STEP 1: WhatsApp only -->
+    <div id="modalStep1">
+      <div style="font-size:11px;color:var(--txt3);margin-bottom:12px">Seu WhatsApp é seu identificador único no bolão.</div>
+      <label>WhatsApp <span style="color:var(--danger)">*</span></label>
+      <input type="tel" id="modalWhats" placeholder="(11) 99999-9999" maxlength="20"
+        onkeydown="if(event.key==='Enter'){verificarWhatsModal()}">
+      <button class="btn btn-amarelo" onclick="verificarWhatsModal()" style="touch-action:manipulation">
+        Continuar →
+      </button>
+    </div>
 
-    <label>Seu nome <span style="color:var(--danger)">*</span></label>
-    <input type="text" id="modalNome" placeholder="Como te chamam?" maxlength="30"
-      onkeydown="if(event.key==='Enter'){document.getElementById('modalWhats').focus()}">
+    <!-- STEP 2: Full form (hidden initially) -->
+    <div id="modalStep2" style="display:none">
+      <label>Seu nome <span style="color:var(--danger)">*</span></label>
+      <input type="text" id="modalNome" placeholder="Como te chamam?" maxlength="30"
+        onkeydown="if(event.key==='Enter'){document.getElementById('modalPix').focus()}">
 
-    <label>WhatsApp <span style="color:var(--danger)">*</span></label>
-    <input type="tel" id="modalWhats" placeholder="(11) 99999-9999" maxlength="20"
-      onkeydown="if(event.key==='Enter'){document.getElementById('modalPix').focus()}">
+      <label>Chave Pix <span style="color:var(--danger)">*</span> <span style="color:var(--txt3);font-size:10px;font-weight:400;text-transform:none;letter-spacing:0">— para receber prêmios</span></label>
+      <input type="text" id="modalPix" placeholder="CPF, email, celular ou chave aleatória"
+        oninput="detectarTipoPix(this.value)" autocomplete="off" autocorrect="off" spellcheck="false"
+        onkeydown="if(event.key==='Enter'){confirmarCadastroModal()}">
+      <div id="pixTipoDetectado" style="font-size:11px;margin-top:-10px;margin-bottom:12px;min-height:16px;color:var(--verde);font-weight:600"></div>
 
-    <label>Chave Pix <span style="color:var(--danger)">*</span> <span style="color:var(--txt3);font-size:10px;font-weight:400;text-transform:none;letter-spacing:0">— para receber prêmios</span></label>
-    <input type="text" id="modalPix" placeholder="CPF, email, celular ou chave aleatória"
-      oninput="detectarTipoPix(this.value)" autocomplete="off" autocorrect="off" spellcheck="false"
-      onkeydown="if(event.key==='Enter'){confirmarCadastroModal()}">
-    <div id="pixTipoDetectado" style="font-size:11px;margin-top:-10px;margin-bottom:12px;min-height:16px;color:var(--verde);font-weight:600"></div>
+      <button class="btn btn-amarelo" onclick="confirmarCadastroModal()" style="touch-action:manipulation">
+        ⚽ Entrar no Bolão Bradesco
+      </button>
+    </div>
 
-    <button class="btn btn-amarelo" onclick="confirmarCadastroModal()" style="touch-action:manipulation">
-      ⚽ Entrar no Bolão Bradesco
-    </button>
-    <button onclick="fecharModal()" style="display:block;width:100%;margin-top:10px;background:none;border:none;color:var(--txt3);font-size:12px;padding:8px;cursor:pointer;font-family:'Inter',sans-serif;">
-      Agora não
-    </button>
   </div>
 </div>
 
-<!-- TUTORIAL ONBOARDING -->
+<!-- TELA DE LOGIN -->
 <div class="tutorial-overlay" id="tutorialOverlay">
   <div class="tutorial-stripe"></div>
-  <div class="tutorial-slides" id="tutorialSlides">
 
-    <!-- SLIDE 1: Boas-vindas -->
-    <div class="tutorial-slide">
-      <div class="tutorial-emoji">🇧🇷⚽🏆</div>
-      <div class="tutorial-title">Bolão Bradesco</div>
-      <div class="tutorial-text">
-        Bem-vindo ao bolão oficial do grupo!<br><br>
-        <strong>Copa do Mundo 2026</strong> — EUA, Canadá e México.<br><br>
-        Aqui você palpita, acompanha ao vivo e torce junto com o grupo.
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;overflow-y:auto;">
+
+    <!-- Logo / Header -->
+    <div style="font-size:56px;margin-bottom:12px">🇧🇷⚽🏆</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:3px;color:var(--amarelo);margin-bottom:4px">Bolão Bradesco</div>
+    <div style="font-size:13px;color:var(--txt2);margin-bottom:32px;text-align:center">Copa do Mundo 2026</div>
+
+    <!-- LOGIN STEP 1: WhatsApp -->
+    <div id="loginStep1" style="width:100%;max-width:340px">
+      <div style="font-size:13px;color:var(--txt2);margin-bottom:16px;text-align:center;line-height:1.5">
+        Digite seu WhatsApp para entrar.<br>
+        <span style="font-size:11px;color:var(--txt3)">É sua identificação única no bolão.</span>
       </div>
+      <label>WhatsApp <span style="color:var(--danger)">*</span></label>
+      <input type="tel" id="loginWhats" placeholder="(11) 99999-9999" maxlength="20"
+        onkeydown="if(event.key==='Enter') verificarLogin()"
+        style="font-size:18px;text-align:center;letter-spacing:1px">
+      <button class="tutorial-btn-next" onclick="verificarLogin()" id="loginBtn" style="margin-top:4px">
+        Entrar →
+      </button>
+      <div id="loginStatus" style="text-align:center;font-size:12px;color:var(--txt3);margin-top:12px;min-height:18px"></div>
     </div>
 
-    <!-- SLIDE 2: Como funciona -->
-    <div class="tutorial-slide">
-      <div class="tutorial-emoji">🎯</div>
-      <div class="tutorial-title">Como Funciona</div>
-      <div class="tutorial-step">
-        <div class="tutorial-step-icon">🏆</div>
-        <div class="tutorial-step-text">
-          <strong>Bolão Mata-Mata</strong>
-          Grupo fechado. Você entra uma vez e palpita em cada fase — oitavas, quartas, semi e final. Pontuação acumulada com multiplicadores.
-        </div>
+    <!-- REGISTER STEP 2: Nome + Pix (hidden) -->
+    <div id="loginStep2" style="display:none;width:100%;max-width:340px">
+      <div style="background:var(--verde-pale);border:1px solid var(--verde);border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--txt2);text-align:center">
+        ✅ Número novo! Preencha seus dados para entrar no grupo.
       </div>
-      <div class="tutorial-step">
-        <div class="tutorial-step-icon">⚡</div>
-        <div class="tutorial-step-text">
-          <strong>Jogo Extra</strong>
-          Aposta pontual em um jogo específico. Quando o organizador liberar um jogo, você pode participar sem compromisso.
-        </div>
-      </div>
+      <label>Seu nome <span style="color:var(--danger)">*</span></label>
+      <input type="text" id="loginNome" placeholder="Como te chamam?" maxlength="30"
+        onkeydown="if(event.key==='Enter') document.getElementById('loginPix').focus()">
+      <label>Chave Pix <span style="color:var(--danger)">*</span>
+        <span style="font-size:10px;color:var(--txt3);font-weight:400;text-transform:none;letter-spacing:0"> — para receber prêmios</span>
+      </label>
+      <input type="text" id="loginPix" placeholder="CPF, email, celular ou chave aleatória"
+        oninput="detectarTipoPix(this.value)" autocomplete="off" spellcheck="false"
+        onkeydown="if(event.key==='Enter') confirmarRegistro()">
+      <div id="pixTipoDetectado" style="font-size:11px;margin-top:-10px;margin-bottom:12px;min-height:16px;color:var(--verde);font-weight:600"></div>
+      <button class="tutorial-btn-next" onclick="confirmarRegistro()">
+        ⚽ Entrar no Bolão Bradesco
+      </button>
+      <button onclick="voltarLogin()" style="display:block;width:100%;margin-top:10px;background:none;border:none;color:var(--txt3);font-size:12px;padding:8px;cursor:pointer;font-family:'Inter',sans-serif;touch-action:manipulation">
+        ← Usar outro número
+      </button>
     </div>
 
-    <!-- SLIDE 3: Passo a passo -->
-    <div class="tutorial-slide">
-      <div class="tutorial-emoji">📋</div>
-      <div class="tutorial-title">Passo a Passo</div>
-      <div class="tutorial-step">
-        <div class="tutorial-step-icon">1️⃣</div>
-        <div class="tutorial-step-text"><strong>Dê seu palpite</strong>Preencha nome, WhatsApp e seu palpite na aba Palpitar.</div>
-      </div>
-      <div class="tutorial-step">
-        <div class="tutorial-step-icon">2️⃣</div>
-        <div class="tutorial-step-text"><strong>Pague o Pix</strong>Transfira o valor de entrada na aba Pagar. Chave Pix disponível lá.</div>
-      </div>
-      <div class="tutorial-step">
-        <div class="tutorial-step-icon">3️⃣</div>
-        <div class="tutorial-step-text"><strong>Aguarde ativação</strong>O organizador confirma seu pagamento e ativa seu palpite.</div>
-      </div>
-      <div class="tutorial-step">
-        <div class="tutorial-step-icon">4️⃣</div>
-        <div class="tutorial-step-text"><strong>Acompanhe o ranking</strong>Veja sua posição e a pontuação de todos em tempo real.</div>
-      </div>
-    </div>
-
-    <!-- SLIDE 4: Instalar no celular -->
-    <div class="tutorial-slide">
-      <div class="tutorial-emoji">📱</div>
-      <div class="tutorial-title">Salve no Celular</div>
-      <div class="tutorial-text">Adicione o bolão à sua tela inicial para acessar como um app.</div>
-      <div class="tutorial-install">
-        <div class="tutorial-install-title">🍎 iPhone / iPad (Safari)</div>
-        <div class="tutorial-install-steps">
-          1. Toque em <span class="ios-share">⬆ Compartilhar</span><br>
-          2. Role e toque em <strong>"Adicionar à Tela de Início"</strong><br>
-          3. Toque em <strong>"Adicionar"</strong>
-        </div>
-      </div>
-      <div class="tutorial-install" style="margin-top:10px">
-        <div class="tutorial-install-title">🤖 Android (Chrome)</div>
-        <div class="tutorial-install-steps">
-          1. Toque em <span class="android-menu">⋮ Menu</span><br>
-          2. Toque em <strong>"Adicionar à tela inicial"</strong><br>
-          3. Confirme tocando em <strong>"Adicionar"</strong>
-        </div>
-      </div>
-    </div>
-
-    <!-- SLIDE 5: CTA Cadastro -->
-    <div class="tutorial-slide">
-      <div class="tutorial-emoji">🇧🇷🏆🇧🇷</div>
-      <div class="tutorial-title">Bora Jogar!</div>
-      <div class="tutorial-text">
-        Cadastre-se agora, pague o Pix e<br>
-        <strong>entre no Bolão Bradesco!</strong>
-      </div>
-      <div style="margin-top:20px;background:linear-gradient(135deg,var(--verde-escuro),var(--azul));border-radius:16px;padding:20px;max-width:320px;width:100%;border:1.5px solid var(--amarelo)">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--amarelo);margin-bottom:8px">O que vem a seguir:</div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.8">
-          ⚽ Preencha nome e WhatsApp<br>
-          💰 Dê seu palpite<br>
-          📲 Pague o Pix<br>
-          ✅ Aguarde ativação<br>
-          🏆 Apareça no ranking!
-        </div>
-      </div>
-      <div style="margin-top:12px;font-size:11px;color:var(--txt3)">
-        💡 Use sempre o mesmo WhatsApp — é sua chave única no bolão.
+    <!-- INSTALL HINT -->
+    <div style="margin-top:28px;text-align:center;max-width:280px">
+      <div style="font-size:11px;color:var(--txt3);line-height:1.6">
+        📱 <strong style="color:var(--txt2)">Dica:</strong> Salve como app —
+        iOS: compartilhar → "Adicionar à Tela de Início" |
+        Android: menu ⋮ → "Adicionar à tela inicial"
       </div>
     </div>
 
   </div>
 
-  <!-- DOTS -->
-  <div class="tutorial-dots" id="tutorialDots">
-    <div class="tutorial-dot active"></div>
-    <div class="tutorial-dot"></div>
-    <div class="tutorial-dot"></div>
-    <div class="tutorial-dot"></div>
-    <div class="tutorial-dot"></div>
-  </div>
-
-  <!-- FOOTER -->
-  <div class="tutorial-footer">
-    <button class="tutorial-btn-next" id="tutorialNext" onclick="tutorialNext()">Próximo →</button>
-  </div>
+  <div style="height:4px;background:linear-gradient(90deg,var(--verde),var(--amarelo),var(--verde));flex-shrink:0"></div>
 </div>
 
 <script>
@@ -2410,263 +2359,156 @@ function getCountryFlag(name){
 }
 
 // ═══════════════════════════════════════
-// MODAL CADASTRO RÁPIDO
+// LOGIN / IDENTIFICAÇÃO
 // ═══════════════════════════════════════
 
 function detectarTipoPix(valor){
   const v = valor.trim();
   const el = document.getElementById('pixTipoDetectado');
+  if(!el) return null;
   if(!v){ el.textContent=''; return null; }
-
-  // Email — contains @
   if(v.includes('@') && v.includes('.')){
-    el.textContent='✅ Email detectado';
-    el.style.color='var(--verde)';
-    return 'Email';
+    el.textContent='✅ Email detectado'; el.style.color='var(--verde)'; return 'Email';
   }
-
   const nums = v.replace(/\D/g,'');
-
-  // CPF — 11 digits, not starting with 0
-  if(nums.length === 11 && !v.includes('-') && parseInt(nums[0]) > 0){
-    // Basic CPF validation — first digit not 0
-    el.textContent='✅ CPF detectado';
-    el.style.color='var(--verde)';
-    return 'CPF';
+  if(nums.length === 11 && parseInt(nums[0]) > 0 && !v.includes('-')){
+    el.textContent='✅ CPF detectado'; el.style.color='var(--verde)'; return 'CPF';
   }
-
-  // Phone — 10 or 11 digits
   if(nums.length === 10 || nums.length === 11){
-    el.textContent='✅ Celular detectado';
-    el.style.color='var(--verde)';
-    return 'Celular';
+    el.textContent='✅ Celular detectado'; el.style.color='var(--verde)'; return 'Celular';
   }
-
-  // Random key — UUID format (32+ chars with hyphens)
   if(v.length >= 32){
-    el.textContent='✅ Chave aleatória detectada';
-    el.style.color='var(--verde)';
-    return 'Aleatória';
+    el.textContent='✅ Chave aleatória detectada'; el.style.color='var(--verde)'; return 'Aleatória';
   }
-
-  el.textContent='⏳ Continue digitando...';
-  el.style.color='var(--txt3)';
-  return null;
+  el.textContent='⏳ Continue digitando...'; el.style.color='var(--txt3)'; return null;
 }
 
-function abrirModalCadastro(){
-  // Mark tutorial as seen as soon as modal opens
-  localStorage.setItem('bolao_tutorial_seen','1');
-  sessionStorage.setItem('bolao_tutorial_seen','1');
-  document.getElementById('modalCadastro').classList.remove('hidden');
-  setTimeout(()=>{
-    const f = document.getElementById('modalNome');
-    if(f) f.focus();
-  }, 400);
+function voltarLogin(){
+  document.getElementById('loginStep1').style.display='block';
+  document.getElementById('loginStep2').style.display='none';
+  document.getElementById('loginStatus').textContent='';
 }
 
-function fecharModal(){
-  document.getElementById('modalCadastro').classList.add('hidden');
-  goTab('palpitar', document.querySelector('.nav-tab'));
-}
-
-async function confirmarCadastroModal(){
-  const nome = document.getElementById('modalNome')?.value.trim();
-  const whats = document.getElementById('modalWhats')?.value.trim();
-  const pix = document.getElementById('modalPix')?.value.trim();
-
-  // Validate all fields
-  if(!nome){
-    toast('Digite seu nome!','err');
-    document.getElementById('modalNome')?.focus();
-    return;
-  }
+async function verificarLogin(){
+  const whats = document.getElementById('loginWhats')?.value.trim();
   const whatsLimpo = whats ? whats.replace(/\D/g,'') : '';
   if(!whats || whatsLimpo.length < 10){
-    toast('Digite seu WhatsApp com DDD — ex: (11) 99999-9999','err');
-    document.getElementById('modalWhats')?.focus();
+    toast('Digite seu WhatsApp com DDD!','err');
     return;
   }
-  if(!pix){
-    toast('Digite sua chave Pix para receber prêmios!','err');
-    document.getElementById('modalPix')?.focus();
-    return;
-  }
-  const pixTipo = detectarTipoPix(pix) || 'Outro';
-  if(pixTipo === 'Outro' && pix.length < 5){
-    toast('Chave Pix inválida. Verifique e tente novamente.','err');
-    document.getElementById('modalPix')?.focus();
-    return;
-  }
+  const btn = document.getElementById('loginBtn');
+  const status = document.getElementById('loginStatus');
+  btn.textContent = 'Verificando...';
+  btn.disabled = true;
+  status.textContent = '';
 
-  // Save to participantes table in Supabase
   try{
-    const payload = {
-      nome,
-      whats: whatsLimpo,
-      pix_tipo: pixTipo,
-      pix_chave: pix || null,
-    };
-    const { error: upsertError } = await sb
-      .from('participantes')
-      .upsert(payload, { onConflict: 'whats' });
-    if(upsertError){
-      console.error('Erro ao salvar participante:', upsertError);
-      // Try plain insert as fallback
-      const { error: insertError } = await sb.from('participantes').insert(payload);
-      if(insertError) console.error('Insert também falhou:', insertError);
+    const {data} = await sb.from('participantes').select('nome,whats').eq('whats', whatsLimpo).single();
+    if(data){
+      // Already registered — log in
+      status.textContent = `✅ Olá, ${data.nome}! Entrando...`;
+      localStorage.setItem('bolao_nome', data.nome);
+      localStorage.setItem('bolao_whats', data.whats);
+      sessionStorage.setItem('cadastro_nome', data.nome);
+      sessionStorage.setItem('cadastro_whats', data.whats);
+      setTimeout(()=>{
+        document.getElementById('tutorialOverlay').classList.add('hidden');
+        showWelcomeBanner();
+        toast(`Bem-vindo de volta, ${data.nome}! 👋`,'ok');
+      }, 800);
+    } else {
+      // New user — show registration form
+      btn.textContent = 'Entrar →';
+      btn.disabled = false;
+      document.getElementById('loginStep1').style.display='none';
+      document.getElementById('loginStep2').style.display='block';
+      setTimeout(()=>{ document.getElementById('loginNome')?.focus(); }, 200);
     }
   } catch(e){
-    console.error('Exceção ao salvar participante:', e);
+    // New user (not found = exception from .single())
+    btn.textContent = 'Entrar →';
+    btn.disabled = false;
+    document.getElementById('loginStep1').style.display='none';
+    document.getElementById('loginStep2').style.display='block';
+    setTimeout(()=>{ document.getElementById('loginNome')?.focus(); }, 200);
   }
+}
 
-  // Store in session and localStorage for pre-fill and welcome
-  sessionStorage.setItem('cadastro_nome', nome);
-  sessionStorage.setItem('cadastro_whats', whats);
+async function confirmarRegistro(){
+  const whats = document.getElementById('loginWhats')?.value.trim();
+  const nome = document.getElementById('loginNome')?.value.trim();
+  const pix = document.getElementById('loginPix')?.value.trim();
+  const whatsLimpo = whats ? whats.replace(/\D/g,'') : '';
+
+  if(!nome){ toast('Digite seu nome!','err'); document.getElementById('loginNome')?.focus(); return; }
+  if(!pix){ toast('Digite sua chave Pix!','err'); document.getElementById('loginPix')?.focus(); return; }
+  const pixTipo = detectarTipoPix(pix) || 'Outro';
+
+  try{
+    await sb.from('participantes').upsert({
+      nome, whats: whatsLimpo, pix_tipo: pixTipo, pix_chave: pix
+    }, {onConflict:'whats'});
+  } catch(e){ console.error('Erro ao salvar:', e); }
+
   localStorage.setItem('bolao_nome', nome);
-  localStorage.setItem('bolao_whats', whats);
-  // Mark tutorial as seen — registered users never see it again
-  localStorage.setItem('bolao_tutorial_seen','1');
-  sessionStorage.setItem('bolao_tutorial_seen','1');
+  localStorage.setItem('bolao_whats', whatsLimpo);
+  sessionStorage.setItem('cadastro_nome', nome);
+  sessionStorage.setItem('cadastro_whats', whatsLimpo);
 
-  // Close modal
-  document.getElementById('modalCadastro').classList.add('hidden');
+  document.getElementById('tutorialOverlay').classList.add('hidden');
   goTab('palpitar', document.querySelector('.nav-tab'));
-
-  // Pre-fill form and highlight
   setTimeout(()=>{
-    ['mNome','uNome'].forEach(id=>{ const f=document.getElementById(id); if(f) f.value=nome; });
-    ['mWhats','uWhats'].forEach(id=>{ const f=document.getElementById(id); if(f) f.value=whats; });
-
+    showWelcomeBanner();
     const form = document.getElementById('formCard');
-    if(form){
-      form.scrollIntoView({behavior:'smooth', block:'start'});
-      form.style.transition='box-shadow 0.3s';
-      form.style.boxShadow='0 0 0 3px var(--amarelo)';
-      setTimeout(()=>{ form.style.boxShadow=''; }, 2000);
-    }
+    if(form){ form.scrollIntoView({behavior:'smooth',block:'start'}); }
     toast(`Bem-vindo, ${nome}! Agora é só palpitar 👇`,'ok');
   }, 300);
 }
 
+// Keep modal functions for backward compatibility but redirect to login
+function abrirModalCadastro(){
+  // No longer used — login screen handles everything
+  document.getElementById('tutorialOverlay').classList.remove('hidden');
+}
+function fecharModal(){
+  document.getElementById('tutorialOverlay').classList.add('hidden');
+}
+function confirmarCadastroModal(){ confirmarRegistro(); }
+function verificarWhatsModal(){ verificarLogin(); }
+
 // ═══════════════════════════════════════
-// TUTORIAL ONBOARDING
+// TUTORIAL (simplified — just shows login)
 // ═══════════════════════════════════════
 let tutorialSlide = 0;
-const TUTORIAL_TOTAL = 5;
+const TUTORIAL_TOTAL = 1;
+function tutorialGoTo(idx){ tutorialSlide=idx; }
+function tutorialNext(){ verificarLogin(); }
+function tutorialInit(){ loginInit(); }
 
-function tutorialInit(){
-  // Check 1: localStorage (persists between sessions)
-  const lsSeen = localStorage.getItem('bolao_tutorial_seen');
-  if(lsSeen){
-    document.getElementById('tutorialOverlay').classList.add('hidden');
-    return;
-  }
+async function loginInit(){
+  // Check localStorage first for quick login
+  const lsNome = localStorage.getItem('bolao_nome');
+  const lsWhats = localStorage.getItem('bolao_whats');
 
-  // Check 2: sessionStorage (current session)
-  const ssSeen = sessionStorage.getItem('bolao_tutorial_seen');
-  if(ssSeen){
-    document.getElementById('tutorialOverlay').classList.add('hidden');
-    return;
-  }
-
-  // Check 3: user already has name/whats stored locally = already registered
-  const jaTemNome = localStorage.getItem('bolao_nome');
-  if(jaTemNome){
-    localStorage.setItem('bolao_tutorial_seen','1');
-    document.getElementById('tutorialOverlay').classList.add('hidden');
-    return;
-  }
-
-  // Check 4: user already has a palpite in the database
-  const whatsLocal = localStorage.getItem('bolao_whats');
-  if(whatsLocal){
-    const whatsLimpo = whatsLocal.replace(/\D/g,'');
-    const jaMata = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
-    const jaUnico = palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
-    if(jaMata || jaUnico){
-      localStorage.setItem('bolao_tutorial_seen','1');
-      document.getElementById('tutorialOverlay').classList.add('hidden');
-      return;
-    }
-  }
-
-  // Show tutorial
-  tutorialGoTo(0);
-}
-
-function tutorialGoTo(idx){
-  tutorialSlide = idx;
-  const slides = document.getElementById('tutorialSlides');
-
-  // Use native scroll instead of transform — more reliable on iOS/Android
-  const slideWidth = slides.offsetWidth || window.innerWidth;
-  slides.scrollTo({ left: idx * slideWidth, behavior: 'smooth' });
-
-  // Update dots
-  const dots = document.querySelectorAll('.tutorial-dot');
-  dots.forEach((d,i) => d.classList.toggle('active', i === idx));
-
-  // Update button
-  const btn = document.getElementById('tutorialNext');
-  if(idx === TUTORIAL_TOTAL - 1){
-    btn.textContent = '⚽ Fazer meu Cadastro!';
-    btn.style.fontSize = '16px';
-  } else {
-    btn.textContent = 'Próximo →';
-    btn.style.fontSize = '14px';
-  }
-}
-
-function tutorialNext(){
-  if(tutorialSlide < TUTORIAL_TOTAL - 1){
-    tutorialGoTo(tutorialSlide + 1);
-  } else {
-    tutorialFinish(true); // Go to registration form
-  }
-}
-
-function tutorialSkip(){
-  tutorialFinish();
-}
-
-function tutorialFinish(goToPalpitar=true){
-  localStorage.setItem('bolao_tutorial_seen','1');
-  sessionStorage.setItem('bolao_tutorial_seen','1');
-  document.getElementById('tutorialOverlay').classList.add('hidden');
-  if(goToPalpitar){
-    // Open quick registration modal
-    setTimeout(()=> abrirModalCadastro(), 200);
-  }
-}
-
-
-
-// Sync dots with native scroll position
-(function(){
-  const slidesEl = document.getElementById('tutorialSlides');
-  let scrollTimer = null;
-  slidesEl.addEventListener('scroll', ()=>{
-    clearTimeout(scrollTimer);
-    scrollTimer = setTimeout(()=>{
-      const slideWidth = slidesEl.offsetWidth || window.innerWidth;
-      const idx = Math.round(slidesEl.scrollLeft / slideWidth);
-      if(idx !== tutorialSlide && idx >= 0 && idx < TUTORIAL_TOTAL){
-        tutorialSlide = idx;
-        const dots = document.querySelectorAll('.tutorial-dot');
-        dots.forEach((d,i) => d.classList.toggle('active', i === idx));
-        const btn = document.getElementById('tutorialNext');
-        if(idx === TUTORIAL_TOTAL - 1){
-          btn.textContent = '⚽ Fazer meu Cadastro!';
-          btn.style.fontSize = '16px';
-        } else {
-          btn.textContent = 'Próximo →';
-          btn.style.fontSize = '14px';
-        }
+  if(lsNome && lsWhats){
+    // Verify still valid in Supabase
+    try{
+      const {data} = await sb.from('participantes').select('nome').eq('whats', lsWhats).single();
+      if(data){
+        // Valid — skip login screen
+        sessionStorage.setItem('cadastro_nome', lsNome);
+        sessionStorage.setItem('cadastro_whats', lsWhats);
+        document.getElementById('tutorialOverlay').classList.add('hidden');
+        showWelcomeBanner();
+        return;
       }
-    }, 80);
-  }, {passive:true});
-})();
+    } catch(e){ /* not found, show login */ }
+  }
+
+  // Show login screen
+  document.getElementById('tutorialOverlay').classList.remove('hidden');
+  setTimeout(()=>{ document.getElementById('loginWhats')?.focus(); }, 500);
+}
 
 // ═══════════════════════════════════════
 // INIT
