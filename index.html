@@ -1178,10 +1178,21 @@ async function enviarMata(){
   for(const j of jogosAtivos){
     palpites[j.id]={g1:parseInt(document.getElementById(`p_${j.id}_1`)?.value)||0,g2:parseInt(document.getElementById(`p_${j.id}_2`)?.value)||0};
   }
-  const {error}=await sb.from('palpites_mata').insert({nome,whats,palpites,status:'pendente',ts:Date.now()});
+  // Check if already marked as pago in participantes
+  let statusInicial = 'pendente';
+  try{
+    const {data:part} = await sb.from('participantes').select('pago').eq('whats',whatsLimpo).single();
+    if(part?.pago) statusInicial = 'ativo';
+  } catch(e){}
+
+  const {error}=await sb.from('palpites_mata').insert({nome,whats,palpites,status:statusInicial,ts:Date.now()});
   if(error) return toast('Erro ao salvar. Tente novamente.','err');
   await addFeed('⚽',`${nome} enviou palpites do mata-mata`);
-  toast(`${nome}, palpites enviados! Agora pague o Pix 💸`,'ok');
+  if(statusInicial==='ativo'){
+    toast(`${nome}, palpites enviados e já ativados! ✓`,'ok');
+  } else {
+    toast(`${nome}, palpites enviados! Agora pague o Pix 💸`,'ok');
+  }
   renderFormPalpite();
 }
 
@@ -1199,10 +1210,22 @@ async function enviarUnico(){
   const g1=parseInt(document.getElementById('uG1')?.value)||0;
   const g2=parseInt(document.getElementById('uG2')?.value)||0;
   const bonus=document.getElementById('uBonus')?.value.trim()||'';
-  const {error}=await sb.from('palpites_unico').insert({nome,whats,g1,g2,bonus,status:'pendente',ts:Date.now()});
+  // Check if already marked as pago
+  let statusInicialU = 'pendente';
+  try{
+    const whatsLimpoU = whats.replace(/\D/g,'');
+    const {data:partU} = await sb.from('participantes').select('pago').eq('whats',whatsLimpoU).single();
+    if(partU?.pago) statusInicialU = 'ativo';
+  } catch(e){}
+
+  const {error}=await sb.from('palpites_unico').insert({nome,whats,g1,g2,bonus,status:statusInicialU,ts:Date.now()});
   if(error) return toast('Erro ao salvar. Tente novamente.','err');
   await addFeed('⚡',`${nome} entrou no jogo extra`);
-  toast(`${nome}, palpite enviado! Agora pague o Pix 💸`,'ok');
+  if(statusInicialU==='ativo'){
+    toast(`${nome}, palpite enviado e ativado! ✓`,'ok');
+  } else {
+    toast(`${nome}, palpite enviado! Agora pague o Pix 💸`,'ok');
+  }
   renderFormPalpite();
 }
 
@@ -2051,24 +2074,28 @@ async function carregarParticipantes(){
   try{
     const {data, error} = await sb.from('participantes').select('*').order('created_at');
     if(error){
-      // RLS blocking read — show instructions to fix
       c.innerHTML=`<div style="padding:12px;color:var(--danger);font-size:12px">
-        ⚠️ Erro de permissão: ${error.message}<br><br>
-        <strong style="color:var(--amarelo)">Rode este SQL no Supabase para corrigir:</strong><br>
-        <code style="background:var(--bg);padding:8px;border-radius:6px;display:block;margin-top:8px;font-size:10px;color:var(--txt);word-break:break-all">
-          CREATE POLICY "anon_read" ON participantes FOR SELECT TO anon USING (true);
-        </code>
+        ⚠️ Erro: ${error.message}
       </div>`;
       return;
     }
     if(!data || !data.length){
-      c.innerHTML='<div style="text-align:center;padding:12px;color:var(--txt3)">Nenhum participante cadastrado ainda.</div>';
+      c.innerHTML='<div style="text-align:center;padding:12px;color:var(--txt3)">Nenhum participante ainda.</div>';
       return;
     }
     c.innerHTML=data.map(p=>`
-      <div style="background:var(--card2);border-radius:10px;padding:10px;margin-bottom:8px;border:1px solid var(--border)">
-        <div style="font-weight:700;font-size:13px;color:var(--txt)">${p.nome}</div>
-        <div style="color:var(--txt2);margin-top:2px">📱 ${p.whats}</div>
+      <div style="background:var(--card2);border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid ${p.pago?'var(--verde)':'var(--border)'}">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="font-weight:700;font-size:14px;color:var(--txt)">${p.nome}</div>
+          <button onclick="togglePago('${p.id}','${p.whats}',${!p.pago})"
+            style="background:${p.pago?'var(--verde)':'var(--card)'};color:${p.pago?'#fff':'var(--txt3)'};
+            border:1.5px solid ${p.pago?'var(--verde)':'var(--border)'};border-radius:20px;
+            padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;
+            font-family:'Inter',sans-serif;touch-action:manipulation">
+            ${p.pago?'✓ Pago':'Pago?'}
+          </button>
+        </div>
+        <div style="color:var(--txt2);font-size:12px">📱 ${p.whats}</div>
         ${p.pix_chave
           ?`<div style="color:var(--amarelo);margin-top:4px;font-family:monospace;font-size:11px">💳 ${p.pix_tipo||'Pix'}: ${p.pix_chave}</div>`
           :`<div style="color:var(--txt3);margin-top:4px;font-size:11px">💳 Pix não informado</div>`}
@@ -2076,6 +2103,31 @@ async function carregarParticipantes(){
       </div>`).join('');
   } catch(e){
     c.innerHTML=`<div style="text-align:center;padding:12px;color:var(--danger)">Erro: ${e.message}</div>`;
+  }
+}
+
+async function togglePago(id, whats, pago){
+  try{
+    await sb.from('participantes').update({pago}).eq('id', id);
+    // If marking as paid, also auto-activate any pending palpites for this whats
+    if(pago){
+      const whatsLimpo = whats.replace(/\D/g,'');
+      // Auto-activate mata palpite
+      const mataPend = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo && p.status==='pendente');
+      if(mataPend){
+        await sb.from('palpites_mata').update({status:'ativo'}).eq('id', mataPend.id);
+        toast(`${mataPend.nome} ativado no Mata-Mata! ✓`,'ok');
+      }
+      // Auto-activate unico palpite
+      const unicoPend = palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo && p.status==='pendente');
+      if(unicoPend){
+        await sb.from('palpites_unico').update({status:'ativo'}).eq('id', unicoPend.id);
+      }
+    }
+    await carregarParticipantes();
+    toast(pago ? '✓ Pagamento confirmado!' : 'Pagamento desmarcado','ok');
+  } catch(e){
+    toast('Erro ao atualizar: '+e.message,'err');
   }
 }
 
