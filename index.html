@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bolão Copa 2026 🇧🇷</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --verde:#009B3A;--verde-escuro:#006B28;--verde-pale:rgba(0,155,58,0.13);
+  --amarelo:#FEDF00;--amarelo-dark:#C9B000;--amarelo-pale:rgba(254,223,0,0.13);
+  --azul:#002776;--azul-mid:#003DA5;--azul-pale:rgba(0,39,118,0.25);
+  --bg:#0A0F0A;--bg2:#111811;--card:#1E261E;--card2:#232D23;
+  --border:rgba(0,155,58,0.18);--border2:rgba(254,223,0,0.15);
+  --txt:#F0F0EE;--txt2:#A8B4A8;--txt3:#6A7A6A;
+  --danger:#D32F2F;--danger-pale:rgba(211,47,47,0.15);
+  --success:#2E7D32;--success-light:#4CAF50;--success-pale:rgba(46,125,50,0.15);
+  --warning:#F57F17;--warning-pale:rgba(245,127,23,0.15);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;padding-bottom:72px;overflow-x:hidden;}
+
+/* HEADER */
+.header{position:relative;overflow:hidden;}
+.header-bg{background:linear-gradient(170deg,var(--verde-escuro) 0%,#001A50 60%,var(--bg) 100%);padding:18px 16px 20px;position:relative;}
+.header-bg::before{content:'';position:absolute;width:260px;height:260px;background:rgba(254,223,0,0.04);transform:rotate(45deg);top:-80px;right:-80px;border-radius:8px;pointer-events:none;}
+.header-bg::after{content:'⚽';position:absolute;font-size:130px;opacity:0.04;bottom:-20px;left:-10px;transform:rotate(15deg);pointer-events:none;}
+.header-eyebrow{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--amarelo);font-weight:700;margin-bottom:3px;position:relative;}
+.header-title{font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:3px;line-height:1;color:#fff;position:relative;}
+.header-title span{color:var(--amarelo);}
+.header-stripe{height:4px;background:linear-gradient(90deg,var(--verde) 0%,var(--amarelo) 50%,var(--verde) 100%);}
+.mode-banner{display:flex;gap:8px;margin-top:14px;position:relative;}
+.mode-pill{flex:1;padding:8px 10px;border-radius:10px;font-size:11px;font-weight:700;text-align:center;letter-spacing:0.5px;text-transform:uppercase;border:1.5px solid transparent;cursor:pointer;transition:all 0.2s;}
+.mode-pill.mata{background:rgba(0,39,118,0.5);border-color:rgba(0,61,165,0.6);color:#7BA7FF;}
+.mode-pill.mata.active{background:var(--azul-mid);border-color:var(--amarelo);color:var(--amarelo);}
+.mode-pill.unico{background:rgba(0,107,40,0.4);border-color:rgba(0,155,58,0.4);color:#6EC98A;}
+.mode-pill.unico.active{background:var(--verde);border-color:var(--amarelo);color:var(--amarelo);}
+.header-match{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:14px;position:relative;}
+.hm-team{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:72px;}
+.hm-flag{font-size:28px;line-height:1;}
+.hm-name{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.7);text-align:center;}
+.hm-score{background:rgba(0,0,0,0.4);border:1.5px solid var(--border2);border-radius:12px;padding:8px 16px;text-align:center;min-width:90px;}
+.hm-score-num{font-family:'Bebas Neue',sans-serif;font-size:34px;color:var(--amarelo);line-height:1;}
+.hm-score-label{font-size:9px;color:rgba(255,255,255,0.4);letter-spacing:1px;text-transform:uppercase;}
+.header-meta{text-align:center;font-size:11px;color:rgba(255,255,255,0.5);margin-top:10px;position:relative;}
+.live-chip{display:inline-flex;align-items:center;gap:5px;background:#B71C1C;color:#fff;font-size:9px;font-weight:800;letter-spacing:1.5px;padding:3px 8px;border-radius:20px;text-transform:uppercase;vertical-align:middle;margin-left:6px;}
+.live-chip::before{content:'';width:5px;height:5px;background:#fff;border-radius:50%;animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+
+/* NAV */
+.nav{display:flex;background:var(--bg2);border-bottom:2px solid var(--verde);position:sticky;top:0;z-index:200;}
+.nav-tab{flex:1;padding:10px 4px;text-align:center;font-size:9px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;cursor:pointer;color:var(--txt3);border:none;background:none;transition:all 0.2s;font-family:'Inter',sans-serif;}
+.nav-tab span{display:block;font-size:18px;margin-bottom:2px;}
+.nav-tab.active{color:var(--amarelo);background:var(--bg);}
+
+/* SCREENS */
+.screen{display:none;padding:14px 14px 0;}
+.screen.active{display:block;}
+
+/* CARDS */
+.card{background:var(--card);border-radius:14px;padding:16px;margin-bottom:12px;border:1px solid var(--border);}
+.card.gold{border-color:var(--border2);}
+.card-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--amarelo);margin-bottom:12px;}
+.card-sub{font-size:12px;color:var(--txt2);line-height:1.5;margin-bottom:12px;}
+
+/* MODO TAG */
+.modo-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:12px;}
+.modo-tag.mata{background:var(--azul-pale);color:#7BA7FF;border:1px solid rgba(0,61,165,0.5);}
+.modo-tag.unico{background:var(--verde-pale);color:#6EC98A;border:1px solid rgba(0,155,58,0.4);}
+
+/* FORM */
+label{display:block;font-size:11px;font-weight:600;color:var(--txt2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;}
+input[type=text],input[type=number],input[type=tel],select{width:100%;background:var(--bg);border:1.5px solid rgba(0,155,58,0.25);border-radius:10px;color:var(--txt);font-size:16px;font-family:'Inter',sans-serif;padding:12px 14px;margin-bottom:14px;outline:none;transition:border-color 0.2s;-webkit-appearance:none;}
+input:focus,select:focus{border-color:var(--amarelo);}
+select option{background:var(--bg);}
+.placar-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.pl-team{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.pl-flag{font-size:30px;}
+.pl-name{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--txt2);text-align:center;}
+.pl-team input{width:74px;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:42px;padding:8px 4px;margin-bottom:0;border-radius:10px;}
+.pl-vs{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--txt3);}
+
+/* BUTTONS */
+.btn{display:block;width:100%;padding:14px;border-radius:12px;font-size:14px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;cursor:pointer;border:none;transition:all 0.18s;font-family:'Inter',sans-serif;text-align:center;}
+.btn+.btn{margin-top:8px;}
+.btn-amarelo{background:var(--amarelo);color:#000;}
+.btn-verde{background:var(--verde);color:#fff;}
+.btn-azul{background:var(--azul-mid);color:#fff;}
+.btn-outline{background:transparent;border:2px solid var(--amarelo);color:var(--amarelo);}
+.btn-danger{background:var(--danger);color:#fff;font-size:13px;padding:11px;}
+.btn-gray{background:var(--card2);color:var(--txt);font-size:13px;padding:11px;}
+.btn:disabled{opacity:0.3;cursor:not-allowed;}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;}
+.badge-verde{background:var(--success-pale);color:var(--success-light);}
+.badge-danger{background:var(--danger-pale);color:#EF5350;}
+.badge-amarelo{background:var(--amarelo-pale);color:var(--amarelo);}
+.badge-azul{background:var(--azul-pale);color:#7BA7FF;}
+.badge-cinza{background:rgba(255,255,255,0.07);color:var(--txt2);}
+.badge-warning{background:var(--warning-pale);color:#FFB74D;}
+
+/* DIVIDERS */
+.divider{height:1px;background:var(--border);margin:14px 0;}
+.divider-amarelo{height:1px;background:var(--border2);margin:14px 0;}
+
+/* TOGGLE */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;}
+.toggle-info{flex:1;}
+.toggle-label{font-size:13px;font-weight:500;}
+.toggle-sub{font-size:11px;color:var(--txt3);margin-top:2px;}
+.toggle{width:46px;height:26px;background:var(--card2);border-radius:13px;position:relative;cursor:pointer;border:none;transition:background 0.2s;flex-shrink:0;}
+.toggle.on{background:var(--verde);}
+.toggle::after{content:'';position:absolute;width:20px;height:20px;background:white;border-radius:50%;top:3px;left:3px;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.4);}
+.toggle.on::after{left:23px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(30px);background:var(--card2);color:var(--txt);padding:12px 22px;border-radius:24px;font-weight:600;font-size:13px;z-index:9999;transition:transform 0.25s,opacity 0.25s;opacity:0;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center;border:1px solid var(--border);}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.toast.ok{background:var(--verde-escuro);border-color:var(--verde);}
+.toast.err{background:#7F0000;border-color:var(--danger);}
+.toast.info{background:#0D2A6B;border-color:var(--azul-mid);}
+
+/* PIX */
+.pix-hero{background:linear-gradient(145deg,#001F0D,#001240);border:1.5px solid var(--amarelo);border-radius:16px;padding:20px;margin-bottom:12px;text-align:center;}
+.pix-valor{font-family:'Bebas Neue',sans-serif;font-size:54px;color:var(--amarelo);line-height:1;}
+.pix-label-sm{font-size:10px;color:var(--txt2);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;}
+.pix-key{background:rgba(0,0,0,0.5);border-radius:10px;padding:12px;font-family:monospace;font-size:14px;color:var(--amarelo);word-break:break-all;letter-spacing:0.5px;margin:10px 0;}
+.pix-nome{font-size:14px;font-weight:700;margin-top:4px;}
+.pix-banco{font-size:11px;color:var(--txt2);}
+.copy-btn{background:rgba(254,223,0,0.1);border:1.5px solid var(--border2);color:var(--amarelo);border-radius:8px;padding:9px 16px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s;width:100%;margin-top:8px;}
+
+/* RANKING */
+.rank-item{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);border-left-width:4px;}
+.rank-item.p1{border-left-color:#FFD700;background:rgba(255,215,0,0.06);}
+.rank-item.p2{border-left-color:#C0C0C0;background:rgba(192,192,192,0.04);}
+.rank-item.p3{border-left-color:#CD7F32;}
+.rank-pos{font-family:'Bebas Neue',sans-serif;font-size:24px;width:28px;color:var(--txt3);flex-shrink:0;}
+.rank-pos.g{color:#FFD700;}.rank-pos.s{color:#C0C0C0;}.rank-pos.b{color:#CD7F32;}
+.rank-info{flex:1;min-width:0;}
+.rank-name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rank-sub{font-size:11px;color:var(--txt2);margin-top:2px;}
+.rank-pts-col{text-align:right;flex-shrink:0;}
+.rank-pts{font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--amarelo);line-height:1;}
+.rank-pts-lbl{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;}
+.tb-chip{display:inline-block;background:var(--azul-pale);color:#7BA7FF;font-size:9px;padding:2px 6px;border-radius:4px;margin-top:3px;letter-spacing:0.5px;text-transform:uppercase;}
+
+/* PHASE TABS */
+.phase-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none;}
+.phase-tabs::-webkit-scrollbar{display:none;}
+.ptab{flex-shrink:0;padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);color:var(--txt2);background:none;transition:all 0.2s;font-family:'Inter',sans-serif;}
+.ptab.active{border-color:var(--amarelo);color:var(--amarelo);background:var(--amarelo-pale);}
+
+/* PARTICIPANTE */
+.part-item{background:var(--card2);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;}
+.part-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--verde-escuro),var(--azul));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0;color:var(--amarelo);}
+.part-info{flex:1;min-width:0;}
+.part-name{font-weight:700;font-size:14px;}
+.part-meta{font-size:11px;color:var(--txt2);margin-top:2px;}
+.part-actions{display:flex;flex-direction:column;gap:5px;flex-shrink:0;}
+.btn-aprovar{background:var(--success-pale);color:var(--success-light);border:1px solid var(--verde);border-radius:8px;padding:6px 12px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:0.5px;}
+.btn-rejeitar{background:var(--danger-pale);color:#EF5350;border:1px solid var(--danger);border-radius:8px;padding:6px 12px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:0.5px;}
+
+/* MATCH SELECTOR */
+.match-sel{background:var(--card2);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:all 0.18s;display:flex;align-items:center;gap:12px;}
+.match-sel.selected{border-color:var(--amarelo);background:var(--amarelo-pale);}
+.match-sel-flags{font-size:22px;letter-spacing:2px;flex-shrink:0;}
+.match-sel-info{flex:1;}
+.match-sel-name{font-size:14px;font-weight:700;}
+.match-sel-date{font-size:11px;color:var(--txt3);margin-top:2px;}
+.match-sel-pts{font-size:11px;color:var(--amarelo);font-weight:700;margin-top:2px;}
+.match-sel-check{font-size:18px;opacity:0;transition:opacity 0.2s;}
+.match-sel.selected .match-sel-check{opacity:1;}
+
+/* PONTUAÇÃO TABLE */
+.pts-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
+.pts-table th{background:var(--bg);color:var(--amarelo);font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:8px 6px;text-align:center;font-weight:700;}
+.pts-table td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--border);color:var(--txt2);}
+.pts-table td:first-child{text-align:left;color:var(--txt);font-weight:600;}
+.pts-table tr:last-child td{border-bottom:none;}
+.pts-num{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--verde);}
+
+/* FEED */
+.feed-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start;}
+.feed-icon{font-size:20px;flex-shrink:0;}
+.feed-content{flex:1;}
+.feed-text{font-size:13px;line-height:1.4;}
+.feed-time{font-size:10px;color:var(--txt3);margin-top:3px;}
+
+/* STATS */
+.stats-row{display:flex;justify-content:space-around;padding:4px 0 8px;}
+.stat{text-align:center;}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--amarelo);line-height:1;}
+.stat-lbl{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;}
+
+/* PRIZE */
+.prize-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);}
+.prize-pos{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--txt3);width:28px;}
+.prize-name{font-weight:600;font-size:14px;flex:1;padding:0 10px;}
+.prize-val{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--amarelo);}
+
+/* SHARE */
+.share-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:#075E54;border:none;border-radius:12px;padding:14px;width:100%;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s;}
+
+/* ADMIN LOCK */
+.admin-hero{text-align:center;padding:16px 0 20px;}
+.admin-hero-icon{font-size:56px;margin-bottom:10px;}
+.admin-hero-title{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--amarelo);margin-bottom:4px;}
+.admin-hero-sub{font-size:13px;color:var(--txt2);}
+
+/* LOADING */
+.loading{text-align:center;padding:32px 16px;color:var(--txt3);}
+.loading-spinner{font-size:32px;animation:spin 1s linear infinite;display:block;margin-bottom:10px;}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+/* MISC */
+.flex-between{display:flex;align-items:center;justify-content:space-between;}
+.text-amarelo{color:var(--amarelo);}
+.text-sm{font-size:12px;color:var(--txt2);}
+.mt8{margin-top:8px;}.mt12{margin-top:12px;}
+.empty{text-align:center;padding:32px 16px;}
+.empty-icon{font-size:44px;margin-bottom:10px;}
+.empty-text{font-size:13px;color:var(--txt3);line-height:1.5;}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:var(--card2);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-bg">
+    <div class="header-eyebrow">Copa do Mundo 2026 🇧🇷</div>
+    <div class="header-title">BOLÃO <span>BRASIL</span></div>
+    <div class="mode-banner">
+      <div class="mode-pill mata active" id="modeMata" onclick="switchMode('mata')">🏆 Mata-Mata</div>
+      <div class="mode-pill unico" id="modeUnico" onclick="switchMode('unico')">⚡ Jogo Extra</div>
+    </div>
+    <div class="header-match">
+      <div class="hm-team"><div class="hm-flag" id="hFlag1">🏆</div><div class="hm-name" id="hTeam1">Mata-Mata</div></div>
+      <div class="hm-score"><div class="hm-score-num" id="hScore">?×?</div><div class="hm-score-label" id="hScoreLbl">Aguardando</div></div>
+      <div class="hm-team"><div class="hm-flag" id="hFlag2">⚽</div><div class="hm-name" id="hTeam2">Copa 2026</div></div>
+    </div>
+    <div class="header-meta"><span id="hDate">Carregando...</span><span id="hLive"></span></div>
+  </div>
+  <div class="header-stripe"></div>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <button class="nav-tab active" onclick="goTab('palpitar',this)"><span>⚽</span>Palpitar</button>
+  <button class="nav-tab" onclick="goTab('ranking',this)"><span>🏆</span>Ranking</button>
+  <button class="nav-tab" onclick="goTab('aovivo',this)"><span>📡</span>Ao Vivo</button>
+  <button class="nav-tab" onclick="goTab('pagar',this)"><span>💸</span>Pagar</button>
+  <div id="adminTabWrap" style="display:none;flex:1">
+    <button class="nav-tab" id="adminTab" onclick="goTab('admin',this)"><span>⚙️</span>Admin</button>
+  </div>
+</div>
+
+<!-- PALPITAR -->
+<div class="screen active" id="screen-palpitar">
+  <div class="card gold">
+    <div class="flex-between" style="margin-bottom:10px">
+      <span class="card-title" style="margin-bottom:0" id="statusTitle">Carregando...</span>
+      <span class="badge badge-verde" id="statusBadge">...</span>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val" id="stTotal">—</div><div class="stat-lbl">Total</div></div>
+      <div class="stat"><div class="stat-val" id="stAtivos">—</div><div class="stat-lbl">Ativos</div></div>
+      <div class="stat"><div class="stat-val" id="stPend">—</div><div class="stat-lbl">Pendentes</div></div>
+      <div class="stat"><div class="stat-val" id="stBolada">—</div><div class="stat-lbl">Bolada</div></div>
+    </div>
+  </div>
+  <div class="card" id="formCard">
+    <div class="loading"><span class="loading-spinner">⚽</span>Carregando...</div>
+  </div>
+  <div class="card" id="ptsCard"><div class="card-title">Pontuação</div><div id="ptsBody"></div></div>
+  <div class="card"><div class="card-title">Desempate</div><div id="tbBody"></div></div>
+</div>
+
+<!-- RANKING -->
+<div class="screen" id="screen-ranking">
+  <div class="mode-banner" style="margin-bottom:12px">
+    <div class="mode-pill mata" id="rankMata" onclick="switchMode('mata');goTab('ranking',document.querySelectorAll('.nav-tab')[1])">🏆 Mata-Mata</div>
+    <div class="mode-pill unico" id="rankUnico" onclick="switchMode('unico');goTab('ranking',document.querySelectorAll('.nav-tab')[1])">⚡ Jogo Extra</div>
+  </div>
+  <div id="rankResCard" class="card gold" style="display:none">
+    <div class="card-title">Resultado Oficial</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:14px;padding:8px 0">
+      <div style="text-align:center"><div style="font-size:34px" id="rrF1">🏴</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--txt2);margin-top:4px" id="rrT1">—</div></div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:54px;color:var(--amarelo)" id="rrScore">—×—</div>
+      <div style="text-align:center"><div style="font-size:34px" id="rrF2">🏴</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--txt2);margin-top:4px" id="rrT2">—</div></div>
+    </div>
+  </div>
+  <div id="rankPremioCard" class="card" style="display:none">
+    <div class="card-title">Premiação 🏆</div>
+    <div id="rankPremioList"></div>
+    <div class="divider"></div>
+    <div class="flex-between text-sm"><span>Total arrecadado</span><span class="text-amarelo" style="font-weight:700" id="rankTotal">—</span></div>
+  </div>
+  <div id="rankContainer"></div>
+  <div id="rankEmpty" class="empty" style="display:none"><div class="empty-icon">🏆</div><div class="empty-text">Nenhum palpite ativo ainda.</div></div>
+</div>
+
+<!-- AO VIVO -->
+<div class="screen" id="screen-aovivo">
+  <div class="card gold">
+    <div class="flex-between" style="margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:0">Partida Atual</div>
+      <div class="badge badge-cinza" id="liveStatus">Aguardando</div>
+    </div>
+    <div id="liveDisplay" style="text-align:center;padding:8px 0;font-size:13px;color:var(--txt3)">Selecione um jogo no Admin</div>
+  </div>
+  <div class="card">
+    <div class="flex-between" style="margin-bottom:10px">
+      <div class="card-title" style="margin-bottom:0">Feed de Eventos</div>
+      <button onclick="fetchLive(true)" style="background:none;border:none;color:var(--amarelo);font-size:12px;cursor:pointer;font-weight:700">↻ Atualizar</button>
+    </div>
+    <div id="feedContainer"><div class="empty"><div class="empty-text">Nenhum evento ainda</div></div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">API football-data.org</div>
+    <div class="card-sub">Cole sua chave gratuita para ativar placares ao vivo.</div>
+    <label>API Key</label>
+    <input type="text" id="apiKeyInput" placeholder="Sua key aqui...">
+    <button class="btn btn-verde" onclick="salvarApiKey()">Salvar e Testar</button>
+    <div id="apiStatus" class="text-sm mt8" style="display:none;text-align:center"></div>
+  </div>
+</div>
+
+<!-- PAGAR -->
+<div class="screen" id="screen-pagar">
+  <div class="mode-banner" style="margin-bottom:12px">
+    <div class="mode-pill mata" id="pagMata" onclick="switchMode('mata');goTab('pagar',document.querySelectorAll('.nav-tab')[3])">🏆 Mata-Mata</div>
+    <div class="mode-pill unico" id="pagUnico" onclick="switchMode('unico');goTab('pagar',document.querySelectorAll('.nav-tab')[3])">⚡ Jogo Extra</div>
+  </div>
+  <div class="pix-hero">
+    <div class="pix-label-sm">Valor da entrada</div>
+    <div class="pix-valor" id="pixValor">—</div>
+    <div class="pix-nome" id="pixNome">—</div>
+    <div class="pix-banco" id="pixBanco">—</div>
+    <div class="pix-key" id="pixKey">Configure no Admin</div>
+    <button class="copy-btn" onclick="copyPix()">📋 Copiar chave Pix</button>
+  </div>
+  <div class="card">
+    <div class="card-title">Como pagar</div>
+    <div style="display:flex;flex-direction:column;gap:0">
+      <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px"><span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--amarelo);width:20px">1</span>Abra o app do seu banco</div>
+      <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px"><span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--amarelo);width:20px">2</span>Vá em Pix → Transferir</div>
+      <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px"><span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--amarelo);width:20px">3</span>Cole a chave acima</div>
+      <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px"><span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--amarelo);width:20px">4</span>Transfira <strong class="text-amarelo" id="pixValorInline" style="margin-left:4px">—</strong></div>
+      <div style="display:flex;gap:10px;padding:9px 0;font-size:13px"><span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--amarelo);width:20px">5</span>Confirme o nome e envie</div>
+    </div>
+  </div>
+  <div class="card"><div class="card-title" id="pagTitle">Participantes</div><div id="pagList"><div class="loading"><span class="loading-spinner">⚽</span></div></div></div>
+</div>
+
+<!-- ADMIN (oculto por padrão) -->
+<div class="screen" id="screen-admin">
+  <div class="card">
+    <div id="adminLock">
+      <div class="admin-hero">
+        <div class="admin-hero-icon">🔐</div>
+        <div class="admin-hero-title">Área Master</div>
+        <div class="admin-hero-sub">Acesso exclusivo do organizador</div>
+      </div>
+      <label>Senha Master</label>
+      <input type="password" id="adminPwdInput" placeholder="Digite a senha" onkeydown="if(event.key==='Enter')checkAdmin()">
+      <button class="btn btn-amarelo" onclick="checkAdmin()">Entrar</button>
+    </div>
+    <div id="adminPanel" style="display:none">
+      <div class="mode-banner" style="margin-bottom:16px">
+        <div class="mode-pill mata active" id="admMata" onclick="adminMode('mata')">🏆 Mata-Mata</div>
+        <div class="mode-pill unico" id="admUnico" onclick="adminMode('unico')">⚡ Jogo Extra</div>
+      </div>
+
+      <!-- MATA-MATA PANEL -->
+      <div id="admMataPanel">
+        <div class="card-title">Fase Ativa</div>
+        <div class="phase-tabs" id="admPhaseTabs"></div>
+        <div id="admMatchList"></div>
+        <button class="btn btn-azul mt8" onclick="ativarFase()">Abrir fase para palpites ✓</button>
+        <div class="divider"></div>
+        <div class="card-title">Inserir Resultado</div>
+        <label>Jogo</label>
+        <select id="resMatchSel" onchange="onResMatchChange()"></select>
+        <div class="placar-row">
+          <div class="pl-team"><div class="pl-flag" id="resF1">🏴</div><div class="pl-name" id="resT1">Time A</div><input type="number" id="resG1" value="0" min="0" max="20"></div>
+          <div class="pl-vs">✕</div>
+          <div class="pl-team"><div class="pl-flag" id="resF2">🏴</div><div class="pl-name" id="resT2">Time B</div><input type="number" id="resG2" value="0" min="0" max="20"></div>
+        </div>
+        <button class="btn btn-verde" onclick="salvarResultadoMata()">Salvar Resultado ✓</button>
+        <div class="text-sm mt8 text-center" id="resMataStatus"></div>
+        <div class="divider"></div>
+        <div class="card-title">Aprovação — Mata-Mata</div>
+        <div id="admPendMata"><div class="loading"><span class="loading-spinner">⚽</span></div></div>
+        <div class="divider"></div>
+        <div class="card-title">Configurações</div>
+        <label>Valor entrada (R$)</label><input type="number" id="mataValor" value="20">
+        <label>Premiação 1º (%)</label><input type="number" id="mataP1" value="60">
+        <label>Premiação 2º (%)</label><input type="number" id="mataP2" value="25">
+        <label>Premiação 3º (%)</label><input type="number" id="mataP3" value="15">
+        <div class="divider-amarelo"></div>
+        <div class="card-title">Chave Pix — Mata-Mata</div>
+        <label>Tipo</label><select id="mataPixTipo"><option>CPF</option><option>Celular</option><option>Email</option><option>Aleatória</option></select>
+        <label>Chave</label><input type="text" id="mataPixChave">
+        <label>Nome</label><input type="text" id="mataPixNome">
+        <label>Banco</label><input type="text" id="mataPixBanco">
+        <button class="btn btn-amarelo mt8" onclick="salvarCfgMata()">Salvar Configurações</button>
+        <button class="btn btn-danger" onclick="limparMata()">⚠️ Limpar palpites</button>
+      </div>
+
+      <!-- ÚNICO PANEL -->
+      <div id="admUnicoPanel" style="display:none">
+        <div class="card-title">Jogo Ativo</div>
+        <div class="phase-tabs" id="admUnicoPhaseTabs"></div>
+        <div id="admUnicoList"></div>
+        <button class="btn btn-verde mt8" onclick="ativarJogoUnico()">Ativar Jogo Extra ✓</button>
+        <div class="divider"></div>
+        <div class="card-title">Link para Compartilhar</div>
+        <div style="background:var(--bg);border-radius:10px;padding:12px;font-size:12px;font-family:monospace;color:var(--amarelo);word-break:break-all;margin-bottom:10px" id="shareLinkTxt">—</div>
+        <button class="share-btn" onclick="shareWA()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Compartilhar no WhatsApp
+        </button>
+        <div class="divider"></div>
+        <div class="card-title">Resultado — Jogo Extra</div>
+        <div class="placar-row">
+          <div class="pl-team"><div class="pl-flag" id="uResF1">🏴</div><div class="pl-name" id="uResT1">Time A</div><input type="number" id="uResG1" value="0" min="0" max="20"></div>
+          <div class="pl-vs">✕</div>
+          <div class="pl-team"><div class="pl-flag" id="uResF2">🏴</div><div class="pl-name" id="uResT2">Time B</div><input type="number" id="uResG2" value="0" min="0" max="20"></div>
+        </div>
+        <div id="unicoBonusResWrap" style="display:none">
+          <label id="unicoBonusResLbl">Resposta correta</label>
+          <input type="text" id="unicoBonusResVal">
+        </div>
+        <button class="btn btn-verde" onclick="apurarUnico()">Apurar Resultado ⚽</button>
+        <button class="btn btn-gray" onclick="limparResUnico()">Limpar Resultado</button>
+        <div class="divider"></div>
+        <div class="card-title">Aprovação — Jogo Extra</div>
+        <div id="admPendUnico"><div class="loading"><span class="loading-spinner">⚽</span></div></div>
+        <div class="divider"></div>
+        <div class="card-title">Configurações</div>
+        <label>Valor entrada (R$)</label><input type="number" id="unicoValor" value="10">
+        <label>Premiação 1º (%)</label><input type="number" id="unicoP1" value="70">
+        <label>Premiação 2º (%)</label><input type="number" id="unicoP2" value="20">
+        <label>Premiação 3º (%)</label><input type="number" id="unicoP3" value="10">
+        <div class="divider"></div>
+        <div class="card-title">Desempate</div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Gols do vencedor</div></div><button class="toggle on" id="tbU1" onclick="this.classList.toggle('on')"></button></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Total de gols</div></div><button class="toggle on" id="tbU2" onclick="this.classList.toggle('on')"></button></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Gols do perdedor</div></div><button class="toggle" id="tbU3" onclick="this.classList.toggle('on')"></button></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Pergunta bônus</div></div><button class="toggle" id="tbUBonus" onclick="toggleUBonus(this)"></button></div>
+        <div id="unicoBonusQWrap" style="display:none"><label>Texto da pergunta</label><input type="text" id="unicoBonusQ" placeholder="Ex: Quem faz o 1º gol?"></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Ordem de envio</div></div><button class="toggle on" id="tbUOrdem" onclick="this.classList.toggle('on')"></button></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Aceitar palpites</div></div><button class="toggle on" id="tbUAceitar" onclick="this.classList.toggle('on')"></button></div>
+        <div class="divider-amarelo"></div>
+        <div class="card-title">Chave Pix — Jogo Extra</div>
+        <label>Tipo</label><select id="unicoPixTipo"><option>CPF</option><option>Celular</option><option>Email</option><option>Aleatória</option></select>
+        <label>Chave</label><input type="text" id="unicoPixChave">
+        <label>Nome</label><input type="text" id="unicoPixNome">
+        <label>Banco</label><input type="text" id="unicoPixBanco">
+        <button class="btn btn-amarelo mt8" onclick="salvarCfgUnico()">Salvar Configurações</button>
+        <button class="btn btn-danger" onclick="limparUnico()">⚠️ Limpar palpites</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+// SUPABASE
+// ═══════════════════════════════════════
+const SUPA_URL = 'https://yyksiowovekyqkocqshq.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5a3Npb3dvdmVreXFrb2Nxc2hxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5OTE4MjMsImV4cCI6MjA5NzU2NzgyM30.KrTJDKOCGS16gz0k7oKsS3V3kjTJbnTzN22YtLle-kc';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ═══════════════════════════════════════
+// JOGOS DA COPA
+// ═══════════════════════════════════════
+const FASES_MATA = [
+  {id:'oitavas',label:'Oitavas',mult:1,jogos:[
+    {id:'O1',t1:'1º Grupo A',f1:'🏆',t2:'2º Grupo B',f2:'🥈',date:'28/06',time:'16h'},
+    {id:'O2',t1:'1º Grupo C',f1:'🏆',t2:'2º Grupo D',f2:'🥈',date:'28/06',time:'20h'},
+    {id:'O3',t1:'1º Grupo E',f1:'🏆',t2:'2º Grupo F',f2:'🥈',date:'29/06',time:'16h'},
+    {id:'O4',t1:'1º Grupo G',f1:'🏆',t2:'2º Grupo H',f2:'🥈',date:'29/06',time:'20h'},
+    {id:'O5',t1:'1º Grupo B',f1:'🏆',t2:'2º Grupo A',f2:'🥈',date:'30/06',time:'16h'},
+    {id:'O6',t1:'1º Grupo D',f1:'🏆',t2:'2º Grupo C',f2:'🥈',date:'30/06',time:'20h'},
+    {id:'O7',t1:'1º Grupo F',f1:'🏆',t2:'2º Grupo E',f2:'🥈',date:'01/07',time:'16h'},
+    {id:'O8',t1:'1º Grupo H',f1:'🏆',t2:'2º Grupo G',f2:'🥈',date:'01/07',time:'20h'},
+  ]},
+  {id:'quartas',label:'Quartas',mult:1.5,jogos:[
+    {id:'Q1',t1:'Vencedor O1',f1:'⚔️',t2:'Vencedor O2',f2:'⚔️',date:'04/07',time:'16h'},
+    {id:'Q2',t1:'Vencedor O3',f1:'⚔️',t2:'Vencedor O4',f2:'⚔️',date:'04/07',time:'20h'},
+    {id:'Q3',t1:'Vencedor O5',f1:'⚔️',t2:'Vencedor O6',f2:'⚔️',date:'05/07',time:'16h'},
+    {id:'Q4',t1:'Vencedor O7',f1:'⚔️',t2:'Vencedor O8',f2:'⚔️',date:'05/07',time:'20h'},
+  ]},
+  {id:'semi',label:'Semifinal',mult:2,jogos:[
+    {id:'S1',t1:'Vencedor Q1',f1:'🔥',t2:'Vencedor Q2',f2:'🔥',date:'09/07',time:'16h'},
+    {id:'S2',t1:'Vencedor Q3',f1:'🔥',t2:'Vencedor Q4',f2:'🔥',date:'09/07',time:'20h'},
+  ]},
+  {id:'terceiro',label:'3º Lugar',mult:1.5,jogos:[
+    {id:'T1',t1:'Perdedor S1',f1:'🥉',t2:'Perdedor S2',f2:'🥉',date:'12/07',time:'16h'},
+  ]},
+  {id:'final',label:'Final',mult:2,jogos:[
+    {id:'F1',t1:'Vencedor S1',f1:'🏆',t2:'Vencedor S2',f2:'🏆',date:'19/07',time:'16h'},
+  ]},
+];
+
+const GRUPOS_JOGOS = [
+  {fase:'Grupo A',t1:'México',f1:'🇲🇽',t2:'Croácia',f2:'🇭🇷',date:'11/06',time:'16h'},
+  {fase:'Grupo A',t1:'Argentina',f1:'🇦🇷',t2:'Islândia',f2:'🇮🇸',date:'11/06',time:'19h'},
+  {fase:'Grupo B',t1:'Brasil',f1:'🇧🇷',t2:'Alemanha',f2:'🇩🇪',date:'12/06',time:'19h'},
+  {fase:'Grupo B',t1:'Espanha',f1:'🇪🇸',t2:'Japão',f2:'🇯🇵',date:'12/06',time:'22h'},
+  {fase:'Grupo C',t1:'EUA',f1:'🇺🇸',t2:'Sérvia',f2:'🇷🇸',date:'12/06',time:'13h'},
+  {fase:'Grupo C',t1:'Portugal',f1:'🇵🇹',t2:'Marrocos',f2:'🇲🇦',date:'13/06',time:'16h'},
+  {fase:'Grupo D',t1:'França',f1:'🇫🇷',t2:'Austrália',f2:'🇦🇺',date:'13/06',time:'13h'},
+  {fase:'Grupo D',t1:'Inglaterra',f1:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',t2:'Suíça',f2:'🇨🇭',date:'13/06',time:'19h'},
+  ...FASES_MATA.flatMap(f=>f.jogos.map(j=>({fase:f.label,t1:j.t1,f1:j.f1,t2:j.t2,f2:j.f2,date:j.date,time:j.time,jogoId:j.id}))),
+];
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let modo = 'mata';
+let adminUnlocked = false;
+let adminModo = 'mata';
+let cfgMata = {};
+let cfgUnico = {};
+let palpitesMata = [];
+let palpitesUnico = [];
+let resultadosMata = {};
+let resultadoUnico = null;
+let feedList = [];
+let apiKey = localStorage.getItem('apiKey')||'';
+let selectedFase = 'oitavas';
+let selectedUnicoIdx = null;
+let liveInterval = null;
+let lastGoals = 0;
+let realtimeSubs = [];
+
+// ═══════════════════════════════════════
+// URL PARAMS — admin secreto e modo
+// ═══════════════════════════════════════
+function readParams(){
+  const p = new URLSearchParams(window.location.search);
+  if(p.get('modo')==='unico') modo='unico';
+  if(p.get('master')==='tharaujo2026'){
+    adminUnlocked=true;
+    document.getElementById('adminTabWrap').style.display='flex';
+  }
+}
+
+function getShareLink(){
+  const base = window.location.href.split('?')[0];
+  return base+'?modo=unico';
+}
+
+// ═══════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════
+let toastT;
+function toast(msg,type=''){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='toast show'+(type?' '+type:'');
+  clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),3200);
+}
+
+// ═══════════════════════════════════════
+// SUPABASE — LOAD
+// ═══════════════════════════════════════
+async function loadAll(){
+  try{
+    const [{data:cfgs},{data:pm},{data:pu},{data:rm},{data:ru},{data:feed}] = await Promise.all([
+      sb.from('config').select('*'),
+      sb.from('palpites_mata').select('*').order('ts'),
+      sb.from('palpites_unico').select('*').order('ts'),
+      sb.from('resultados_mata').select('*'),
+      sb.from('resultado_unico').select('*').eq('id',1).single(),
+      sb.from('feed').select('*').order('created_at',{ascending:false}).limit(30),
+    ]);
+    cfgMata = cfgs?.find(c=>c.id==='mata')?.dados||{valor:20,p1:60,p2:25,p3:15,pixChave:'',pixNome:'',pixBanco:'',pixTipo:'CPF',faseAtiva:'oitavas',jogosAtivos:[],adminPwd:'copa2026'};
+    cfgUnico = cfgs?.find(c=>c.id==='unico')?.dados||{valor:10,p1:70,p2:20,p3:10,pixChave:'',pixNome:'',pixBanco:'',pixTipo:'CPF',aceitar:true,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true,adminPwd:'copa2026'};
+    palpitesMata = pm||[];
+    palpitesUnico = pu||[];
+    resultadosMata = Object.fromEntries((rm||[]).map(r=>[r.jogo_id,{g1:r.g1,g2:r.g2}]));
+    resultadoUnico = ru||null;
+    feedList = feed||[];
+    updateHeader();
+    renderFormPalpite();
+    renderPtsBody();
+    renderTbBody();
+    renderFeed();
+    updatePixDisplay();
+    renderPagList();
+  }catch(e){
+    toast('Erro ao carregar dados','err');
+    console.error(e);
+  }
+}
+
+// ═══════════════════════════════════════
+// REALTIME
+// ═══════════════════════════════════════
+function setupRealtime(){
+  const sub = sb.channel('bolao-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'palpites_mata'},()=>{
+      sb.from('palpites_mata').select('*').order('ts').then(({data})=>{
+        palpitesMata=data||[];
+        updateHeader();renderFormPalpite();
+        if(adminUnlocked) renderAdminPend();
+        renderPagList();
+        if(document.getElementById('screen-ranking').classList.contains('active')&&modo==='mata') renderRanking();
+      });
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'palpites_unico'},()=>{
+      sb.from('palpites_unico').select('*').order('ts').then(({data})=>{
+        palpitesUnico=data||[];
+        updateHeader();
+        if(adminUnlocked) renderAdminPendUnico();
+        renderPagList();
+        if(document.getElementById('screen-ranking').classList.contains('active')&&modo==='unico') renderRanking();
+      });
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'resultado_unico'},()=>{
+      sb.from('resultado_unico').select('*').eq('id',1).single().then(({data})=>{
+        resultadoUnico=data;updateHeader();renderFormPalpite();
+        if(document.getElementById('screen-ranking').classList.contains('active')) renderRanking();
+      });
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'resultados_mata'},()=>{
+      sb.from('resultados_mata').select('*').then(({data})=>{
+        resultadosMata=Object.fromEntries((data||[]).map(r=>[r.jogo_id,{g1:r.g1,g2:r.g2}]));
+        if(document.getElementById('screen-ranking').classList.contains('active')) renderRanking();
+      });
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'feed'},()=>{
+      sb.from('feed').select('*').order('created_at',{ascending:false}).limit(30).then(({data})=>{
+        feedList=data||[];renderFeed();
+      });
+    })
+    .subscribe();
+  realtimeSubs.push(sub);
+}
+
+// ═══════════════════════════════════════
+// HEADER
+// ═══════════════════════════════════════
+function updateHeader(){
+  const isMata=modo==='mata';
+  ['modeMata','rankMata','pagMata','admMata'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle('active',isMata); });
+  ['modeUnico','rankUnico','pagUnico','admUnico'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle('active',!isMata); });
+
+  if(isMata){
+    const fase=FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
+    document.getElementById('hFlag1').textContent='🏆';
+    document.getElementById('hTeam1').textContent='Mata-Mata';
+    document.getElementById('hFlag2').textContent='⚽';
+    document.getElementById('hTeam2').textContent='Copa 2026';
+    document.getElementById('hScore').textContent=fase?fase.label:'—';
+    document.getElementById('hScoreLbl').textContent='Fase Ativa';
+    document.getElementById('hDate').textContent=`${(cfgMata.jogosAtivos||[]).length} jogos abertos`;
+    const ativos=palpitesMata.filter(p=>p.status==='ativo');
+    const pend=palpitesMata.filter(p=>p.status==='pendente');
+    document.getElementById('stTotal').textContent=palpitesMata.length;
+    document.getElementById('stAtivos').textContent=ativos.length;
+    document.getElementById('stPend').textContent=pend.length;
+    document.getElementById('stBolada').textContent='R$'+(ativos.length*(cfgMata.valor||20));
+    document.getElementById('statusTitle').textContent='Bolão Mata-Mata';
+    const sb2=document.getElementById('statusBadge');
+    sb2.textContent='Aberto';sb2.className='badge badge-verde';
+  } else {
+    const j=cfgUnico.jogoAtivo;
+    document.getElementById('hFlag1').textContent=j?j.f1:'⚡';
+    document.getElementById('hTeam1').textContent=j?j.t1:'Jogo Extra';
+    document.getElementById('hFlag2').textContent=j?j.f2:'🎯';
+    document.getElementById('hTeam2').textContent=j?j.t2:'Aguardando';
+    const r=resultadoUnico;
+    document.getElementById('hScore').textContent=r?`${r.g1}×${r.g2}`:'?×?';
+    document.getElementById('hScoreLbl').textContent=r?'Resultado Final':'Aguardando';
+    document.getElementById('hDate').textContent=j?`${j.date} · ${j.time}`:'Configure no Admin';
+    const ativos=palpitesUnico.filter(p=>p.status==='ativo');
+    const pend=palpitesUnico.filter(p=>p.status==='pendente');
+    document.getElementById('stTotal').textContent=palpitesUnico.length;
+    document.getElementById('stAtivos').textContent=ativos.length;
+    document.getElementById('stPend').textContent=pend.length;
+    document.getElementById('stBolada').textContent='R$'+(ativos.length*(cfgUnico.valor||10));
+    document.getElementById('statusTitle').textContent='Bolão Jogo Extra';
+    const sb2=document.getElementById('statusBadge');
+    if(r){sb2.textContent='Encerrado';sb2.className='badge badge-amarelo';}
+    else if(!cfgUnico.aceitar){sb2.textContent='Fechado';sb2.className='badge badge-danger';}
+    else{sb2.textContent='Aberto';sb2.className='badge badge-verde';}
+  }
+}
+
+// ═══════════════════════════════════════
+// FORM PALPITE
+// ═══════════════════════════════════════
+function renderFormPalpite(){
+  const card=document.getElementById('formCard');
+  const isMata=modo==='mata';
+  if(isMata){
+    const fase=FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
+    const jogosAtivos=(cfgMata.jogosAtivos||[]).map(id=>fase?.jogos.find(j=>j.id===id)).filter(Boolean);
+    if(!jogosAtivos.length){
+      card.innerHTML=`<div class="modo-tag mata">🏆 Bolão Mata-Mata</div><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Aguardando o organizador abrir a fase.<br>Os palpites serão liberados fase a fase.</div></div>`;
+      return;
+    }
+    card.innerHTML=`
+      <div class="modo-tag mata">🏆 Bolão Mata-Mata</div>
+      <div class="card-title">Seus Palpites — ${fase?.label||''}</div>
+      <label>Seu nome</label>
+      <input type="text" id="mNome" placeholder="Como te chamam?" maxlength="30">
+      <label>WhatsApp (opcional)</label>
+      <input type="tel" id="mWhats" placeholder="(11) 99999-9999" maxlength="20">
+      <div class="card-sub">Palpite em todos os <strong>${jogosAtivos.length} jogos</strong> da fase. Prazo: até o 1º jogo começar.</div>
+      ${jogosAtivos.map(j=>`
+        <div style="margin-bottom:16px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--txt2);margin-bottom:8px">${j.date} · ${j.time}</div>
+          <div class="placar-row">
+            <div class="pl-team"><div class="pl-flag">${j.f1}</div><div class="pl-name">${j.t1}</div><input type="number" id="p_${j.id}_1" value="0" min="0" max="20"></div>
+            <div class="pl-vs">✕</div>
+            <div class="pl-team"><div class="pl-flag">${j.f2}</div><div class="pl-name">${j.t2}</div><input type="number" id="p_${j.id}_2" value="0" min="0" max="20"></div>
+          </div>
+        </div>`).join('')}
+      <button class="btn btn-azul" onclick="enviarMata()">Enviar Palpites ⚽</button>
+    `;
+  } else {
+    const j=cfgUnico.jogoAtivo;
+    if(!j){ card.innerHTML=`<div class="modo-tag unico">⚡ Jogo Extra</div><div class="empty"><div class="empty-icon">⚡</div><div class="empty-text">Nenhum jogo extra ativo.<br>Aguarde o link do organizador!</div></div>`; return; }
+    if(resultadoUnico){ card.innerHTML=`<div class="modo-tag unico">⚡ Jogo Extra</div><div class="empty"><div class="empty-icon">🏁</div><div class="empty-text">Jogo encerrado. Veja o Ranking!</div></div>`; return; }
+    if(!cfgUnico.aceitar){ card.innerHTML=`<div class="modo-tag unico">⚡ Jogo Extra</div><div class="empty"><div class="empty-icon">🔒</div><div class="empty-text">Palpites fechados.</div></div>`; return; }
+    card.innerHTML=`
+      <div class="modo-tag unico">⚡ Jogo Extra</div>
+      <div class="card-title">Seu Palpite</div>
+      <label>Seu nome</label>
+      <input type="text" id="uNome" placeholder="Como te chamam?" maxlength="30">
+      <label>WhatsApp (opcional)</label>
+      <input type="tel" id="uWhats" placeholder="(11) 99999-9999" maxlength="20">
+      <div class="placar-row">
+        <div class="pl-team"><div class="pl-flag">${j.f1}</div><div class="pl-name">${j.t1}</div><input type="number" id="uG1" value="0" min="0" max="20"></div>
+        <div class="pl-vs">✕</div>
+        <div class="pl-team"><div class="pl-flag">${j.f2}</div><div class="pl-name">${j.t2}</div><input type="number" id="uG2" value="0" min="0" max="20"></div>
+      </div>
+      ${cfgUnico.tbBonus&&cfgUnico.bonusQ?`<label>${cfgUnico.bonusQ}</label><input type="text" id="uBonus" placeholder="Sua resposta" maxlength="60">`:''}
+      <button class="btn btn-verde" onclick="enviarUnico()">Enviar Palpite ⚽</button>
+    `;
+  }
+}
+
+// ═══════════════════════════════════════
+// ENVIAR PALPITES
+// ═══════════════════════════════════════
+async function enviarMata(){
+  const nome=document.getElementById('mNome')?.value.trim();
+  const whats=document.getElementById('mWhats')?.value.trim();
+  if(!nome) return toast('Digite seu nome!','err');
+  if(palpitesMata.find(p=>p.nome.toLowerCase()===nome.toLowerCase())) return toast('Nome já cadastrado!','err');
+  const fase=FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
+  const jogosAtivos=(cfgMata.jogosAtivos||[]).map(id=>fase?.jogos.find(j=>j.id===id)).filter(Boolean);
+  const palpites={};
+  for(const j of jogosAtivos){
+    palpites[j.id]={g1:parseInt(document.getElementById(`p_${j.id}_1`)?.value)||0,g2:parseInt(document.getElementById(`p_${j.id}_2`)?.value)||0};
+  }
+  const {error}=await sb.from('palpites_mata').insert({nome,whats,palpites,status:'pendente',ts:Date.now()});
+  if(error) return toast('Erro ao salvar. Tente novamente.','err');
+  await addFeed('⚽',`${nome} enviou palpites do mata-mata`);
+  toast(`${nome}, palpites enviados! Agora pague o Pix 💸`,'ok');
+  renderFormPalpite();
+}
+
+async function enviarUnico(){
+  const nome=document.getElementById('uNome')?.value.trim();
+  const whats=document.getElementById('uWhats')?.value.trim();
+  if(!nome) return toast('Digite seu nome!','err');
+  if(!cfgUnico.aceitar) return toast('Palpites fechados!','err');
+  if(resultadoUnico) return toast('Resultado já apurado!','err');
+  if(palpitesUnico.find(p=>p.nome.toLowerCase()===nome.toLowerCase())) return toast('Nome já cadastrado!','err');
+  const g1=parseInt(document.getElementById('uG1')?.value)||0;
+  const g2=parseInt(document.getElementById('uG2')?.value)||0;
+  const bonus=document.getElementById('uBonus')?.value.trim()||'';
+  const {error}=await sb.from('palpites_unico').insert({nome,whats,g1,g2,bonus,status:'pendente',ts:Date.now()});
+  if(error) return toast('Erro ao salvar. Tente novamente.','err');
+  await addFeed('⚡',`${nome} entrou no jogo extra`);
+  toast(`${nome}, palpite enviado! Agora pague o Pix 💸`,'ok');
+  renderFormPalpite();
+}
+
+// ═══════════════════════════════════════
+// PONTUAÇÃO
+// ═══════════════════════════════════════
+function calcMata(g1p,g2p,g1r,g2r,mult){
+  let base=0;
+  if(g1p===g1r&&g2p===g2r) base=10;
+  else{
+    const rp=g1p>g2p?1:g1p<g2p?-1:0,rr=g1r>g2r?1:g1r<g2r?-1:0;
+    if(rp===rr) base=(g1p-g2p)===(g1r-g2r)?6:3;
+    else if(rp===0&&rr===0) base=1;
+  }
+  return Math.round(base*mult);
+}
+function calcUnico(g1p,g2p,g1r,g2r){
+  if(g1p===g1r&&g2p===g2r) return 10;
+  const rp=g1p>g2p?1:g1p<g2p?-1:0,rr=g1r>g2r?1:g1r<g2r?-1:0;
+  if(rp===rr) return (g1p-g2p)===(g1r-g2r)?6:3;
+  if(rp===0&&rr===0) return 1;
+  return 0;
+}
+
+function renderPtsBody(){
+  const b=document.getElementById('ptsBody');
+  if(modo==='mata'){
+    b.innerHTML=`<table class="pts-table">
+      <tr><th>Acerto</th><th>Oitavas</th><th>Quartas</th><th>Semi</th><th>Final</th></tr>
+      <tr><td>Placar exato</td><td class="pts-num">10</td><td class="pts-num">15</td><td class="pts-num">20</td><td class="pts-num">20</td></tr>
+      <tr><td>Venc.+saldo</td><td class="pts-num">6</td><td class="pts-num">9</td><td class="pts-num">12</td><td class="pts-num">12</td></tr>
+      <tr><td>Vencedor</td><td class="pts-num">3</td><td class="pts-num">5</td><td class="pts-num">6</td><td class="pts-num">6</td></tr>
+    </table>
+    <div class="text-sm mt8">Quartas ×1,5 · Semi e Final ×2. Vantagem de começo se sustenta.</div>`;
+  } else {
+    b.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+      <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--verde)">10</div><div style="font-size:11px;color:var(--txt2);margin-top:2px">Placar exato</div></div>
+      <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--verde)">6</div><div style="font-size:11px;color:var(--txt2);margin-top:2px">Vencedor + saldo</div></div>
+      <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--verde)">3</div><div style="font-size:11px;color:var(--txt2);margin-top:2px">Vencedor certo</div></div>
+      <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--verde)">1</div><div style="font-size:11px;color:var(--txt2);margin-top:2px">Empate previsto</div></div>
+    </div>`;
+  }
+}
+
+function renderTbBody(){
+  const b=document.getElementById('tbBody');
+  const items=modo==='mata'
+    ?['🎯 Maior nº de placares exatos','✅ Maior nº de vencedores acertados','📏 Menor diferença acumulada de gols','🏆 Acertou o campeão (final)','⏱️ Quem se cadastrou primeiro']
+    :[cfgUnico.tbGV&&'⚽ Gols do vencedor',cfgUnico.tbTG&&'📊 Total de gols',cfgUnico.tbGP&&'🥅 Gols do perdedor',cfgUnico.tbBonus&&cfgUnico.bonusQ&&'🎯 '+cfgUnico.bonusQ,cfgUnico.tbOrdem&&'⏱️ Quem enviou primeiro'].filter(Boolean);
+  b.innerHTML=items.map((t,i)=>`<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--amarelo);width:20px">${i+1}</span>${t}</div>`).join('');
+}
+
+// ═══════════════════════════════════════
+// RANKING
+// ═══════════════════════════════════════
+function renderRanking(){
+  const container=document.getElementById('rankContainer');
+  const empty=document.getElementById('rankEmpty');
+  const resCard=document.getElementById('rankResCard');
+  const premCard=document.getElementById('rankPremioCard');
+  const isMata=modo==='mata';
+
+  if(isMata){
+    resCard.style.display='none';
+    const ativos=palpitesMata.filter(p=>p.status==='ativo');
+    if(!ativos.length){container.innerHTML='';empty.style.display='block';premCard.style.display='none';return;}
+    empty.style.display='none';
+    const ranked=ativos.map(p=>{
+      let total=0,exatos=0,venc=0,diff=0;
+      for(const [jid,res] of Object.entries(resultadosMata)){
+        const pal=p.palpites?.[jid];if(!pal) continue;
+        const fase=FASES_MATA.find(f=>f.jogos.some(j=>j.id===jid));
+        const mult=fase?.mult||1;
+        const pts=calcMata(pal.g1,pal.g2,res.g1,res.g2,mult);
+        total+=pts;
+        if(pal.g1===res.g1&&pal.g2===res.g2) exatos++;
+        const rp=pal.g1>pal.g2?1:pal.g1<pal.g2?-1:0,rr=res.g1>res.g2?1:res.g1<res.g2?-1:0;
+        if(rp===rr) venc++;
+        diff+=Math.abs(pal.g1-res.g1)+Math.abs(pal.g2-res.g2);
+      }
+      const fp=p.palpites?.['F1'],fr=resultadosMata['F1'];
+      const campeao=fp&&fr&&fp.g1===fr.g1&&fp.g2===fr.g2?1:0;
+      return{...p,total,exatos,venc,diff,campeao};
+    }).sort((a,b)=>{
+      if(b.total!==a.total) return b.total-a.total;
+      if(b.exatos!==a.exatos) return b.exatos-a.exatos;
+      if(b.venc!==a.venc) return b.venc-a.venc;
+      if(a.diff!==b.diff) return a.diff-b.diff;
+      if(b.campeao!==a.campeao) return b.campeao-a.campeao;
+      return a.ts-b.ts;
+    });
+    if(Object.keys(resultadosMata).length>0){
+      const total=ativos.length*(cfgMata.valor||20);
+      const medals=['🥇','🥈','🥉'];
+      let prows='';
+      [[cfgMata.p1,0],[cfgMata.p2,1],[cfgMata.p3,2]].forEach(([pct,i])=>{
+        if(ranked[i]&&pct>0) prows+=`<div class="prize-row"><div class="prize-pos">${medals[i]}</div><div class="prize-name">${ranked[i].nome}</div><div class="prize-val">R$ ${(total*pct/100).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>`;
+      });
+      document.getElementById('rankPremioList').innerHTML=prows;
+      document.getElementById('rankTotal').textContent='R$ '+total.toLocaleString('pt-BR',{minimumFractionDigits:2});
+      premCard.style.display='block';
+    } else premCard.style.display='none';
+    const pc=['p1','p2','p3'],pp=['g','s','b'],md=['🥇','🥈','🥉'];
+    container.innerHTML=ranked.map((p,i)=>`<div class="rank-item ${pc[i]||''}">
+      <div class="rank-pos ${pp[i]||''}">${i+1}</div>
+      <div class="rank-info">
+        <div class="rank-name">${p.nome} ${md[i]||''}</div>
+        <div class="rank-sub">🎯 ${p.exatos} exatos · ✅ ${p.venc} vencedores</div>
+        ${i>0&&ranked[i-1].total===p.total?'<div class="tb-chip">desempate ativo</div>':''}
+      </div>
+      <div class="rank-pts-col"><div class="rank-pts">${p.total}</div><div class="rank-pts-lbl">pts</div></div>
+    </div>`).join('');
+  } else {
+    const j=cfgUnico.jogoAtivo;
+    if(j){document.getElementById('rrF1').textContent=j.f1;document.getElementById('rrT1').textContent=j.t1;document.getElementById('rrF2').textContent=j.f2;document.getElementById('rrT2').textContent=j.t2;}
+    const ativos=palpitesUnico.filter(p=>p.status==='ativo');
+    if(!ativos.length){container.innerHTML='';empty.style.display='block';resCard.style.display='none';premCard.style.display='none';return;}
+    empty.style.display='none';
+    if(resultadoUnico){
+      resCard.style.display='block';
+      document.getElementById('rrScore').textContent=`${resultadoUnico.g1}×${resultadoUnico.g2}`;
+      const r1=resultadoUnico.g1,r2=resultadoUnico.g2;
+      let ranked=ativos.map(p=>({...p,pts:calcUnico(p.g1,p.g2,r1,r2)})).sort((a,b)=>{
+        if(b.pts!==a.pts) return b.pts-a.pts;
+        const sa=[],sb2=[];
+        if(cfgUnico.tbGV){const v=r1>=r2?r1:r2;sa.push(Math.abs(v-(a.g1>=a.g2?a.g1:a.g2)));sb2.push(Math.abs(v-(b.g1>=b.g2?b.g1:b.g2)));}
+        if(cfgUnico.tbTG){sa.push(Math.abs((r1+r2)-(a.g1+a.g2)));sb2.push(Math.abs((r1+r2)-(b.g1+b.g2)));}
+        if(cfgUnico.tbGP){const v=r1<=r2?r1:r2;sa.push(Math.abs(v-(a.g1<=a.g2?a.g1:a.g2)));sb2.push(Math.abs(v-(b.g1<=b.g2?b.g1:b.g2)));}
+        if(cfgUnico.tbBonus){const ra=resultadoUnico.bonus_ans?.toLowerCase().trim();sa.push(ra&&a.bonus?.toLowerCase().trim()===ra?0:1);sb2.push(ra&&b.bonus?.toLowerCase().trim()===ra?0:1);}
+        if(cfgUnico.tbOrdem){sa.push(a.ts);sb2.push(b.ts);}
+        for(let i=0;i<Math.min(sa.length,sb2.length);i++) if(sa[i]!==sb2[i]) return sa[i]-sb2[i];
+        return 0;
+      });
+      const total=ativos.length*(cfgUnico.valor||10);
+      const medals=['🥇','🥈','🥉'];
+      let prows='';
+      [[cfgUnico.p1,0],[cfgUnico.p2,1],[cfgUnico.p3,2]].forEach(([pct,i])=>{
+        if(ranked[i]&&pct>0) prows+=`<div class="prize-row"><div class="prize-pos">${medals[i]}</div><div class="prize-name">${ranked[i].nome}</div><div class="prize-val">R$ ${(total*pct/100).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>`;
+      });
+      document.getElementById('rankPremioList').innerHTML=prows;
+      document.getElementById('rankTotal').textContent='R$ '+total.toLocaleString('pt-BR',{minimumFractionDigits:2});
+      premCard.style.display='block';
+      const pc=['p1','p2','p3'],pp=['g','s','b'],md=['🥇','🥈','🥉'];
+      container.innerHTML=ranked.map((p,i)=>`<div class="rank-item ${pc[i]||''}">
+        <div class="rank-pos ${pp[i]||''}">${i+1}</div>
+        <div class="rank-info">
+          <div class="rank-name">${p.nome} ${md[i]||''}</div>
+          <div class="rank-sub">${j?.f1||''}${p.g1}×${p.g2}${j?.f2||''}${p.bonus?' · '+p.bonus:''}</div>
+          ${i>0&&ranked[i-1].pts===p.pts?'<div class="tb-chip">desempate ativo</div>':''}
+        </div>
+        <div class="rank-pts-col"><div class="rank-pts">${p.pts}</div><div class="rank-pts-lbl">pts</div></div>
+      </div>`).join('');
+    } else {
+      resCard.style.display='none';premCard.style.display='none';
+      container.innerHTML=ativos.sort((a,b)=>a.ts-b.ts).map((p,i)=>`<div class="rank-item">
+        <div class="rank-pos">${i+1}</div>
+        <div class="rank-info"><div class="rank-name">${p.nome}</div><div class="rank-sub">${j?.f1||''}${p.g1}×${p.g2}${j?.f2||''}${p.bonus?' · '+p.bonus:''}</div></div>
+        <div class="rank-pts-col"><div class="rank-pts" style="color:var(--txt3);font-size:20px">?</div><div class="rank-pts-lbl">pts</div></div>
+      </div>`).join('');
+    }
+  }
+}
+
+// ═══════════════════════════════════════
+// PIX / PAGAR
+// ═══════════════════════════════════════
+function updatePixDisplay(){
+  const cfg=modo==='mata'?cfgMata:cfgUnico;
+  document.getElementById('pixValor').textContent='R$ '+(cfg.valor||'—');
+  document.getElementById('pixValorInline').textContent='R$ '+Number(cfg.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  document.getElementById('pixNome').textContent=cfg.pixNome||'—';
+  document.getElementById('pixBanco').textContent=(cfg.pixTipo?cfg.pixTipo+' · ':'')+( cfg.pixBanco||'—');
+  document.getElementById('pixKey').textContent=cfg.pixChave||'Configure no Admin';
+  document.getElementById('pagMata').classList.toggle('active',modo==='mata');
+  document.getElementById('pagUnico').classList.toggle('active',modo==='unico');
+  document.getElementById('pagTitle').textContent=modo==='mata'?'Participantes — Mata-Mata':'Participantes — Jogo Extra';
+}
+
+function renderPagList(){
+  updatePixDisplay();
+  const lista=modo==='mata'?palpitesMata:palpitesUnico;
+  const c=document.getElementById('pagList');
+  if(!lista.length){c.innerHTML='<div class="empty"><div class="empty-text">Nenhum participante ainda</div></div>';return;}
+  c.innerHTML=lista.map(p=>`<div class="part-item" style="align-items:center">
+    <div class="part-avatar">${p.nome[0].toUpperCase()}</div>
+    <div class="part-info"><div class="part-name">${p.nome}</div><div class="part-meta">${p.whats||'Sem WhatsApp'}</div></div>
+    <span class="badge ${p.status==='ativo'?'badge-verde':p.status==='rejeitado'?'badge-danger':'badge-warning'}">${p.status==='ativo'?'✓ Ativo':p.status==='rejeitado'?'Rejeitado':'⏳ Pendente'}</span>
+  </div>`).join('');
+}
+
+function copyPix(){
+  const cfg=modo==='mata'?cfgMata:cfgUnico;
+  if(!cfg.pixChave) return toast('Chave Pix não configurada','err');
+  navigator.clipboard?.writeText(cfg.pixChave).then(()=>toast('Chave copiada! 📋','ok')).catch(()=>{
+    const t=document.createElement('textarea');t.value=cfg.pixChave;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);toast('Chave copiada! 📋','ok');
+  });
+}
+
+// ═══════════════════════════════════════
+// FEED
+// ═══════════════════════════════════════
+async function addFeed(icon,texto){
+  const hora=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  await sb.from('feed').insert({icon,texto,hora});
+}
+
+function renderFeed(){
+  const c=document.getElementById('feedContainer');
+  if(!feedList.length){c.innerHTML='<div class="empty"><div class="empty-text">Nenhum evento ainda</div></div>';return;}
+  c.innerHTML=feedList.map(e=>`<div class="feed-item"><div class="feed-icon">${e.icon}</div><div class="feed-content"><div class="feed-text">${e.texto}</div><div class="feed-time">${e.hora}</div></div></div>`).join('');
+}
+
+// ═══════════════════════════════════════
+// API AO VIVO
+// ═══════════════════════════════════════
+async function fetchLive(manual=false){
+  if(!apiKey) return;
+  const today=new Date().toISOString().split('T')[0];
+  try{
+    const res=await fetch(`https://api.football-data.org/v4/matches?dateFrom=${today}&dateTo=${today}`,{headers:{'X-Auth-Token':apiKey}});
+    if(!res.ok){if(manual)toast('Erro API: '+res.status,'err');return;}
+    const data=await res.json();
+    const matches=(data.matches||[]);
+    const found=matches.find(m=>m.competition?.code==='WC')||matches[0];
+    if(found){
+      const s=found.score?.fullTime||found.score?.halfTime||{};
+      const g1=s.home??'?',g2=s.away??'?';
+      const status=found.status;
+      document.getElementById('hScore').textContent=`${g1}×${g2}`;
+      document.getElementById('hScoreLbl').textContent=status==='IN_PLAY'?'Ao Vivo':status==='FINISHED'?'FT':'Aguardando';
+      document.getElementById('liveStatus').textContent=status==='IN_PLAY'?'Ao Vivo':status==='FINISHED'?'Encerrado':'Aguardando';
+      document.getElementById('liveStatus').className=`badge ${status==='IN_PLAY'?'badge-danger':status==='FINISHED'?'badge-amarelo':'badge-cinza'}`;
+      if(status==='IN_PLAY'){
+        document.getElementById('hLive').innerHTML='<span class="live-chip">Ao Vivo</span>';
+        if(!liveInterval) liveInterval=setInterval(()=>fetchLive(),30000);
+        const tg=(typeof g1==='number'?g1:0)+(typeof g2==='number'?g2:0);
+        if(tg>lastGoals&&lastGoals>=0){
+          const msg=`⚽ GOL! Placar: ${g1} × ${g2}`;
+          await addFeed('⚽',msg);
+          if('Notification'in window&&Notification.permission==='granted') new Notification('Bolão Copa 2026 — GOL!',{body:msg});
+          toast(msg,'ok');
+        }
+        lastGoals=tg;
+      } else {
+        document.getElementById('hLive').innerHTML='';
+        if(liveInterval){clearInterval(liveInterval);liveInterval=null;}
+      }
+      document.getElementById('liveDisplay').innerHTML=`<div style="display:flex;align-items:center;justify-content:center;gap:14px;padding:8px 0">
+        <div style="text-align:center"><div style="font-size:28px">${found.homeTeam?.tla||'🏴'}</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--txt2);margin-top:4px">${found.homeTeam?.shortName||'Time A'}</div></div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:50px;color:var(--amarelo)">${g1} × ${g2}</div>
+        <div style="text-align:center"><div style="font-size:28px">${found.awayTeam?.tla||'🏴'}</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--txt2);margin-top:4px">${found.awayTeam?.shortName||'Time B'}</div></div>
+      </div>
+      <div class="text-sm" style="text-align:center">${status==='IN_PLAY'?'🔴 Em andamento':status==='FINISHED'?'✅ Encerrado':'📅 Aguardando'}</div>`;
+      if(manual) toast('Dados atualizados!','ok');
+    }
+  }catch(e){if(manual)toast('Erro de conexão','err');}
+}
+
+async function salvarApiKey(){
+  apiKey=document.getElementById('apiKeyInput').value.trim();
+  if(!apiKey) return toast('Cole a API key primeiro','err');
+  localStorage.setItem('apiKey',apiKey);
+  const st=document.getElementById('apiStatus');
+  st.style.display='block';st.textContent='Testando...';st.style.color='var(--txt2)';
+  try{
+    const res=await fetch('https://api.football-data.org/v4/competitions',{headers:{'X-Auth-Token':apiKey}});
+    if(res.ok){st.textContent='✅ Conectado!';st.style.color='#6EC98A';toast('API conectada!','ok');await addFeed('📡','API football-data.org conectada');}
+    else{st.textContent='❌ Erro '+res.status;st.style.color='#EF5350';}
+  }catch(e){st.textContent='❌ Sem conexão';st.style.color='#EF5350';}
+}
+
+// ═══════════════════════════════════════
+// MODO SWITCH
+// ═══════════════════════════════════════
+function switchMode(m){
+  modo=m;
+  updateHeader();renderFormPalpite();renderPtsBody();renderTbBody();updatePixDisplay();renderPagList();
+}
+
+// ═══════════════════════════════════════
+// ADMIN
+// ═══════════════════════════════════════
+function checkAdmin(){
+  const pwd=document.getElementById('adminPwdInput').value;
+  if(pwd===cfgMata.adminPwd||pwd==='copa2026'){
+    adminUnlocked=true;
+    document.getElementById('adminLock').style.display='none';
+    document.getElementById('adminPanel').style.display='block';
+    adminMode('mata');
+  } else toast('Senha incorreta','err');
+}
+
+function adminMode(m){
+  adminModo=m;
+  document.getElementById('admMata').classList.toggle('active',m==='mata');
+  document.getElementById('admUnico').classList.toggle('active',m==='unico');
+  document.getElementById('admMataPanel').style.display=m==='mata'?'block':'none';
+  document.getElementById('admUnicoPanel').style.display=m==='unico'?'block':'none';
+  if(m==='mata'){renderAdminPhase();renderAdminPend();loadCfgMata();renderResultadoSel();}
+  else{renderAdminUnicoPhase();renderAdminPendUnico();loadCfgUnico();updateShareLink();updateUnicoResFields();}
+}
+
+// ── MATA-MATA ADMIN ──
+function renderAdminPhase(){
+  const c=document.getElementById('admPhaseTabs');
+  c.innerHTML=FASES_MATA.map(f=>`<button class="ptab ${selectedFase===f.id?'active':''}" onclick="selFase('${f.id}',this)">${f.label}${f.mult>1?' ×'+f.mult:''}</button>`).join('');
+  renderAdminMatchList();
+}
+
+function selFase(id,el){
+  selectedFase=id;
+  document.querySelectorAll('#admPhaseTabs .ptab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderAdminMatchList();
+}
+
+function renderAdminMatchList(){
+  const fase=FASES_MATA.find(f=>f.id===selectedFase);
+  if(!fase) return;
+  const ativos=cfgMata.jogosAtivos||[];
+  document.getElementById('admMatchList').innerHTML=fase.jogos.map(j=>`
+    <div class="match-sel ${ativos.includes(j.id)?'selected':''}" onclick="toggleJogoMata('${j.id}',this)">
+      <div class="match-sel-flags">${j.f1} ${j.f2}</div>
+      <div class="match-sel-info">
+        <div class="match-sel-name">${j.t1} × ${j.t2}</div>
+        <div class="match-sel-date">${j.date} · ${j.time}</div>
+        <div class="match-sel-pts">Placar exato: ${Math.round(10*fase.mult)} pts</div>
+      </div>
+      <div class="match-sel-check">✓</div>
+    </div>`).join('');
+}
+
+function toggleJogoMata(id,el){
+  const arr=cfgMata.jogosAtivos||[];
+  const idx=arr.indexOf(id);
+  if(idx>=0) arr.splice(idx,1); else arr.push(id);
+  cfgMata.jogosAtivos=arr;
+  el.classList.toggle('selected');
+}
+
+async function ativarFase(){
+  cfgMata.faseAtiva=selectedFase;
+  await sb.from('config').upsert({id:'mata',dados:cfgMata,updated_at:new Date().toISOString()});
+  updateHeader();renderFormPalpite();
+  await addFeed('🏟️',`Fase ${selectedFase} aberta — ${cfgMata.jogosAtivos?.length||0} jogos`);
+  toast(`Fase ${selectedFase} aberta!`,'ok');
+}
+
+function renderResultadoSel(){
+  const fase=FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
+  const sel=document.getElementById('resMatchSel');
+  if(!sel||!fase) return;
+  sel.innerHTML=fase.jogos.map(j=>`<option value="${j.id}">${j.f1} ${j.t1} × ${j.t2} ${j.f2} (${j.date})</option>`).join('');
+  onResMatchChange();
+  const nRes=Object.keys(resultadosMata).length;
+  document.getElementById('resMataStatus').textContent=nRes?`${nRes} resultado(s) inserido(s)`:'Nenhum resultado ainda';
+}
+
+function onResMatchChange(){
+  const id=document.getElementById('resMatchSel')?.value;
+  const fase=FASES_MATA.find(f=>f.jogos.some(j=>j.id===id));
+  const j=fase?.jogos.find(x=>x.id===id);
+  if(j){
+    document.getElementById('resF1').textContent=j.f1;document.getElementById('resT1').textContent=j.t1;
+    document.getElementById('resF2').textContent=j.f2;document.getElementById('resT2').textContent=j.t2;
+  }
+}
+
+async function salvarResultadoMata(){
+  const id=document.getElementById('resMatchSel')?.value;
+  if(!id) return toast('Selecione o jogo','err');
+  const g1=parseInt(document.getElementById('resG1').value)||0;
+  const g2=parseInt(document.getElementById('resG2').value)||0;
+  await sb.from('resultados_mata').upsert({jogo_id:id,g1,g2,updated_at:new Date().toISOString()});
+  resultadosMata[id]={g1,g2};
+  await addFeed('📊',`Resultado inserido: ${g1}×${g2}`);
+  if('Notification'in window&&Notification.permission==='granted') new Notification('Bolão Copa 2026 — Resultado!',{body:`${g1} × ${g2} — veja o ranking!`});
+  toast('Resultado salvo!','ok');
+  document.getElementById('resMataStatus').textContent=`${Object.keys(resultadosMata).length} resultado(s) inserido(s)`;
+}
+
+function renderAdminPend(){
+  const c=document.getElementById('admPendMata');
+  if(!palpitesMata.length){c.innerHTML='<div class="empty"><div class="empty-text">Nenhum palpite ainda</div></div>';return;}
+  c.innerHTML=palpitesMata.map(p=>`<div class="part-item">
+    <div class="part-avatar">${p.nome[0].toUpperCase()}</div>
+    <div class="part-info">
+      <div class="part-name">${p.nome}</div>
+      <div class="part-meta">${p.whats||'Sem WhatsApp'} · ${new Date(p.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+      <span class="badge ${p.status==='ativo'?'badge-verde':p.status==='rejeitado'?'badge-danger':'badge-warning'} mt8">${p.status==='ativo'?'✓ Ativo':p.status==='rejeitado'?'Rejeitado':'⏳ Pendente'}</span>
+    </div>
+    <div class="part-actions">
+      ${p.status!=='ativo'?`<button class="btn-aprovar" onclick="aprovarMata('${p.id}')">✓ Ativar</button>`:''}
+      ${p.status!=='rejeitado'?`<button class="btn-rejeitar" onclick="rejeitarMata('${p.id}')">✗ Rejeitar</button>`:''}
+    </div>
+  </div>`).join('');
+}
+
+async function aprovarMata(id){
+  await sb.from('palpites_mata').update({status:'ativo'}).eq('id',id);
+  toast('Ativado! ✓','ok');
+}
+async function rejeitarMata(id){
+  await sb.from('palpites_mata').update({status:'rejeitado'}).eq('id',id);
+  toast('Rejeitado','info');
+}
+
+function loadCfgMata(){
+  document.getElementById('mataValor').value=cfgMata.valor||20;
+  document.getElementById('mataP1').value=cfgMata.p1||60;
+  document.getElementById('mataP2').value=cfgMata.p2||25;
+  document.getElementById('mataP3').value=cfgMata.p3||15;
+  document.getElementById('mataPixTipo').value=cfgMata.pixTipo||'CPF';
+  document.getElementById('mataPixChave').value=cfgMata.pixChave||'';
+  document.getElementById('mataPixNome').value=cfgMata.pixNome||'';
+  document.getElementById('mataPixBanco').value=cfgMata.pixBanco||'';
+}
+
+async function salvarCfgMata(){
+  cfgMata={...cfgMata,
+    valor:parseFloat(document.getElementById('mataValor').value)||20,
+    p1:parseInt(document.getElementById('mataP1').value)||60,
+    p2:parseInt(document.getElementById('mataP2').value)||25,
+    p3:parseInt(document.getElementById('mataP3').value)||15,
+    pixTipo:document.getElementById('mataPixTipo').value,
+    pixChave:document.getElementById('mataPixChave').value.trim(),
+    pixNome:document.getElementById('mataPixNome').value.trim(),
+    pixBanco:document.getElementById('mataPixBanco').value.trim(),
+  };
+  await sb.from('config').upsert({id:'mata',dados:cfgMata,updated_at:new Date().toISOString()});
+  updateHeader();updatePixDisplay();toast('Configurações salvas!','ok');
+}
+
+async function limparMata(){
+  if(!confirm('Limpar TODOS os palpites do mata-mata?')) return;
+  await sb.from('palpites_mata').delete().neq('id','00000000-0000-0000-0000-000000000000');
+  await sb.from('resultados_mata').delete().neq('jogo_id','_');
+  palpitesMata=[];resultadosMata={};
+  updateHeader();renderAdminPend();renderPagList();toast('Palpites limpos','info');
+}
+
+// ── ÚNICO ADMIN ──
+function renderAdminUnicoPhase(){
+  const fases=[...new Set(GRUPOS_JOGOS.map(j=>j.fase))];
+  const c=document.getElementById('admUnicoPhaseTabs');
+  c.innerHTML=fases.map((f,i)=>`<button class="ptab ${i===0?'active':''}" onclick="filtroUnico('${f}',this)">${f}</button>`).join('');
+  filtroUnico(fases[0],c.querySelector('.ptab'));
+}
+
+function filtroUnico(fase,el){
+  document.querySelectorAll('#admUnicoPhaseTabs .ptab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const jogos=GRUPOS_JOGOS.filter(j=>j.fase===fase);
+  document.getElementById('admUnicoList').innerHTML=jogos.map((j,i)=>{
+    const gi=GRUPOS_JOGOS.indexOf(j);
+    const isSel=cfgUnico.jogoAtivo&&cfgUnico.jogoAtivo.t1===j.t1&&cfgUnico.jogoAtivo.t2===j.t2;
+    return `<div class="match-sel ${isSel?'selected':''}" onclick="selJogoUnico(${gi},this)">
+      <div class="match-sel-flags">${j.f1} ${j.f2}</div>
+      <div class="match-sel-info"><div class="match-sel-name">${j.t1} × ${j.t2}</div><div class="match-sel-date">${j.date} · ${j.time}</div></div>
+      <div class="match-sel-check">✓</div>
+    </div>`;
+  }).join('');
+}
+
+function selJogoUnico(idx,el){
+  selectedUnicoIdx=idx;
+  document.querySelectorAll('#admUnicoList .match-sel').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function ativarJogoUnico(){
+  if(selectedUnicoIdx===null) return toast('Selecione um jogo','err');
+  const j=GRUPOS_JOGOS[selectedUnicoIdx];
+  cfgUnico.jogoAtivo={...j};
+  cfgUnico.aceitar=true;
+  await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
+  await sb.from('palpites_unico').delete().neq('id','00000000-0000-0000-0000-000000000000');
+  await sb.from('resultado_unico').upsert({id:1,g1:null,g2:null,bonus_ans:'',updated_at:new Date().toISOString()});
+  palpitesUnico=[];resultadoUnico=null;
+  updateHeader();renderFormPalpite();updateShareLink();updateUnicoResFields();renderAdminPendUnico();renderPagList();
+  await addFeed('⚡',`Jogo Extra aberto: ${j.t1} × ${j.t2}`);
+  toast(`Jogo Extra: ${j.t1} × ${j.t2}`,'ok');
+}
+
+function updateShareLink(){
+  const link=getShareLink();
+  const j=cfgUnico.jogoAtivo;
+  document.getElementById('shareLinkTxt').textContent=j?`${link}  (${j.t1} × ${j.t2})`:link;
+}
+
+function shareWA(){
+  const link=getShareLink();
+  const j=cfgUnico.jogoAtivo;
+  const msg=j
+    ?`⚡ *Bolão Jogo Extra — Copa 2026* ⚽\n\n*${j.t1} ${j.f1} × ${j.f2} ${j.t2}*\n📅 ${j.date} · ${j.time}\n💰 Entrada: R$ ${cfgUnico.valor}\n\nDê seu palpite aqui:\n${link}`
+    :`⚽ *Bolão Copa 2026*\n${link}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
+}
+
+function updateUnicoResFields(){
+  const j=cfgUnico.jogoAtivo;
+  if(!j) return;
+  document.getElementById('uResF1').textContent=j.f1;document.getElementById('uResT1').textContent=j.t1;
+  document.getElementById('uResF2').textContent=j.f2;document.getElementById('uResT2').textContent=j.t2;
+  const bw=document.getElementById('unicoBonusResWrap');
+  if(bw) bw.style.display=cfgUnico.tbBonus&&cfgUnico.bonusQ?'block':'none';
+  if(document.getElementById('unicoBonusResLbl')&&cfgUnico.bonusQ)
+    document.getElementById('unicoBonusResLbl').textContent='Resposta correta: '+cfgUnico.bonusQ;
+}
+
+async function apurarUnico(){
+  const g1=parseInt(document.getElementById('uResG1').value)||0;
+  const g2=parseInt(document.getElementById('uResG2').value)||0;
+  const bonus_ans=document.getElementById('unicoBonusResVal')?.value.trim()||'';
+  await sb.from('resultado_unico').upsert({id:1,g1,g2,bonus_ans,updated_at:new Date().toISOString()});
+  cfgUnico.aceitar=false;
+  await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
+  resultadoUnico={g1,g2,bonus_ans};
+  updateHeader();
+  const j=cfgUnico.jogoAtivo;
+  await addFeed('🏆',`Resultado jogo extra: ${j?.f1||''}${g1}×${g2}${j?.f2||''}`);
+  if('Notification'in window&&Notification.permission==='granted') new Notification('Bolão Copa 2026 — Encerrado!',{body:`Resultado: ${g1} × ${g2}`});
+  toast('Resultado apurado! 🏆','ok');
+}
+
+async function limparResUnico(){
+  await sb.from('resultado_unico').upsert({id:1,g1:null,g2:null,bonus_ans:'',updated_at:new Date().toISOString()});
+  cfgUnico.aceitar=true;
+  await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
+  resultadoUnico=null;updateHeader();renderFormPalpite();toast('Resultado limpo','info');
+}
+
+function renderAdminPendUnico(){
+  const c=document.getElementById('admPendUnico');
+  const j=cfgUnico.jogoAtivo;
+  if(!palpitesUnico.length){c.innerHTML='<div class="empty"><div class="empty-text">Nenhum palpite ainda</div></div>';return;}
+  c.innerHTML=palpitesUnico.map(p=>`<div class="part-item">
+    <div class="part-avatar">${p.nome[0].toUpperCase()}</div>
+    <div class="part-info">
+      <div class="part-name">${p.nome}</div>
+      <div class="part-meta">${j?.f1||''}${p.g1}×${p.g2}${j?.f2||''}${p.bonus?' · '+p.bonus:''} · ${p.whats||'Sem WhatsApp'}</div>
+      <span class="badge ${p.status==='ativo'?'badge-verde':p.status==='rejeitado'?'badge-danger':'badge-warning'} mt8">${p.status==='ativo'?'✓ Ativo':p.status==='rejeitado'?'Rejeitado':'⏳ Pendente'}</span>
+    </div>
+    <div class="part-actions">
+      ${p.status!=='ativo'?`<button class="btn-aprovar" onclick="aprovarUnico('${p.id}')">✓ Ativar</button>`:''}
+      ${p.status!=='rejeitado'?`<button class="btn-rejeitar" onclick="rejeitarUnico('${p.id}')">✗ Rejeitar</button>`:''}
+    </div>
+  </div>`).join('');
+}
+
+async function aprovarUnico(id){
+  await sb.from('palpites_unico').update({status:'ativo'}).eq('id',id);
+  toast('Ativado! ✓','ok');
+}
+async function rejeitarUnico(id){
+  await sb.from('palpites_unico').update({status:'rejeitado'}).eq('id',id);
+  toast('Rejeitado','info');
+}
+
+function loadCfgUnico(){
+  document.getElementById('unicoValor').value=cfgUnico.valor||10;
+  document.getElementById('unicoP1').value=cfgUnico.p1||70;
+  document.getElementById('unicoP2').value=cfgUnico.p2||20;
+  document.getElementById('unicoP3').value=cfgUnico.p3||10;
+  document.getElementById('unicoPixTipo').value=cfgUnico.pixTipo||'CPF';
+  document.getElementById('unicoPixChave').value=cfgUnico.pixChave||'';
+  document.getElementById('unicoPixNome').value=cfgUnico.pixNome||'';
+  document.getElementById('unicoPixBanco').value=cfgUnico.pixBanco||'';
+  document.getElementById('unicoBonusQ').value=cfgUnico.bonusQ||'';
+  document.getElementById('apiKeyInput').value=apiKey||'';
+  setT('tbU1',cfgUnico.tbGV);setT('tbU2',cfgUnico.tbTG);setT('tbU3',cfgUnico.tbGP);
+  setT('tbUBonus',cfgUnico.tbBonus);setT('tbUOrdem',cfgUnico.tbOrdem);setT('tbUAceitar',cfgUnico.aceitar);
+  document.getElementById('unicoBonusQWrap').style.display=cfgUnico.tbBonus?'block':'none';
+}
+
+function setT(id,v){const el=document.getElementById(id);if(el){if(v)el.classList.add('on');else el.classList.remove('on');}}
+function getT(id){return document.getElementById(id)?.classList.contains('on');}
+function toggleUBonus(el){el.classList.toggle('on');document.getElementById('unicoBonusQWrap').style.display=el.classList.contains('on')?'block':'none';}
+
+async function salvarCfgUnico(){
+  cfgUnico={...cfgUnico,
+    valor:parseFloat(document.getElementById('unicoValor').value)||10,
+    p1:parseInt(document.getElementById('unicoP1').value)||70,
+    p2:parseInt(document.getElementById('unicoP2').value)||20,
+    p3:parseInt(document.getElementById('unicoP3').value)||10,
+    pixTipo:document.getElementById('unicoPixTipo').value,
+    pixChave:document.getElementById('unicoPixChave').value.trim(),
+    pixNome:document.getElementById('unicoPixNome').value.trim(),
+    pixBanco:document.getElementById('unicoPixBanco').value.trim(),
+    tbGV:getT('tbU1'),tbTG:getT('tbU2'),tbGP:getT('tbU3'),
+    tbBonus:getT('tbUBonus'),bonusQ:document.getElementById('unicoBonusQ').value.trim(),
+    tbOrdem:getT('tbUOrdem'),aceitar:getT('tbUAceitar'),
+  };
+  await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
+  updateHeader();updatePixDisplay();renderTbBody();updateUnicoResFields();
+  toast('Configurações salvas!','ok');
+}
+
+async function limparUnico(){
+  if(!confirm('Limpar palpites do jogo extra?')) return;
+  await sb.from('palpites_unico').delete().neq('id','00000000-0000-0000-0000-000000000000');
+  await sb.from('resultado_unico').upsert({id:1,g1:null,g2:null,bonus_ans:'',updated_at:new Date().toISOString()});
+  palpitesUnico=[];resultadoUnico=null;cfgUnico.aceitar=true;
+  updateHeader();renderFormPalpite();renderAdminPendUnico();renderPagList();
+  toast('Palpites limpos','info');
+}
+
+// ═══════════════════════════════════════
+// NAVEGAÇÃO
+// ═══════════════════════════════════════
+function goTab(screen,tabEl){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('screen-'+screen).classList.add('active');
+  if(tabEl) tabEl.classList.add('active');
+  if(screen==='ranking') renderRanking();
+  if(screen==='pagar'){updatePixDisplay();renderPagList();}
+  if(screen==='aovivo'){renderFeed();if(apiKey) fetchLive();}
+  if(screen==='admin'&&adminUnlocked) adminMode(adminModo);
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+readParams();
+loadAll().then(()=>{
+  setupRealtime();
+  if(apiKey){document.getElementById('apiKeyInput').value=apiKey;}
+  if('Notification'in window&&Notification.permission==='default'){
+    setTimeout(()=>{
+      if(confirm('Ativar alertas de gol ao vivo?')) Notification.requestPermission();
+    },3000);
+  }
+});
+</script>
+</body>
+</html>
