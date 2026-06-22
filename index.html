@@ -1598,11 +1598,11 @@ async function renderPagOpcoes(){
     // Considera ativo se: pago_unico=true OU palpite com status ativo OU qualquer palpite existente (pendente vira ativo ao pagar)
     const temPalpiteUnico = palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===myWhats&&(p.jogo_extra_id||'jogo1')==='jogo1');
     const jaU1 = pagoUnico || (temPalpiteUnico&&temPalpiteUnico.status==='ativo');
-    const pendUnico = temPalpiteUnico&&temPalpiteUnico.status==='pendente';
+    const pendUnico = !jaU1 && temPalpiteUnico&&temPalpiteUnico.status==='pendente';
     opcoes.push({
       id:'unico', label:`⚡ Extra — ${j1.t1} × ${j1.t2}`, sub:`${j1.date} · ${j1.time}`,
       valor:cfgUnico.valor||10, jaAtivo:!!jaU1,
-      disponivel:(cfgUnico.aceitar&&!jaU1)||pendUnico,
+      disponivel:cfgUnico.aceitar&&!jaU1&&!temPalpiteUnico,
       pendente:!!pendUnico,
     });
   }
@@ -2407,10 +2407,16 @@ function renderAdminPendUnico(){
 
 async function aprovarUnico(id){
   await sb.from('palpites_unico').update({status:'ativo'}).eq('id',id);
+  const {data:pu}=await sb.from('palpites_unico').select('*').order('ts');
+  if(pu) palpitesUnico=pu;
+  renderAdminPendUnico();
   toast('Ativado! ✓','ok');
 }
 async function rejeitarUnico(id){
   await sb.from('palpites_unico').update({status:'rejeitado'}).eq('id',id);
+  const {data:pu}=await sb.from('palpites_unico').select('*').order('ts');
+  if(pu) palpitesUnico=pu;
+  renderAdminPendUnico();
   toast('Rejeitado','info');
 }
 
