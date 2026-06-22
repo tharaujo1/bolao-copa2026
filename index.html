@@ -607,11 +607,6 @@ select option{background:var(--bg);}
         <label>Premiação 2º (%)</label><input type="number" id="mataP2" value="25">
         <label>Premiação 3º (%)</label><input type="number" id="mataP3" value="15">
         <div class="divider-amarelo"></div>
-        <div class="card-title">Chave Pix — Mata-Mata</div>
-        <label>Tipo</label><select id="mataPixTipo"><option>CPF</option><option>Celular</option><option>Email</option><option>Aleatória</option></select>
-        <label>Chave</label><input type="text" id="mataPixChave">
-        <label>Nome</label><input type="text" id="mataPixNome">
-        <label>Banco</label><input type="text" id="mataPixBanco">
         <div class="toggle-row" style="margin-top:12px">
           <div class="toggle-info">
             <div class="toggle-label">Inscrições abertas</div>
@@ -668,12 +663,7 @@ select option{background:var(--bg);}
         <div id="unicoBonusQWrap" style="display:none"><label>Texto da pergunta</label><input type="text" id="unicoBonusQ" placeholder="Ex: Quem faz o 1º gol?"></div>
         <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Ordem de envio</div></div><button class="toggle on" id="tbUOrdem" onclick="this.classList.toggle('on')"></button></div>
         <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Aceitar palpites</div></div><button class="toggle on" id="tbUAceitar" onclick="this.classList.toggle('on')"></button></div>
-        <div class="divider-amarelo"></div>
-        <div class="card-title">Chave Pix — Jogo Extra</div>
-        <label>Tipo</label><select id="unicoPixTipo"><option>CPF</option><option>Celular</option><option>Email</option><option>Aleatória</option></select>
-        <label>Chave</label><input type="text" id="unicoPixChave">
-        <label>Nome</label><input type="text" id="unicoPixNome">
-        <label>Banco</label><input type="text" id="unicoPixBanco">
+        
         <button class="btn btn-amarelo mt8" onclick="salvarCfgUnico()">Salvar Configurações</button>
         <button class="btn btn-danger" onclick="limparUnico()">⚠️ Limpar palpites</button>
 
@@ -1481,18 +1471,12 @@ function renderRanking(){
       const total=ativos.length*(cfgMata.valor||20);
       const medals=['🥇','🥈','🥉'];
       let prows='';
-      // FIX C2: 1 participante leva 100%
-      if(ranked.length===1){
-        prows=`<div class="prize-row"><div class="prize-pos">🥇</div><div class="prize-name">${ranked[0].nome}</div><div class="prize-val">R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>`;
-      } else {
       [[cfgMata.p1,0],[cfgMata.p2,1],[cfgMata.p3,2]].forEach(([pct,i])=>{
         if(ranked[i]&&pct>0) prows+=`<div class="prize-row"><div class="prize-pos">${medals[i]}</div><div class="prize-name">${ranked[i].nome}</div><div class="prize-val">R$ ${(total*pct/100).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>`;
       });
-      }
       document.getElementById('rankPremioList').innerHTML=prows;
       document.getElementById('rankTotal').textContent='R$ '+total.toLocaleString('pt-BR',{minimumFractionDigits:2});
       premCard.style.display='block';
-      updateRankPixOrg(); // FIX C5
     } else premCard.style.display='none';
     const pc=['p1','p2','p3'],pp=['g','s','b'],md=['🥇','🥈','🥉'];
     container.innerHTML=ranked.map((p,i)=>`<div class="rank-item ${pc[i]||''}">
@@ -1504,7 +1488,6 @@ function renderRanking(){
       </div>
       <div class="rank-pts-col"><div class="rank-pts">${p.total}</div><div class="rank-pts-lbl">pts</div></div>
     </div>`).join('');
-    renderPixGanhadorAdmin(ranked, 'mata');
   } else {
     const j=cfgUnico.jogoAtivo;
     if(j){document.getElementById('rrF1').textContent=j.f1;document.getElementById('rrT1').textContent=j.t1;document.getElementById('rrF2').textContent=j.f2;document.getElementById('rrT2').textContent=j.t2;}
@@ -1532,12 +1515,9 @@ function renderRanking(){
       [[cfgUnico.p1,0],[cfgUnico.p2,1],[cfgUnico.p3,2]].forEach(([pct,i])=>{
         if(ranked[i]&&pct>0) prows+=`<div class="prize-row"><div class="prize-pos">${medals[i]}</div><div class="prize-name">${ranked[i].nome}</div><div class="prize-val">R$ ${(total*pct/100).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>`;
       });
-      // FIX C2: 1 participante leva 100%
-      if(ranked.length===1) prows=`<div class="prize-row"><div class="prize-pos">🥇</div><div class="prize-name">${ranked[0].nome}</div><div class="prize-val">R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>`;
       document.getElementById('rankPremioList').innerHTML=prows;
       document.getElementById('rankTotal').textContent='R$ '+total.toLocaleString('pt-BR',{minimumFractionDigits:2});
       premCard.style.display='block';
-      updateRankPixOrg(); // FIX C5
       const pc=['p1','p2','p3'],pp=['g','s','b'],md=['🥇','🥈','🥉'];
       container.innerHTML=ranked.map((p,i)=>`<div class="rank-item ${pc[i]||''}">
         <div class="rank-pos ${pp[i]||''}">${i+1}</div>
@@ -1548,8 +1528,6 @@ function renderRanking(){
         </div>
         <div class="rank-pts-col"><div class="rank-pts">${p.pts}</div><div class="rank-pts-lbl">pts</div></div>
       </div>`).join('');
-      // Card Pix do ganhador — visível apenas para o admin
-      renderPixGanhadorAdmin(ranked, 'unico');
     } else {
       resCard.style.display='none';premCard.style.display='none';
       container.innerHTML=ativos.sort((a,b)=>a.ts-b.ts).map((p,i)=>`<div class="rank-item">
@@ -1821,85 +1799,6 @@ async function addFeed(icon,texto){
   await sb.from('feed').insert({icon,texto,hora});
 }
 
-// Renderiza card de Pix do ganhador abaixo do ranking — só para admin
-async function renderPixGanhadorAdmin(ranked, bolao){
-  // Só exibe para o admin
-  const containerId = 'rankPixGanhadorAdmin';
-  let el = document.getElementById(containerId);
-  if(!el){
-    el = document.createElement('div');
-    el.id = containerId;
-    const rankContainer = document.getElementById('rankContainer');
-    if(rankContainer) rankContainer.after(el);
-  }
-
-  if(!adminUnlocked || !ranked || !ranked.length){
-    el.innerHTML=''; return;
-  }
-
-  const ganhador = ranked[0]; // 1º colocado
-  if(!ganhador) { el.innerHTML=''; return; }
-
-  // Buscar Pix do ganhador nos participantes
-  const whatsLimpo = (ganhador.whats||'').replace(/\D/g,'');
-  let pixChave='', pixTipo='', pixNome='';
-  try{
-    const r = await fetch('/api/participantes', {headers:{'x-master-key':'tharaujo2026'}});
-    if(r.ok){
-      const list = await r.json();
-      const part = list.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
-      if(part){ pixChave=part.pix_chave||''; pixTipo=part.pix_tipo||'Pix'; pixNome=part.nome||ganhador.nome; }
-    }
-  } catch(e){}
-
-  const bolaoLabel = bolao==='mata'?'Mata-Mata':'Jogo Extra';
-  const pts = ganhador.total ?? ganhador.pts ?? '—';
-
-  el.innerHTML=`
-    <div style="background:linear-gradient(135deg,rgba(255,215,0,0.08),rgba(0,0,0,0));
-      border:1.5px solid #FFD700;border-radius:14px;padding:16px;margin-top:4px;margin-bottom:12px">
-      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
-        color:#FFD700;margin-bottom:10px">🔐 Admin — Pix do Ganhador · ${bolaoLabel}</div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-        <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#FFD700,#C9B000);
-          display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#000;flex-shrink:0">
-          ${ganhador.nome[0].toUpperCase()}
-        </div>
-        <div>
-          <div style="font-size:15px;font-weight:700;color:#FFD700">${ganhador.nome} 🥇</div>
-          <div style="font-size:11px;color:var(--txt2);margin-top:1px">${pts} pts · ${ganhador.whats||'sem WhatsApp'}</div>
-        </div>
-      </div>
-      ${pixChave
-        ? `<div style="background:rgba(0,0,0,0.4);border-radius:10px;padding:12px;margin-bottom:8px">
-            <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">${pixTipo}</div>
-            <div style="font-size:14px;color:var(--amarelo);font-weight:700;font-family:monospace;word-break:break-all">${pixChave}</div>
-            <div style="font-size:11px;color:var(--txt2);margin-top:3px">${pixNome}</div>
-           </div>
-           <button onclick="copiarPixGanhador('${pixChave.replace(/'/g,"\'")}','${ganhador.nome.replace(/'/g,"\'")}') "
-             style="width:100%;background:rgba(255,215,0,0.15);border:1.5px solid #FFD700;
-             color:#FFD700;border-radius:8px;padding:10px;font-size:12px;font-weight:700;
-             cursor:pointer;font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:0.5px;
-             touch-action:manipulation">
-             📋 Copiar chave Pix para pagar
-           </button>`
-        : `<div style="font-size:12px;color:var(--txt3);padding:8px 0">
-            ⚠️ ${ganhador.nome} não cadastrou chave Pix.
-            <br>WhatsApp: <strong style="color:var(--txt)">${ganhador.whats||'não informado'}</strong>
-           </div>`
-      }
-    </div>`;
-}
-
-// Copiar chave Pix do ganhador (só admin vê)
-function copiarPixGanhador(chave, nome){
-  navigator.clipboard?.writeText(chave).then(()=>toast(`Pix de ${nome} copiado! 📋`,'ok')).catch(()=>{
-    const t=document.createElement('textarea');t.value=chave;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);toast(`Pix de ${nome} copiado! 📋`,'ok');
-  });
-}
-// updateRankPixOrg: mantida por compatibilidade mas sem efeito (card removido do HTML)
-function updateRankPixOrg(){ /* no-op */ }
-
 function renderFeed(){
   const c=document.getElementById('feedContainer');
   if(!feedList.length){c.innerHTML='<div class="empty"><div class="empty-text">Nenhum evento ainda</div></div>';return;}
@@ -1961,26 +1860,11 @@ async function fetchAllToday(manual=false){
       return gameBrazilDate === brazilToday;
     });
 
-    if(todayMatches.length){
-      renderTodayGames(c, todayMatches, manual, false);
-    } else {
-      // FIX C4: sem jogos hoje → mostra amanhã automaticamente
-      const brazilTomorrow = new Date(brazilNow.getTime() + 24*60*60*1000).toISOString().split('T')[0];
-      const tomorrowMatches = allMatches.filter(m=>{
-        if(!m.utcDate) return false;
-        const gb = new Date(new Date(m.utcDate).getTime() - 3*60*60*1000);
-        return gb.toISOString().split('T')[0] === brazilTomorrow;
-      });
-      if(tomorrowMatches.length){
-        renderTodayGames(c, tomorrowMatches, manual, true);
-      } else {
-        c.innerHTML='<div class="empty"><div class="empty-text">Nenhum jogo da Copa hoje ou amanhã 📅</div></div>';
-      }
-    }
+    renderTodayGames(c, todayMatches, manual);
   }catch(e){ c.innerHTML='<div class="empty"><div class="empty-text">Erro de conexão</div></div>'; }
 }
 
-function renderTodayGames(c, matches, manual, isAmanha=false){
+function renderTodayGames(c, matches, manual){
   if(!matches.length){
     c.innerHTML='<div class="empty"><div class="empty-text">Nenhum jogo da Copa hoje 📅</div></div>';
     return;
@@ -1990,14 +1874,12 @@ function renderTodayGames(c, matches, manual, isAmanha=false){
   matches.sort((a,b)=>(order[a.status]??9)-(order[b.status]??9));
 
   c.innerHTML=matches.map(m=>{
+    const s=m.score?.fullTime||m.score?.halfTime||{};
+    const g1=s.home; const g2=s.away;
     const status=m.status;
     const isLive=status==='IN_PLAY'||status==='PAUSED';
     const isDone=status==='FINISHED';
-    // FIX C3: regularTime > fullTime > halfTime; score real só FINISHED
-    const _sc=m.score||{};
-    const _sf=isDone?(_sc.regularTime||_sc.fullTime||_sc.halfTime||{}):(isLive?(_sc.halfTime||{}):{});
-    const g1=_sf.home; const g2=_sf.away;
-    const hasScore=(g1!==null&&g1!==undefined)&&(isDone||isLive);
+    const hasScore=g1!==null&&g1!==undefined&&isDone||isLive;
     const kickoff=formatKickoff(m.utcDate);
     const f1=getCountryFlag(m.homeTeam?.name||'');
     const f2=getCountryFlag(m.awayTeam?.name||'');
@@ -2019,13 +1901,7 @@ function renderTodayGames(c, matches, manual, isAmanha=false){
       </div>
     </div>`;
   }).join('');
-  if(isAmanha){
-    const lbl=document.createElement('div');
-    lbl.style.cssText='font-size:11px;color:var(--amarelo);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border2)';
-    lbl.textContent='📅 Próximos jogos — amanhã';
-    c.insertBefore(lbl,c.firstChild);
-    if(manual) toast('Mostrando jogos de amanhã (sem jogos hoje)','info');
-  } else if(manual) toast('Jogos atualizados!','ok');
+  if(manual) toast('Jogos atualizados!','ok');
 }
 
 async function fetchLive(manual=false){
@@ -2062,10 +1938,8 @@ async function fetchLive(manual=false){
     }) || wcMatches[0]; // fallback to first WC match of the day
 
     if(found){
-      // FIX C3: regularTime > fullTime > halfTime; só score real quando FINISHED
-      const _fsc=found.score||{};
-      const _fsf=found.status==='FINISHED'?(_fsc.regularTime||_fsc.fullTime||_fsc.halfTime||{}):(_fsc.halfTime||{});
-      const g1=_fsf.home??'?',g2=_fsf.away??'?';
+      const s=found.score?.fullTime||found.score?.halfTime||{};
+      const g1=s.home??'?',g2=s.away??'?';
       const status=found.status;
 
       if(liveStatusEl){
@@ -2272,67 +2146,19 @@ async function salvarResultadoMata(){
 
 function renderAdminPend(){
   const c=document.getElementById('admPendMata');
-  if(!palpitesMata.length){
-    c.innerHTML='<div class="empty"><div class="empty-text">Nenhum palpite ainda</div></div>';
-    return;
-  }
-  const pendentes  = palpitesMata.filter(p=>p.status==='pendente');
-  const ativos     = palpitesMata.filter(p=>p.status==='ativo');
-  const rejeitados = palpitesMata.filter(p=>p.status==='rejeitado');
-  const btnDel = (id,nome) => `<button style="background:var(--danger-pale);color:#EF5350;border:1px solid var(--danger);border-radius:8px;padding:6px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;touch-action:manipulation" onclick="excluirMata('${id}','${nome.replace(/'/g,"\\'")}')">🗑</button>`;
-  let out = '';
-  if(pendentes.length){
-    out += pendentes.map(p=>`<div class="part-item">
-      <div class="part-avatar" style="background:linear-gradient(135deg,#7F5200,#3D2700)">${p.nome[0].toUpperCase()}</div>
-      <div class="part-info">
-        <div class="part-name">${p.nome}</div>
-        <div class="part-meta">${p.whats||'Sem WhatsApp'} · ${new Date(p.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
-        <span class="badge badge-warning mt8">⏳ Aguardando aprovação</span>
-      </div>
-      <div class="part-actions">
-        <button class="btn-aprovar" onclick="aprovarMata('${p.id}')">✓ Ativar</button>
-        <button class="btn-rejeitar" onclick="rejeitarMata('${p.id}')">✗ Rejeitar</button>
-        ${btnDel(p.id,p.nome)}
-      </div>
-    </div>`).join('');
-  } else {
-    out += '<div style="font-size:12px;color:var(--txt3);padding:6px 0 10px">✓ Nenhum palpite pendente</div>';
-  }
-  const totalOutros = ativos.length + rejeitados.length;
-  if(totalOutros > 0){
-    out += `<details style="margin-top:6px">
-      <summary style="font-size:11px;color:var(--txt3);cursor:pointer;list-style:none;padding:8px 0;border-top:1px solid var(--border);user-select:none">
-        <span style="color:var(--success-light)">✓ ${ativos.length} ativo${ativos.length!==1?'s':''}</span>
-        ${rejeitados.length?`<span style="color:#EF5350;margin-left:10px">✗ ${rejeitados.length} rejeitado${rejeitados.length!==1?'s':''}</span>`:''}
-        <span style="float:right;color:var(--txt3)">▾ ver todos</span>
-      </summary>
-      <div style="margin-top:6px">
-      ${[...ativos,...rejeitados].map(p=>`<div class="part-item" style="opacity:0.7">
-        <div class="part-avatar">${p.nome[0].toUpperCase()}</div>
-        <div class="part-info">
-          <div class="part-name">${p.nome}</div>
-          <div class="part-meta">${p.whats||'Sem WhatsApp'} · ${new Date(p.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
-          <span class="badge ${p.status==='ativo'?'badge-verde':'badge-danger'} mt8">${p.status==='ativo'?'✓ Ativo':'✗ Rejeitado'}</span>
-        </div>
-        <div class="part-actions">
-          ${p.status==='ativo'?`<button class="btn-rejeitar" onclick="rejeitarMata('${p.id}')">✗</button>`:''}
-          ${p.status==='rejeitado'?`<button class="btn-aprovar" onclick="aprovarMata('${p.id}')">↩ Reativar</button>`:''}
-          ${btnDel(p.id,p.nome)}
-        </div>
-      </div>`).join('')}
-      </div>
-    </details>`;
-  }
-  c.innerHTML = out;
-}
-
-async function excluirMata(id, nome){
-  if(!confirm(`Excluir palpite de ${nome}? Esta ação não pode ser desfeita.`)) return;
-  const {error} = await sb.from('palpites_mata').delete().eq('id', id);
-  if(error){ toast('Erro ao excluir','err'); return; }
-  palpitesMata = palpitesMata.filter(p=>p.id!==id);
-  updateHeader(); renderAdminPend(); renderPagList();
-  toast(`Palpite de ${nome} excluído`,'info');
+  if(!palpitesMata.length){c.innerHTML='<div class="empty"><div class="empty-text">Nenhum palpite ainda</div></div>';return;}
+  c.innerHTML=palpitesMata.map(p=>`<div class="part-item">
+    <div class="part-avatar">${p.nome[0].toUpperCase()}</div>
+    <div class="part-info">
+      <div class="part-name">${p.nome}</div>
+      <div class="part-meta">${p.whats||'Sem WhatsApp'} · ${new Date(p.ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+      <span class="badge ${p.status==='ativo'?'badge-verde':p.status==='rejeitado'?'badge-danger':'badge-warning'} mt8">${p.status==='ativo'?'✓ Ativo':p.status==='rejeitado'?'Rejeitado':'⏳ Pendente'}</span>
+    </div>
+    <div class="part-actions">
+      ${p.status!=='ativo'?`<button class="btn-aprovar" onclick="aprovarMata('${p.id}')">✓ Ativar</button>`:''}
+      ${p.status!=='rejeitado'?`<button class="btn-rejeitar" onclick="rejeitarMata('${p.id}')">✗ Rejeitar</button>`:''}
+    </div>
+  </div>`).join('');
 }
 
 async function aprovarMata(id){
@@ -2349,10 +2175,7 @@ function loadCfgMata(){
   document.getElementById('mataP1').value=cfgMata.p1||60;
   document.getElementById('mataP2').value=cfgMata.p2||25;
   document.getElementById('mataP3').value=cfgMata.p3||15;
-  document.getElementById('mataPixTipo').value=cfgMata.pixTipo||'CPF';
-  document.getElementById('mataPixChave').value=cfgMata.pixChave||'';
-  document.getElementById('mataPixNome').value=cfgMata.pixNome||'';
-  document.getElementById('mataPixBanco').value=cfgMata.pixBanco||'';
+
   setT('tbMataInscricoes', cfgMata.inscricoesAbertas!==false);
 }
 
@@ -2362,10 +2185,7 @@ async function salvarCfgMata(){
     p1:parseInt(document.getElementById('mataP1').value)||60,
     p2:parseInt(document.getElementById('mataP2').value)||25,
     p3:parseInt(document.getElementById('mataP3').value)||15,
-    pixTipo:document.getElementById('mataPixTipo').value,
-    pixChave:document.getElementById('mataPixChave').value.trim(),
-    pixNome:document.getElementById('mataPixNome').value.trim(),
-    pixBanco:document.getElementById('mataPixBanco').value.trim(),
+
     inscricoesAbertas:getT('tbMataInscricoes'),
   };
   await sb.from('config').upsert({id:'mata',dados:cfgMata,updated_at:new Date().toISOString()});
@@ -2554,67 +2374,19 @@ async function limparResUnico(){
 function renderAdminPendUnico(){
   const c=document.getElementById('admPendUnico');
   const j=cfgUnico.jogoAtivo;
-  if(!palpitesUnico.length){
-    c.innerHTML='<div class="empty"><div class="empty-text">Nenhum palpite ainda</div></div>';
-    return;
-  }
-  const pendentes = palpitesUnico.filter(p=>p.status==='pendente');
-  const ativos    = palpitesUnico.filter(p=>p.status==='ativo');
-  const rejeitados= palpitesUnico.filter(p=>p.status==='rejeitado');
-  const btnDel = (id,nome) => `<button style="background:var(--danger-pale);color:#EF5350;border:1px solid var(--danger);border-radius:8px;padding:6px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;touch-action:manipulation" onclick="excluirUnico('${id}','${nome.replace(/'/g,"\\'")}')">🗑</button>`;
-  let out = '';
-  if(pendentes.length){
-    out += pendentes.map(p=>`<div class="part-item">
-      <div class="part-avatar" style="background:linear-gradient(135deg,#7F5200,#3D2700)">${p.nome[0].toUpperCase()}</div>
-      <div class="part-info">
-        <div class="part-name">${p.nome}</div>
-        <div class="part-meta">${j?.f1||''}${p.g1}×${p.g2}${j?.f2||''}${p.bonus?' · '+p.bonus:''} · ${p.whats||'Sem WhatsApp'}</div>
-        <span class="badge badge-warning mt8">⏳ Aguardando aprovação</span>
-      </div>
-      <div class="part-actions">
-        <button class="btn-aprovar" onclick="aprovarUnico('${p.id}')">✓ Ativar</button>
-        <button class="btn-rejeitar" onclick="rejeitarUnico('${p.id}')">✗ Rejeitar</button>
-        ${btnDel(p.id,p.nome)}
-      </div>
-    </div>`).join('');
-  } else {
-    out += '<div style="font-size:12px;color:var(--txt3);padding:6px 0 10px">✓ Nenhum palpite pendente</div>';
-  }
-  const totalOutros = ativos.length + rejeitados.length;
-  if(totalOutros > 0){
-    out += `<details style="margin-top:6px">
-      <summary style="font-size:11px;color:var(--txt3);cursor:pointer;list-style:none;padding:8px 0;border-top:1px solid var(--border);user-select:none">
-        <span style="color:var(--success-light)">✓ ${ativos.length} ativo${ativos.length!==1?'s':''}</span>
-        ${rejeitados.length?`<span style="color:#EF5350;margin-left:10px">✗ ${rejeitados.length} rejeitado${rejeitados.length!==1?'s':''}</span>`:''}
-        <span style="float:right;color:var(--txt3)">▾ ver todos</span>
-      </summary>
-      <div style="margin-top:6px">
-      ${[...ativos,...rejeitados].map(p=>`<div class="part-item" style="opacity:0.7">
-        <div class="part-avatar">${p.nome[0].toUpperCase()}</div>
-        <div class="part-info">
-          <div class="part-name">${p.nome}</div>
-          <div class="part-meta">${j?.f1||''}${p.g1}×${p.g2}${j?.f2||''}${p.bonus?' · '+p.bonus:''} · ${p.whats||'Sem WhatsApp'}</div>
-          <span class="badge ${p.status==='ativo'?'badge-verde':'badge-danger'} mt8">${p.status==='ativo'?'✓ Ativo':'✗ Rejeitado'}</span>
-        </div>
-        <div class="part-actions">
-          ${p.status==='ativo'?`<button class="btn-rejeitar" onclick="rejeitarUnico('${p.id}')">✗</button>`:''}
-          ${p.status==='rejeitado'?`<button class="btn-aprovar" onclick="aprovarUnico('${p.id}')">↩ Reativar</button>`:''}
-          ${btnDel(p.id,p.nome)}
-        </div>
-      </div>`).join('')}
-      </div>
-    </details>`;
-  }
-  c.innerHTML = out;
-}
-
-async function excluirUnico(id, nome){
-  if(!confirm(`Excluir palpite de ${nome}? Esta ação não pode ser desfeita.`)) return;
-  const {error} = await sb.from('palpites_unico').delete().eq('id', id);
-  if(error){ toast('Erro ao excluir','err'); return; }
-  palpitesUnico = palpitesUnico.filter(p=>p.id!==id);
-  updateHeader(); renderAdminPendUnico(); renderPagList();
-  toast(`Palpite de ${nome} excluído`,'info');
+  if(!palpitesUnico.length){c.innerHTML='<div class="empty"><div class="empty-text">Nenhum palpite ainda</div></div>';return;}
+  c.innerHTML=palpitesUnico.map(p=>`<div class="part-item">
+    <div class="part-avatar">${p.nome[0].toUpperCase()}</div>
+    <div class="part-info">
+      <div class="part-name">${p.nome}</div>
+      <div class="part-meta">${j?.f1||''}${p.g1}×${p.g2}${j?.f2||''}${p.bonus?' · '+p.bonus:''} · ${p.whats||'Sem WhatsApp'}</div>
+      <span class="badge ${p.status==='ativo'?'badge-verde':p.status==='rejeitado'?'badge-danger':'badge-warning'} mt8">${p.status==='ativo'?'✓ Ativo':p.status==='rejeitado'?'Rejeitado':'⏳ Pendente'}</span>
+    </div>
+    <div class="part-actions">
+      ${p.status!=='ativo'?`<button class="btn-aprovar" onclick="aprovarUnico('${p.id}')">✓ Ativar</button>`:''}
+      ${p.status!=='rejeitado'?`<button class="btn-rejeitar" onclick="rejeitarUnico('${p.id}')">✗ Rejeitar</button>`:''}
+    </div>
+  </div>`).join('');
 }
 
 async function aprovarUnico(id){
@@ -2637,10 +2409,7 @@ function loadCfgUnico(){
   document.getElementById('unicoP1').value=cfgUnico.p1||70;
   document.getElementById('unicoP2').value=cfgUnico.p2||20;
   document.getElementById('unicoP3').value=cfgUnico.p3||10;
-  document.getElementById('unicoPixTipo').value=cfgUnico.pixTipo||'CPF';
-  document.getElementById('unicoPixChave').value=cfgUnico.pixChave||'';
-  document.getElementById('unicoPixNome').value=cfgUnico.pixNome||'';
-  document.getElementById('unicoPixBanco').value=cfgUnico.pixBanco||'';
+
   document.getElementById('unicoBonusQ').value=cfgUnico.bonusQ||'';
   document.getElementById('apiKeyInput').value=apiKey||'';
   const adminKeyEl=document.getElementById('apiKeyInputAdmin');if(adminKeyEl)adminKeyEl.value=apiKey||'';
@@ -2659,10 +2428,7 @@ async function salvarCfgUnico(){
     p1:parseInt(document.getElementById('unicoP1').value)||70,
     p2:parseInt(document.getElementById('unicoP2').value)||20,
     p3:parseInt(document.getElementById('unicoP3').value)||10,
-    pixTipo:document.getElementById('unicoPixTipo').value,
-    pixChave:document.getElementById('unicoPixChave').value.trim(),
-    pixNome:document.getElementById('unicoPixNome').value.trim(),
-    pixBanco:document.getElementById('unicoPixBanco').value.trim(),
+
     tbGV:getT('tbU1'),tbTG:getT('tbU2'),tbGP:getT('tbU3'),
     tbBonus:getT('tbUBonus'),bonusQ:document.getElementById('unicoBonusQ').value.trim(),
     tbOrdem:getT('tbUOrdem'),aceitar:getT('tbUAceitar'),
@@ -2675,8 +2441,7 @@ async function salvarCfgUnico(){
 async function limparUnico(){
   if(!confirm('Limpar palpites e resultado do jogo extra?')) return;
   await sb.from('palpites_unico').delete().neq('id','00000000-0000-0000-0000-000000000000');
-  // FIX C1: DELETE garante que resultado_unico não contamina próximo bolão
-  await sb.from('resultado_unico').delete().eq('id',1);
+  await sb.from('resultado_unico').upsert({id:1,g1:null,g2:null,bonus_ans:'',updated_at:new Date().toISOString()});
   // Also clear active game
   cfgUnico.jogoAtivo = null;
   cfgUnico.aceitar = true;
