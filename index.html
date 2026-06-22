@@ -459,13 +459,6 @@ select option{background:var(--bg);}
     <div id="rankPremioList"></div>
     <div class="divider"></div>
     <div class="flex-between text-sm"><span>Total arrecadado</span><span class="text-amarelo" style="font-weight:700" id="rankTotal">—</span></div>
-    <!-- FIX C5: chave Pix do organizador para facilitar pagamento -->
-    <div id="rankPixOrg" style="display:none;margin-top:12px;background:var(--bg);border-radius:10px;padding:12px">
-      <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">💳 Pix do organizador</div>
-      <div style="font-size:13px;color:var(--amarelo);font-weight:700;font-family:monospace;word-break:break-all" id="rankPixOrgChave">—</div>
-      <div style="font-size:11px;color:var(--txt2);margin-top:2px" id="rankPixOrgNome">—</div>
-      <button onclick="copiarPixOrg()" style="margin-top:8px;background:rgba(254,223,0,0.1);border:1.5px solid var(--border2);color:var(--amarelo);border-radius:8px;padding:8px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:0.5px;width:100%">📋 Copiar chave Pix</button>
-    </div>
   </div>
   <div id="rankContainer"></div>
   <div id="rankEmpty" class="empty" style="display:none"><div class="empty-icon">🏆</div><div class="empty-text">Nenhum palpite ativo ainda.</div></div>
@@ -1511,6 +1504,7 @@ function renderRanking(){
       </div>
       <div class="rank-pts-col"><div class="rank-pts">${p.total}</div><div class="rank-pts-lbl">pts</div></div>
     </div>`).join('');
+    renderPixGanhadorAdmin(ranked, 'mata');
   } else {
     const j=cfgUnico.jogoAtivo;
     if(j){document.getElementById('rrF1').textContent=j.f1;document.getElementById('rrT1').textContent=j.t1;document.getElementById('rrF2').textContent=j.f2;document.getElementById('rrT2').textContent=j.t2;}
@@ -1554,6 +1548,8 @@ function renderRanking(){
         </div>
         <div class="rank-pts-col"><div class="rank-pts">${p.pts}</div><div class="rank-pts-lbl">pts</div></div>
       </div>`).join('');
+      // Card Pix do ganhador — visível apenas para o admin
+      renderPixGanhadorAdmin(ranked, 'unico');
     } else {
       resCard.style.display='none';premCard.style.display='none';
       container.innerHTML=ativos.sort((a,b)=>a.ts-b.ts).map((p,i)=>`<div class="rank-item">
@@ -1825,24 +1821,84 @@ async function addFeed(icon,texto){
   await sb.from('feed').insert({icon,texto,hora});
 }
 
-// FIX C5: copiar chave Pix do organizador no Ranking
-function copiarPixOrg(){
-  const chave=document.getElementById('rankPixOrgChave')?.textContent;
-  if(!chave||chave==='—') return toast('Chave Pix não configurada','err');
-  navigator.clipboard?.writeText(chave).then(()=>toast('Chave Pix copiada! 📋','ok')).catch(()=>{
-    const t=document.createElement('textarea');t.value=chave;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);toast('Chave Pix copiada! 📋','ok');
+// Renderiza card de Pix do ganhador abaixo do ranking — só para admin
+async function renderPixGanhadorAdmin(ranked, bolao){
+  // Só exibe para o admin
+  const containerId = 'rankPixGanhadorAdmin';
+  let el = document.getElementById(containerId);
+  if(!el){
+    el = document.createElement('div');
+    el.id = containerId;
+    const rankContainer = document.getElementById('rankContainer');
+    if(rankContainer) rankContainer.after(el);
+  }
+
+  if(!adminUnlocked || !ranked || !ranked.length){
+    el.innerHTML=''; return;
+  }
+
+  const ganhador = ranked[0]; // 1º colocado
+  if(!ganhador) { el.innerHTML=''; return; }
+
+  // Buscar Pix do ganhador nos participantes
+  const whatsLimpo = (ganhador.whats||'').replace(/\D/g,'');
+  let pixChave='', pixTipo='', pixNome='';
+  try{
+    const r = await fetch('/api/participantes', {headers:{'x-master-key':'tharaujo2026'}});
+    if(r.ok){
+      const list = await r.json();
+      const part = list.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
+      if(part){ pixChave=part.pix_chave||''; pixTipo=part.pix_tipo||'Pix'; pixNome=part.nome||ganhador.nome; }
+    }
+  } catch(e){}
+
+  const bolaoLabel = bolao==='mata'?'Mata-Mata':'Jogo Extra';
+  const pts = ganhador.total ?? ganhador.pts ?? '—';
+
+  el.innerHTML=`
+    <div style="background:linear-gradient(135deg,rgba(255,215,0,0.08),rgba(0,0,0,0));
+      border:1.5px solid #FFD700;border-radius:14px;padding:16px;margin-top:4px;margin-bottom:12px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+        color:#FFD700;margin-bottom:10px">🔐 Admin — Pix do Ganhador · ${bolaoLabel}</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#FFD700,#C9B000);
+          display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#000;flex-shrink:0">
+          ${ganhador.nome[0].toUpperCase()}
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#FFD700">${ganhador.nome} 🥇</div>
+          <div style="font-size:11px;color:var(--txt2);margin-top:1px">${pts} pts · ${ganhador.whats||'sem WhatsApp'}</div>
+        </div>
+      </div>
+      ${pixChave
+        ? `<div style="background:rgba(0,0,0,0.4);border-radius:10px;padding:12px;margin-bottom:8px">
+            <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">${pixTipo}</div>
+            <div style="font-size:14px;color:var(--amarelo);font-weight:700;font-family:monospace;word-break:break-all">${pixChave}</div>
+            <div style="font-size:11px;color:var(--txt2);margin-top:3px">${pixNome}</div>
+           </div>
+           <button onclick="copiarPixGanhador('${pixChave.replace(/'/g,"\'")}','${ganhador.nome.replace(/'/g,"\'")}') "
+             style="width:100%;background:rgba(255,215,0,0.15);border:1.5px solid #FFD700;
+             color:#FFD700;border-radius:8px;padding:10px;font-size:12px;font-weight:700;
+             cursor:pointer;font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:0.5px;
+             touch-action:manipulation">
+             📋 Copiar chave Pix para pagar
+           </button>`
+        : `<div style="font-size:12px;color:var(--txt3);padding:8px 0">
+            ⚠️ ${ganhador.nome} não cadastrou chave Pix.
+            <br>WhatsApp: <strong style="color:var(--txt)">${ganhador.whats||'não informado'}</strong>
+           </div>`
+      }
+    </div>`;
+}
+
+// Copiar chave Pix do ganhador (só admin vê)
+function copiarPixGanhador(chave, nome){
+  navigator.clipboard?.writeText(chave).then(()=>toast(`Pix de ${nome} copiado! 📋`,'ok')).catch(()=>{
+    const t=document.createElement('textarea');t.value=chave;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);toast(`Pix de ${nome} copiado! 📋`,'ok');
   });
 }
-function updateRankPixOrg(){
-  const cfg=modo==='mata'?cfgMata:cfgUnico;
-  const el=document.getElementById('rankPixOrg');
-  if(!el) return;
-  if(cfg.pixChave){
-    document.getElementById('rankPixOrgChave').textContent=cfg.pixChave;
-    document.getElementById('rankPixOrgNome').textContent=(cfg.pixNome||'Organizador')+(cfg.pixBanco?' · '+cfg.pixBanco:'');
-    el.style.display='block';
-  } else { el.style.display='none'; }
-}
+// updateRankPixOrg: mantida por compatibilidade mas sem efeito (card removido do HTML)
+function updateRankPixOrg(){ /* no-op */ }
 
 function renderFeed(){
   const c=document.getElementById('feedContainer');
