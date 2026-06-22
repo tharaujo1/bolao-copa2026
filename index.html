@@ -633,18 +633,8 @@ select option{background:var(--bg);}
           Compartilhar no WhatsApp
         </button>
         <div class="divider"></div>
-        <div class="card-title">Resultado — Jogo Extra</div>
-        <div class="placar-row">
-          <div class="pl-team"><div class="pl-flag" id="uResF1">🏴</div><div class="pl-name" id="uResT1">Time A</div><input type="number" id="uResG1" value="0" min="0" max="20"></div>
-          <div class="pl-vs">✕</div>
-          <div class="pl-team"><div class="pl-flag" id="uResF2">🏴</div><div class="pl-name" id="uResT2">Time B</div><input type="number" id="uResG2" value="0" min="0" max="20"></div>
-        </div>
-        <div id="unicoBonusResWrap" style="display:none">
-          <label id="unicoBonusResLbl">Resposta correta</label>
-          <input type="text" id="unicoBonusResVal">
-        </div>
-        <button class="btn btn-verde" onclick="apurarUnico()">Apurar Resultado ⚽</button>
-        <button class="btn btn-gray" onclick="limparResUnico()">Limpar Resultado</button>
+        <div class="card-title">Resultado Manual — Fallback</div>
+        <div id="admResultadoManual"></div>
         <div class="divider"></div>
         <div class="card-title">Aprovação — Jogo Extra</div>
         <div id="admPendUnico"><div class="loading"><span class="loading-spinner">⚽</span></div></div>
@@ -860,31 +850,49 @@ const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 // JOGOS DA COPA
 // ═══════════════════════════════════════
 const FASES_MATA = [
-  {id:'oitavas',label:'Oitavas',mult:1,jogos:[
-    {id:'O1',t1:'1º Grupo A',f1:'🏆',t2:'2º Grupo B',f2:'🥈',date:'28/06',time:'16h'},
-    {id:'O2',t1:'1º Grupo C',f1:'🏆',t2:'2º Grupo D',f2:'🥈',date:'28/06',time:'20h'},
-    {id:'O3',t1:'1º Grupo E',f1:'🏆',t2:'2º Grupo F',f2:'🥈',date:'29/06',time:'16h'},
-    {id:'O4',t1:'1º Grupo G',f1:'🏆',t2:'2º Grupo H',f2:'🥈',date:'29/06',time:'20h'},
-    {id:'O5',t1:'1º Grupo B',f1:'🏆',t2:'2º Grupo A',f2:'🥈',date:'30/06',time:'16h'},
-    {id:'O6',t1:'1º Grupo D',f1:'🏆',t2:'2º Grupo C',f2:'🥈',date:'30/06',time:'20h'},
-    {id:'O7',t1:'1º Grupo F',f1:'🏆',t2:'2º Grupo E',f2:'🥈',date:'01/07',time:'16h'},
-    {id:'O8',t1:'1º Grupo H',f1:'🏆',t2:'2º Grupo G',f2:'🥈',date:'01/07',time:'20h'},
+  {id:'dezesseis',label:'16-avos',mult:1,jogos:[
+    {id:'D01',t1:'1º Grupo A',f1:'🏆',t2:'3º Grupo C/D/E',f2:'🥉',date:'28/06',time:'16h'},
+    {id:'D02',t1:'1º Grupo C',f1:'🏆',t2:'3º Grupo A/B/F',f2:'🥉',date:'28/06',time:'20h'},
+    {id:'D03',t1:'1º Grupo B',f1:'🏆',t2:'3º Grupo G/H/I',f2:'🥉',date:'29/06',time:'16h'},
+    {id:'D04',t1:'1º Grupo D',f1:'🏆',t2:'2º Grupo B',f2:'🥈',date:'29/06',time:'20h'},
+    {id:'D05',t1:'1º Grupo E',f1:'🏆',t2:'2º Grupo D',f2:'🥈',date:'30/06',time:'16h'},
+    {id:'D06',t1:'1º Grupo F',f1:'🏆',t2:'2º Grupo E',f2:'🥈',date:'30/06',time:'20h'},
+    {id:'D07',t1:'1º Grupo G',f1:'🏆',t2:'2º Grupo H',f2:'🥈',date:'01/07',time:'16h'},
+    {id:'D08',t1:'1º Grupo H',f1:'🏆',t2:'2º Grupo G',f2:'🥈',date:'01/07',time:'20h'},
+    {id:'D09',t1:'1º Grupo I',f1:'🏆',t2:'2º Grupo J',f2:'🥈',date:'02/07',time:'16h'},
+    {id:'D10',t1:'1º Grupo J',f1:'🏆',t2:'2º Grupo I',f2:'🥈',date:'02/07',time:'20h'},
+    {id:'D11',t1:'1º Grupo K',f1:'🏆',t2:'2º Grupo L',f2:'🥈',date:'03/07',time:'16h'},
+    {id:'D12',t1:'1º Grupo L',f1:'🏆',t2:'2º Grupo K',f2:'🥈',date:'03/07',time:'20h'},
+    {id:'D13',t1:'2º Grupo A',f1:'🥈',t2:'2º Grupo C',f2:'🥈',date:'04/07',time:'16h'},
+    {id:'D14',t1:'2º Grupo F',f1:'🥈',t2:'3º Grupo J/K/L',f2:'🥉',date:'04/07',time:'20h'},
+    {id:'D15',t1:'1º Grupo À',f1:'🏆',t2:'3º Grupo B/C/D',f2:'🥉',date:'05/07',time:'16h'},
+    {id:'D16',t1:'2º Grupo À',f1:'🥈',t2:'3º Grupo E/F/G',f2:'🥉',date:'05/07',time:'20h'},
   ]},
-  {id:'quartas',label:'Quartas',mult:1.5,jogos:[
-    {id:'Q1',t1:'Vencedor O1',f1:'⚔️',t2:'Vencedor O2',f2:'⚔️',date:'04/07',time:'16h'},
-    {id:'Q2',t1:'Vencedor O3',f1:'⚔️',t2:'Vencedor O4',f2:'⚔️',date:'04/07',time:'20h'},
-    {id:'Q3',t1:'Vencedor O5',f1:'⚔️',t2:'Vencedor O6',f2:'⚔️',date:'05/07',time:'16h'},
-    {id:'Q4',t1:'Vencedor O7',f1:'⚔️',t2:'Vencedor O8',f2:'⚔️',date:'05/07',time:'20h'},
+  {id:'oitavas',label:'Oitavas',mult:1.5,jogos:[
+    {id:'O1',t1:'Vencedor D01',f1:'⚔️',t2:'Vencedor D02',f2:'⚔️',date:'08/07',time:'16h'},
+    {id:'O2',t1:'Vencedor D03',f1:'⚔️',t2:'Vencedor D04',f2:'⚔️',date:'08/07',time:'20h'},
+    {id:'O3',t1:'Vencedor D05',f1:'⚔️',t2:'Vencedor D06',f2:'⚔️',date:'09/07',time:'16h'},
+    {id:'O4',t1:'Vencedor D07',f1:'⚔️',t2:'Vencedor D08',f2:'⚔️',date:'09/07',time:'20h'},
+    {id:'O5',t1:'Vencedor D09',f1:'⚔️',t2:'Vencedor D10',f2:'⚔️',date:'10/07',time:'16h'},
+    {id:'O6',t1:'Vencedor D11',f1:'⚔️',t2:'Vencedor D12',f2:'⚔️',date:'10/07',time:'20h'},
+    {id:'O7',t1:'Vencedor D13',f1:'⚔️',t2:'Vencedor D14',f2:'⚔️',date:'11/07',time:'16h'},
+    {id:'O8',t1:'Vencedor D15',f1:'⚔️',t2:'Vencedor D16',f2:'⚔️',date:'11/07',time:'20h'},
   ]},
-  {id:'semi',label:'Semifinal',mult:2,jogos:[
-    {id:'S1',t1:'Vencedor Q1',f1:'🔥',t2:'Vencedor Q2',f2:'🔥',date:'09/07',time:'16h'},
-    {id:'S2',t1:'Vencedor Q3',f1:'🔥',t2:'Vencedor Q4',f2:'🔥',date:'09/07',time:'20h'},
+  {id:'quartas',label:'Quartas',mult:2,jogos:[
+    {id:'Q1',t1:'Vencedor O1',f1:'🔥',t2:'Vencedor O2',f2:'🔥',date:'14/07',time:'16h'},
+    {id:'Q2',t1:'Vencedor O3',f1:'🔥',t2:'Vencedor O4',f2:'🔥',date:'14/07',time:'20h'},
+    {id:'Q3',t1:'Vencedor O5',f1:'🔥',t2:'Vencedor O6',f2:'🔥',date:'15/07',time:'16h'},
+    {id:'Q4',t1:'Vencedor O7',f1:'🔥',t2:'Vencedor O8',f2:'🔥',date:'15/07',time:'20h'},
+  ]},
+  {id:'semi',label:'Semifinal',mult:2.5,jogos:[
+    {id:'S1',t1:'Vencedor Q1',f1:'🌟',t2:'Vencedor Q2',f2:'🌟',date:'18/07',time:'16h'},
+    {id:'S2',t1:'Vencedor Q3',f1:'🌟',t2:'Vencedor Q4',f2:'🌟',date:'18/07',time:'20h'},
   ]},
   {id:'terceiro',label:'3º Lugar',mult:1.5,jogos:[
-    {id:'T1',t1:'Perdedor S1',f1:'🥉',t2:'Perdedor S2',f2:'🥉',date:'12/07',time:'16h'},
+    {id:'T1',t1:'Perdedor S1',f1:'🥉',t2:'Perdedor S2',f2:'🥉',date:'19/07',time:'16h'},
   ]},
-  {id:'final',label:'Final',mult:2,jogos:[
-    {id:'F1',t1:'Vencedor S1',f1:'🏆',t2:'Vencedor S2',f2:'🏆',date:'19/07',time:'16h'},
+  {id:'final',label:'Final',mult:3,jogos:[
+    {id:'F1',t1:'Vencedor S1',f1:'🏆',t2:'Vencedor S2',f2:'🏆',date:'19/07',time:'20h'},
   ]},
 ];
 
@@ -1357,10 +1365,10 @@ function renderPtsBody(){
   const extra=document.getElementById('ptsExtraInfo');
   if(modo==='mata'){
     b.innerHTML=`<table class="pts-table">
-      <tr><th>Acerto</th><th>Oitavas</th><th>Quartas</th><th>Semi</th><th>Final</th></tr>
-      <tr><td>Placar exato</td><td class="pts-num">10</td><td class="pts-num">15</td><td class="pts-num">20</td><td class="pts-num">20</td></tr>
-      <tr><td>Venc.+saldo</td><td class="pts-num">6</td><td class="pts-num">9</td><td class="pts-num">12</td><td class="pts-num">12</td></tr>
-      <tr><td>Vencedor</td><td class="pts-num">3</td><td class="pts-num">5</td><td class="pts-num">6</td><td class="pts-num">6</td></tr>
+      <tr><th>Acerto</th><th>16-avos</th><th>Oitavas</th><th>Quartas</th><th>Semi</th><th>3º</th><th>Final</th></tr>
+      <tr><td>Placar exato</td><td class="pts-num">10</td><td class="pts-num">15</td><td class="pts-num">20</td><td class="pts-num">25</td><td class="pts-num">15</td><td class="pts-num">30</td></tr>
+      <tr><td>Venc.+saldo</td><td class="pts-num">6</td><td class="pts-num">9</td><td class="pts-num">12</td><td class="pts-num">15</td><td class="pts-num">9</td><td class="pts-num">18</td></tr>
+      <tr><td>Vencedor</td><td class="pts-num">3</td><td class="pts-num">5</td><td class="pts-num">6</td><td class="pts-num">8</td><td class="pts-num">5</td><td class="pts-num">9</td></tr>
     </table>`;
     if(extra) extra.innerHTML=`
       <div class="divider"></div>
@@ -1368,15 +1376,15 @@ function renderPtsBody(){
       <div style="display:flex;flex-direction:column;gap:6px">
         <div style="display:flex;gap:10px;font-size:12px;color:var(--txt2);align-items:flex-start">
           <span style="font-size:16px;flex-shrink:0">🎯</span>
-          <span><strong style="color:var(--txt)">Placar exato</strong> — você acertou o resultado certinho. Ex: Brasil 2×1 Argentina e o jogo terminou 2×1. <strong style="color:var(--amarelo)">10 pts</strong></span>
+          <span><strong style="color:var(--txt)">Placar exato</strong> — acertou o resultado certinho. Ex: Brasil 2×1 e terminou 2×1. <strong style="color:var(--amarelo)">10 pts</strong> (nos 16-avos)</span>
         </div>
         <div style="display:flex;gap:10px;font-size:12px;color:var(--txt2);align-items:flex-start">
           <span style="font-size:16px;flex-shrink:0">✅</span>
-          <span><strong style="color:var(--txt)">Vencedor + saldo</strong> — acertou quem ganhou e a diferença de gols. Ex: você chutou 2×0, jogo terminou 3×1 (diferença de 2 em ambos). <strong style="color:var(--amarelo)">6 pts</strong></span>
+          <span><strong style="color:var(--txt)">Vencedor + saldo</strong> — acertou quem ganhou e a diferença de gols. Ex: chutou 2×0, terminou 3×1 (diferença 2). <strong style="color:var(--amarelo)">6 pts</strong> (nos 16-avos)</span>
         </div>
         <div style="display:flex;gap:10px;font-size:12px;color:var(--txt2);align-items:flex-start">
           <span style="font-size:16px;flex-shrink:0">🏅</span>
-          <span><strong style="color:var(--txt)">Só o vencedor</strong> — acertou quem ganhou mas errou o saldo. Ex: você chutou 1×0, jogo terminou 3×1. <strong style="color:var(--amarelo)">3 pts</strong></span>
+          <span><strong style="color:var(--txt)">Só o vencedor</strong> — acertou quem ganhou mas errou o saldo. Ex: chutou 1×0, terminou 3×1. <strong style="color:var(--amarelo)">3 pts</strong> (nos 16-avos)</span>
         </div>
         <div style="display:flex;gap:10px;font-size:12px;color:var(--txt2);align-items:flex-start">
           <span style="font-size:16px;flex-shrink:0">✖️</span>
@@ -1385,8 +1393,8 @@ function renderPtsBody(){
       </div>
       <div style="background:var(--azul-pale);border-radius:10px;padding:10px;margin-top:10px;font-size:12px;color:var(--txt2)">
         <strong style="color:#7BA7FF">Multiplicadores por fase:</strong><br>
-        Oitavas ×1 · Quartas ×1,5 · Semifinal ×2 · Final ×2<br>
-        <span style="font-size:11px;color:var(--txt3)">Quem foi bem nas oitavas mantém vantagem nas fases seguintes.</span>
+        16-avos ×1 · Oitavas ×1,5 · Quartas ×2 · Semifinal ×2,5 · 3º Lugar ×1,5 · Final ×3<br>
+        <span style="font-size:11px;color:var(--txt3)">Pontos base × multiplicador da fase. Quem acertar mais nas fases finais vira o jogo!</span>
       </div>`;
   } else {
     b.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
@@ -2066,6 +2074,19 @@ function adminMode(m){
 }
 
 // ── MATA-MATA ADMIN ──
+// Mapeamento fase app -> stage API
+const FASE_STAGE_MAP = {
+  dezesseis: 'ROUND_OF_32',
+  oitavas:   'ROUND_OF_16',
+  quartas:   'QUARTER_FINALS',
+  semi:      'SEMI_FINALS',
+  terceiro:  'THIRD_PLACE',
+  final:     'FINAL',
+};
+
+// Cache de jogos buscados da API por fase
+const _mataAPICache = {};
+
 function renderAdminPhase(){
   const c=document.getElementById('admPhaseTabs');
   c.innerHTML=FASES_MATA.map(f=>`<button class="ptab ${selectedFase===f.id?'active':''}" onclick="selFase('${f.id}',this)">${f.label}${f.mult>1?' ×'+f.mult:''}</button>`).join('');
@@ -2081,11 +2102,53 @@ function selFase(id,el){
   renderAdminMatchList();
 }
 
-function renderAdminMatchList(){
+async function renderAdminMatchList(){
   const fase=FASES_MATA.find(f=>f.id===selectedFase);
   if(!fase) return;
+  const c=document.getElementById('admMatchList');
+  c.innerHTML='<div style="text-align:center;padding:10px;font-size:12px;color:var(--txt3)">⚽ Buscando confrontos...</div>';
+
+  // Tentar buscar da API
+  let jogos = fase.jogos; // fallback hardcoded
+  let fromAPI = false;
+  const stage = FASE_STAGE_MAP[selectedFase];
+
+  if(apiKey && stage){
+    // Usar cache se disponivel
+    if(_mataAPICache[selectedFase]){
+      jogos = _mataAPICache[selectedFase];
+      fromAPI = true;
+    } else {
+      try{
+        const res = await fetch(`/api/football?key=${apiKey}&path=competitions/2000/matches?stage=${stage}`);
+        if(res.ok){
+          const data = await res.json();
+          const matches = data.matches||[];
+          if(matches.length){
+            jogos = matches.map(m=>{
+              const j = apiMatchToJogo(m);
+              // Manter ID do hardcoded se encontrar por posicao, senao usar apiId
+              const hardIdx = fase.jogos.findIndex(hj=>
+                hj.t1.toLowerCase().includes(j.t1.toLowerCase().split(' ')[0]) ||
+                j.t1.toLowerCase().includes(hj.t1.toLowerCase().split(' ')[0])
+              );
+              j.id = hardIdx>=0 ? fase.jogos[hardIdx].id : (m.id?.toString()||`api_${m.id}`);
+              return j;
+            });
+            _mataAPICache[selectedFase] = jogos;
+            fromAPI = true;
+          }
+        }
+      } catch(e){ console.warn('API falhou, usando hardcoded:', e); }
+    }
+  }
+
   const ativos=cfgMata.jogosAtivos||[];
-  document.getElementById('admMatchList').innerHTML=fase.jogos.map(j=>`
+  const fonte = fromAPI
+    ? '<div style="font-size:10px;color:var(--verde);text-align:right;margin-bottom:6px">✓ Confrontos via API (tempo real)</div>'
+    : '<div style="font-size:10px;color:var(--txt3);text-align:right;margin-bottom:6px">⚠️ Confrontos estimados (API indisponível)</div>';
+
+  c.innerHTML = fonte + jogos.map(j=>`
     <div class="match-sel ${ativos.includes(j.id)?'selected':''}" onclick="toggleJogoMata('${j.id}',this)">
       <div class="match-sel-flags">${j.f1} ${j.f2}</div>
       <div class="match-sel-info">
@@ -2107,10 +2170,15 @@ function toggleJogoMata(id,el){
 
 async function ativarFase(){
   cfgMata.faseAtiva=selectedFase;
+  // Salvar jogos da fase atual (com nomes reais da API se disponivel)
+  const fase=FASES_MATA.find(f=>f.id===selectedFase);
+  const jogosCache=_mataAPICache[selectedFase];
+  if(jogosCache && fase) fase.jogos=jogosCache; // atualiza hardcoded com API
   await sb.from('config').upsert({id:'mata',dados:cfgMata,updated_at:new Date().toISOString()});
-  updateHeader();renderFormPalpite();
-  await addFeed('🏟️',`Fase ${selectedFase} aberta — ${cfgMata.jogosAtivos?.length||0} jogos`);
-  toast(`Fase ${selectedFase} aberta!`,'ok');
+  updateHeader();renderFormPalpite();renderResultadoSel();
+  const faseLabel=fase?.label||selectedFase;
+  await addFeed('🏟️',`${faseLabel} aberta — ${cfgMata.jogosAtivos?.length||0} jogos`);
+  toast(`${faseLabel} aberta!`,'ok');
 }
 
 function renderResultadoSel(){
@@ -2339,39 +2407,81 @@ ${link}
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,'_blank');
 }
 
-function updateUnicoResFields(){
-  const j=cfgUnico.jogoAtivo;
-  if(!j) return;
-  document.getElementById('uResF1').textContent=j.f1;document.getElementById('uResT1').textContent=j.t1;
-  document.getElementById('uResF2').textContent=j.f2;document.getElementById('uResT2').textContent=j.t2;
-  const bw=document.getElementById('unicoBonusResWrap');
-  if(bw) bw.style.display=cfgUnico.tbBonus&&cfgUnico.bonusQ?'block':'none';
-  if(document.getElementById('unicoBonusResLbl')&&cfgUnico.bonusQ)
-    document.getElementById('unicoBonusResLbl').textContent='Resposta correta: '+cfgUnico.bonusQ;
+function renderResultadoManual(){
+  const c = document.getElementById('admResultadoManual');
+  if(!c) return;
+  const jogosAtivos = [];
+  if(cfgUnico.jogoAtivo) jogosAtivos.push({slot:1, j:cfgUnico.jogoAtivo, cfgId:'unico', resId:1});
+  if(cfgUnico2.jogoAtivo) jogosAtivos.push({slot:2, j:cfgUnico2.jogoAtivo, cfgId:'unico2', resId:2});
+
+  if(!jogosAtivos.length){
+    c.innerHTML='<div style="font-size:12px;color:var(--txt3);padding:8px 0">✅ Apuração automática ativa — nenhum jogo extra ativo no momento</div>';
+    return;
+  }
+
+  c.innerHTML = jogosAtivos.map(({slot, j, cfgId, resId})=>`
+    <div style="background:var(--bg);border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--amarelo);margin-bottom:10px">
+        ${j.f1} ${j.t1} × ${j.t2} ${j.f2} — ${j.date} ${j.time}
+      </div>
+      <div class="placar-row">
+        <div class="pl-team">
+          <div class="pl-flag">${j.f1}</div>
+          <div class="pl-name">${j.t1}</div>
+          <input type="number" id="resG1_${slot}" value="" min="0" max="20" inputmode="numeric" placeholder="0" onclick="this.select()">
+        </div>
+        <div class="pl-vs">✕</div>
+        <div class="pl-team">
+          <div class="pl-flag">${j.f2}</div>
+          <div class="pl-name">${j.t2}</div>
+          <input type="number" id="resG2_${slot}" value="" min="0" max="20" inputmode="numeric" placeholder="0" onclick="this.select()">
+        </div>
+      </div>
+      <button class="btn btn-verde" onclick="apurarManual(${slot},'${cfgId}',${resId})">Apurar ⚽</button>
+      <button class="btn btn-gray" onclick="limparManual(${slot},'${cfgId}',${resId})" style="margin-top:6px">Limpar Resultado</button>
+    </div>
+  `).join('');
 }
 
-async function apurarUnico(){
-  const g1=parseInt(document.getElementById('uResG1').value)||0;
-  const g2=parseInt(document.getElementById('uResG2').value)||0;
-  const bonus_ans=document.getElementById('unicoBonusResVal')?.value.trim()||'';
-  await sb.from('resultado_unico').upsert({id:1,g1,g2,bonus_ans,updated_at:new Date().toISOString()});
-  const j=cfgUnico.jogoAtivo;
-  cfgUnico.aceitar=false;
-  cfgUnico.jogoAtivo=null; // Clear active game after result
-  await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
-  resultadoUnico={g1,g2,bonus_ans};
+async function apurarManual(slot, cfgId, resId){
+  const g1 = parseInt(document.getElementById(`resG1_${slot}`)?.value)||0;
+  const g2 = parseInt(document.getElementById(`resG2_${slot}`)?.value)||0;
+  const j = slot===1 ? cfgUnico.jogoAtivo : cfgUnico2.jogoAtivo;
+  await sb.from('resultado_unico').upsert({id:resId,g1,g2,bonus_ans:'',updated_at:new Date().toISOString()});
+  if(slot===1){
+    cfgUnico.aceitar=false; cfgUnico.jogoAtivo=null;
+    await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
+    resultadoUnico={g1,g2,bonus_ans:''};
+  } else {
+    cfgUnico2.aceitar=false; cfgUnico2.jogoAtivo=null;
+    await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
+  }
   updateHeader();
-  await addFeed('🏆',`Resultado jogo extra: ${j?.f1||''}${g1}×${g2}${j?.f2||''}`);
-  if('Notification'in window&&Notification.permission==='granted') new Notification('Bolão Copa 2026 — Encerrado!',{body:`Resultado: ${g1} × ${g2}`});
-  toast('Resultado apurado! 🏆','ok');
+  renderResultadoManual();
+  await addFeed('🏆',`Resultado: ${j?.f1||''}${j?.t1||''} ${g1}×${g2} ${j?.t2||''}${j?.f2||''}`);
+  if('Notification'in window&&Notification.permission==='granted')
+    new Notification('Bolão Copa 2026 — Resultado!',{body:`${j?.t1||''} ${g1} × ${g2} ${j?.t2||''}`});
+  toast(`🏆 ${j?.t1||''} ${g1}×${g2} ${j?.t2||''} — apurado!`,'ok');
 }
 
-async function limparResUnico(){
-  await sb.from('resultado_unico').upsert({id:1,g1:null,g2:null,bonus_ans:'',updated_at:new Date().toISOString()});
-  cfgUnico.aceitar=true;
-  await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
-  resultadoUnico=null;updateHeader();renderFormPalpite();toast('Resultado limpo','info');
+async function limparManual(slot, cfgId, resId){
+  await sb.from('resultado_unico').upsert({id:resId,g1:null,g2:null,bonus_ans:'',updated_at:new Date().toISOString()});
+  if(slot===1){
+    cfgUnico.aceitar=true;
+    await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
+    resultadoUnico=null; updateHeader(); renderFormPalpite();
+  } else {
+    cfgUnico2.aceitar=true;
+    await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
+  }
+  renderResultadoManual();
+  toast('Resultado limpo','info');
 }
+
+// Manter compatibilidade com chamadas antigas
+function updateUnicoResFields(){ renderResultadoManual(); }
+async function apurarUnico(){ await apurarManual(1,'unico',1); }
+async function limparResUnico(){ await limparManual(1,'unico',1); }
 
 function renderAdminPendUnico(){
   const c=document.getElementById('admPendUnico');
@@ -2648,11 +2758,9 @@ function filtroUnico2(fase,el){
   }).join('');
 }
 function renderAdminUnicoUnificado(){
-  // Show active games
   renderJogosAtivos();
-  // Show upcoming games list
   renderSmartJogos('unified');
-  // Show pending palpites for both extras
+  renderResultadoManual();
   renderAdminPendUnico();
 }
 
