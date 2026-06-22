@@ -668,12 +668,6 @@ select option{background:var(--bg);}
         <div id="unicoBonusQWrap" style="display:none"><label>Texto da pergunta</label><input type="text" id="unicoBonusQ" placeholder="Ex: Quem faz o 1º gol?"></div>
         <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Ordem de envio</div></div><button class="toggle on" id="tbUOrdem" onclick="this.classList.toggle('on')"></button></div>
         <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Aceitar palpites</div></div><button class="toggle on" id="tbUAceitar" onclick="this.classList.toggle('on')"></button></div>
-        <div class="divider-amarelo"></div>
-        <div class="card-title">Chave Pix — Jogo Extra</div>
-        <label>Tipo</label><select id="unicoPixTipo"><option>CPF</option><option>Celular</option><option>Email</option><option>Aleatória</option></select>
-        <label>Chave</label><input type="text" id="unicoPixChave">
-        <label>Nome</label><input type="text" id="unicoPixNome">
-        <label>Banco</label><input type="text" id="unicoPixBanco">
         <button class="btn btn-amarelo mt8" onclick="salvarCfgUnico()">Salvar Configurações</button>
         <button class="btn btn-danger" onclick="limparUnico()">⚠️ Limpar palpites</button>
 
@@ -2541,10 +2535,7 @@ function loadCfgUnico(){
   document.getElementById('unicoP1').value=cfgUnico.p1||70;
   document.getElementById('unicoP2').value=cfgUnico.p2||20;
   document.getElementById('unicoP3').value=cfgUnico.p3||10;
-  document.getElementById('unicoPixTipo').value=cfgUnico.pixTipo||'CPF';
-  document.getElementById('unicoPixChave').value=cfgUnico.pixChave||'';
-  document.getElementById('unicoPixNome').value=cfgUnico.pixNome||'';
-  document.getElementById('unicoPixBanco').value=cfgUnico.pixBanco||'';
+  // Campos Pix Jogo Extra removidos do painel (QR Code via MP substitui)
   document.getElementById('unicoBonusQ').value=cfgUnico.bonusQ||'';
   document.getElementById('apiKeyInput').value=apiKey||'';
   const adminKeyEl=document.getElementById('apiKeyInputAdmin');if(adminKeyEl)adminKeyEl.value=apiKey||'';
@@ -2563,10 +2554,7 @@ async function salvarCfgUnico(){
     p1:parseInt(document.getElementById('unicoP1').value)||70,
     p2:parseInt(document.getElementById('unicoP2').value)||20,
     p3:parseInt(document.getElementById('unicoP3').value)||10,
-    pixTipo:document.getElementById('unicoPixTipo').value,
-    pixChave:document.getElementById('unicoPixChave').value.trim(),
-    pixNome:document.getElementById('unicoPixNome').value.trim(),
-    pixBanco:document.getElementById('unicoPixBanco').value.trim(),
+    // Pix Jogo Extra gerenciado via Mercado Pago — campos removidos do painel
     tbGV:getT('tbU1'),tbTG:getT('tbU2'),tbGP:getT('tbU3'),
     tbBonus:getT('tbUBonus'),bonusQ:document.getElementById('unicoBonusQ').value.trim(),
     tbOrdem:getT('tbUOrdem'),aceitar:getT('tbUAceitar'),
