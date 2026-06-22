@@ -459,6 +459,13 @@ select option{background:var(--bg);}
     <div id="rankPremioList"></div>
     <div class="divider"></div>
     <div class="flex-between text-sm"><span>Total arrecadado</span><span class="text-amarelo" style="font-weight:700" id="rankTotal">—</span></div>
+    <!-- FIX C5: chave Pix do organizador para facilitar pagamento -->
+    <div id="rankPixOrg" style="display:none;margin-top:12px;background:var(--bg);border-radius:10px;padding:12px">
+      <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">💳 Pix do organizador</div>
+      <div style="font-size:13px;color:var(--amarelo);font-weight:700;font-family:monospace;word-break:break-all" id="rankPixOrgChave">—</div>
+      <div style="font-size:11px;color:var(--txt2);margin-top:2px" id="rankPixOrgNome">—</div>
+      <button onclick="copiarPixOrg()" style="margin-top:8px;background:rgba(254,223,0,0.1);border:1.5px solid var(--border2);color:var(--amarelo);border-radius:8px;padding:8px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;text-transform:uppercase;letter-spacing:0.5px;width:100%">📋 Copiar chave Pix</button>
+    </div>
   </div>
   <div id="rankContainer"></div>
   <div id="rankEmpty" class="empty" style="display:none"><div class="empty-icon">🏆</div><div class="empty-text">Nenhum palpite ativo ainda.</div></div>
@@ -1481,12 +1488,18 @@ function renderRanking(){
       const total=ativos.length*(cfgMata.valor||20);
       const medals=['🥇','🥈','🥉'];
       let prows='';
+      // FIX C2: 1 participante leva 100%
+      if(ranked.length===1){
+        prows=`<div class="prize-row"><div class="prize-pos">🥇</div><div class="prize-name">${ranked[0].nome}</div><div class="prize-val">R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>`;
+      } else {
       [[cfgMata.p1,0],[cfgMata.p2,1],[cfgMata.p3,2]].forEach(([pct,i])=>{
         if(ranked[i]&&pct>0) prows+=`<div class="prize-row"><div class="prize-pos">${medals[i]}</div><div class="prize-name">${ranked[i].nome}</div><div class="prize-val">R$ ${(total*pct/100).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>`;
       });
+      }
       document.getElementById('rankPremioList').innerHTML=prows;
       document.getElementById('rankTotal').textContent='R$ '+total.toLocaleString('pt-BR',{minimumFractionDigits:2});
       premCard.style.display='block';
+      updateRankPixOrg(); // FIX C5
     } else premCard.style.display='none';
     const pc=['p1','p2','p3'],pp=['g','s','b'],md=['🥇','🥈','🥉'];
     container.innerHTML=ranked.map((p,i)=>`<div class="rank-item ${pc[i]||''}">
@@ -1525,9 +1538,12 @@ function renderRanking(){
       [[cfgUnico.p1,0],[cfgUnico.p2,1],[cfgUnico.p3,2]].forEach(([pct,i])=>{
         if(ranked[i]&&pct>0) prows+=`<div class="prize-row"><div class="prize-pos">${medals[i]}</div><div class="prize-name">${ranked[i].nome}</div><div class="prize-val">R$ ${(total*pct/100).toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>`;
       });
+      // FIX C2: 1 participante leva 100%
+      if(ranked.length===1) prows=`<div class="prize-row"><div class="prize-pos">🥇</div><div class="prize-name">${ranked[0].nome}</div><div class="prize-val">R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>`;
       document.getElementById('rankPremioList').innerHTML=prows;
       document.getElementById('rankTotal').textContent='R$ '+total.toLocaleString('pt-BR',{minimumFractionDigits:2});
       premCard.style.display='block';
+      updateRankPixOrg(); // FIX C5
       const pc=['p1','p2','p3'],pp=['g','s','b'],md=['🥇','🥈','🥉'];
       container.innerHTML=ranked.map((p,i)=>`<div class="rank-item ${pc[i]||''}">
         <div class="rank-pos ${pp[i]||''}">${i+1}</div>
@@ -1809,6 +1825,25 @@ async function addFeed(icon,texto){
   await sb.from('feed').insert({icon,texto,hora});
 }
 
+// FIX C5: copiar chave Pix do organizador no Ranking
+function copiarPixOrg(){
+  const chave=document.getElementById('rankPixOrgChave')?.textContent;
+  if(!chave||chave==='—') return toast('Chave Pix não configurada','err');
+  navigator.clipboard?.writeText(chave).then(()=>toast('Chave Pix copiada! 📋','ok')).catch(()=>{
+    const t=document.createElement('textarea');t.value=chave;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);toast('Chave Pix copiada! 📋','ok');
+  });
+}
+function updateRankPixOrg(){
+  const cfg=modo==='mata'?cfgMata:cfgUnico;
+  const el=document.getElementById('rankPixOrg');
+  if(!el) return;
+  if(cfg.pixChave){
+    document.getElementById('rankPixOrgChave').textContent=cfg.pixChave;
+    document.getElementById('rankPixOrgNome').textContent=(cfg.pixNome||'Organizador')+(cfg.pixBanco?' · '+cfg.pixBanco:'');
+    el.style.display='block';
+  } else { el.style.display='none'; }
+}
+
 function renderFeed(){
   const c=document.getElementById('feedContainer');
   if(!feedList.length){c.innerHTML='<div class="empty"><div class="empty-text">Nenhum evento ainda</div></div>';return;}
@@ -1870,11 +1905,26 @@ async function fetchAllToday(manual=false){
       return gameBrazilDate === brazilToday;
     });
 
-    renderTodayGames(c, todayMatches, manual);
+    if(todayMatches.length){
+      renderTodayGames(c, todayMatches, manual, false);
+    } else {
+      // FIX C4: sem jogos hoje → mostra amanhã automaticamente
+      const brazilTomorrow = new Date(brazilNow.getTime() + 24*60*60*1000).toISOString().split('T')[0];
+      const tomorrowMatches = allMatches.filter(m=>{
+        if(!m.utcDate) return false;
+        const gb = new Date(new Date(m.utcDate).getTime() - 3*60*60*1000);
+        return gb.toISOString().split('T')[0] === brazilTomorrow;
+      });
+      if(tomorrowMatches.length){
+        renderTodayGames(c, tomorrowMatches, manual, true);
+      } else {
+        c.innerHTML='<div class="empty"><div class="empty-text">Nenhum jogo da Copa hoje ou amanhã 📅</div></div>';
+      }
+    }
   }catch(e){ c.innerHTML='<div class="empty"><div class="empty-text">Erro de conexão</div></div>'; }
 }
 
-function renderTodayGames(c, matches, manual){
+function renderTodayGames(c, matches, manual, isAmanha=false){
   if(!matches.length){
     c.innerHTML='<div class="empty"><div class="empty-text">Nenhum jogo da Copa hoje 📅</div></div>';
     return;
@@ -1884,12 +1934,14 @@ function renderTodayGames(c, matches, manual){
   matches.sort((a,b)=>(order[a.status]??9)-(order[b.status]??9));
 
   c.innerHTML=matches.map(m=>{
-    const s=m.score?.fullTime||m.score?.halfTime||{};
-    const g1=s.home; const g2=s.away;
     const status=m.status;
     const isLive=status==='IN_PLAY'||status==='PAUSED';
     const isDone=status==='FINISHED';
-    const hasScore=g1!==null&&g1!==undefined&&isDone||isLive;
+    // FIX C3: regularTime > fullTime > halfTime; score real só FINISHED
+    const _sc=m.score||{};
+    const _sf=isDone?(_sc.regularTime||_sc.fullTime||_sc.halfTime||{}):(isLive?(_sc.halfTime||{}):{});
+    const g1=_sf.home; const g2=_sf.away;
+    const hasScore=(g1!==null&&g1!==undefined)&&(isDone||isLive);
     const kickoff=formatKickoff(m.utcDate);
     const f1=getCountryFlag(m.homeTeam?.name||'');
     const f2=getCountryFlag(m.awayTeam?.name||'');
@@ -1911,7 +1963,13 @@ function renderTodayGames(c, matches, manual){
       </div>
     </div>`;
   }).join('');
-  if(manual) toast('Jogos atualizados!','ok');
+  if(isAmanha){
+    const lbl=document.createElement('div');
+    lbl.style.cssText='font-size:11px;color:var(--amarelo);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border2)';
+    lbl.textContent='📅 Próximos jogos — amanhã';
+    c.insertBefore(lbl,c.firstChild);
+    if(manual) toast('Mostrando jogos de amanhã (sem jogos hoje)','info');
+  } else if(manual) toast('Jogos atualizados!','ok');
 }
 
 async function fetchLive(manual=false){
@@ -1948,8 +2006,10 @@ async function fetchLive(manual=false){
     }) || wcMatches[0]; // fallback to first WC match of the day
 
     if(found){
-      const s=found.score?.fullTime||found.score?.halfTime||{};
-      const g1=s.home??'?',g2=s.away??'?';
+      // FIX C3: regularTime > fullTime > halfTime; só score real quando FINISHED
+      const _fsc=found.score||{};
+      const _fsf=found.status==='FINISHED'?(_fsc.regularTime||_fsc.fullTime||_fsc.halfTime||{}):(_fsc.halfTime||{});
+      const g1=_fsf.home??'?',g2=_fsf.away??'?';
       const status=found.status;
 
       if(liveStatusEl){
@@ -2463,7 +2523,8 @@ async function salvarCfgUnico(){
 async function limparUnico(){
   if(!confirm('Limpar palpites e resultado do jogo extra?')) return;
   await sb.from('palpites_unico').delete().neq('id','00000000-0000-0000-0000-000000000000');
-  await sb.from('resultado_unico').upsert({id:1,g1:null,g2:null,bonus_ans:'',updated_at:new Date().toISOString()});
+  // FIX C1: DELETE garante que resultado_unico não contamina próximo bolão
+  await sb.from('resultado_unico').delete().eq('id',1);
   // Also clear active game
   cfgUnico.jogoAtivo = null;
   cfgUnico.aceitar = true;
