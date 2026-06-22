@@ -638,7 +638,31 @@ select option{background:var(--bg);}
           Compartilhar no WhatsApp
         </button>
         <div class="divider"></div>
-        <div class="card-title">Resultado — Jogo Extra</div>
+        <div class="card-title">Apurar Resultado</div>
+        <!-- Seletor de jogo quando há 2 extras ativos -->
+        <div id="apuracaoSelectorWrap" style="display:none;margin-bottom:12px">
+          <label>Qual jogo apurar?</label>
+          <div style="display:flex;gap:8px">
+            <button id="apuracaoBtnJ1" onclick="selecionarApuracao('jogo1')"
+              style="flex:1;padding:10px;border-radius:10px;font-size:12px;font-weight:700;
+              border:2px solid var(--verde);background:var(--verde);color:#fff;cursor:pointer;
+              font-family:'Inter',sans-serif;touch-action:manipulation;transition:all 0.2s">
+              ⚡ Extra 1
+            </button>
+            <button id="apuracaoBtnJ2" onclick="selecionarApuracao('jogo2')"
+              style="flex:1;padding:10px;border-radius:10px;font-size:12px;font-weight:700;
+              border:2px solid var(--border);background:var(--card2);color:var(--txt2);cursor:pointer;
+              font-family:'Inter',sans-serif;touch-action:manipulation;transition:all 0.2s">
+              ⚡ Extra 2
+            </button>
+          </div>
+        </div>
+        <!-- Indicador do jogo sendo apurado -->
+        <div id="apuracaoIndicador" style="display:none;background:var(--bg);border-radius:10px;
+          padding:10px 12px;margin-bottom:12px;border-left:3px solid var(--verde)">
+          <div style="font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Apurando</div>
+          <div id="apuracaoIndicadorNome" style="font-size:14px;font-weight:700;color:var(--txt)">—</div>
+        </div>
         <div class="placar-row">
           <div class="pl-team"><div class="pl-flag" id="uResF1">🏴</div><div class="pl-name" id="uResT1">Time A</div><input type="number" id="uResG1" value="0" min="0" max="20"></div>
           <div class="pl-vs">✕</div>
@@ -648,8 +672,11 @@ select option{background:var(--bg);}
           <label id="unicoBonusResLbl">Resposta correta</label>
           <input type="text" id="unicoBonusResVal">
         </div>
-        <button class="btn btn-verde" onclick="apurarUnico()">Apurar Resultado ⚽</button>
-        <button class="btn btn-gray" onclick="limparResUnico()">Limpar Resultado</button>
+        <div id="apuracaoSemJogo" style="display:none;text-align:center;padding:16px;color:var(--txt3);font-size:13px">
+          Nenhum jogo extra ativo para apurar.
+        </div>
+        <button class="btn btn-verde" id="btnApurarUnico" onclick="apurarUnicoAtual()">Apurar Resultado ⚽</button>
+        <button class="btn btn-gray" id="btnLimparResUnico" onclick="limparResUnicoAtual()">Limpar Resultado</button>
         <div class="divider"></div>
         <div class="card-title">Aprovação — Jogo Extra</div>
         <div id="admPendUnico"><div class="loading"><span class="loading-spinner">⚽</span></div></div>
@@ -668,6 +695,12 @@ select option{background:var(--bg);}
         <div id="unicoBonusQWrap" style="display:none"><label>Texto da pergunta</label><input type="text" id="unicoBonusQ" placeholder="Ex: Quem faz o 1º gol?"></div>
         <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Ordem de envio</div></div><button class="toggle on" id="tbUOrdem" onclick="this.classList.toggle('on')"></button></div>
         <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Aceitar palpites</div></div><button class="toggle on" id="tbUAceitar" onclick="this.classList.toggle('on')"></button></div>
+        <div class="divider-amarelo"></div>
+        <div class="card-title">Chave Pix — Jogo Extra</div>
+        <label>Tipo</label><select id="unicoPixTipo"><option>CPF</option><option>Celular</option><option>Email</option><option>Aleatória</option></select>
+        <label>Chave</label><input type="text" id="unicoPixChave">
+        <label>Nome</label><input type="text" id="unicoPixNome">
+        <label>Banco</label><input type="text" id="unicoPixBanco">
         <button class="btn btn-amarelo mt8" onclick="salvarCfgUnico()">Salvar Configurações</button>
         <button class="btn btn-danger" onclick="limparUnico()">⚠️ Limpar palpites</button>
 
@@ -2474,20 +2507,139 @@ function updateUnicoResFields(){
     document.getElementById('unicoBonusResLbl').textContent='Resposta correta: '+cfgUnico.bonusQ;
 }
 
-async function apurarUnico(){
+// Qual jogo está selecionado para apuração: 'jogo1' ou 'jogo2'
+let apuracaoJogoSel = 'jogo1';
+
+function selecionarApuracao(qual){
+  apuracaoJogoSel = qual;
+  // Visual dos botões
+  const b1 = document.getElementById('apuracaoBtnJ1');
+  const b2 = document.getElementById('apuracaoBtnJ2');
+  if(b1&&b2){
+    const ativo  = 'border:2px solid var(--verde);background:var(--verde);color:#fff;cursor:pointer;font-family:Inter,sans-serif;touch-action:manipulation;transition:all 0.2s;flex:1;padding:10px;border-radius:10px;font-size:12px;font-weight:700';
+    const inativo= 'border:2px solid var(--border);background:var(--card2);color:var(--txt2);cursor:pointer;font-family:Inter,sans-serif;touch-action:manipulation;transition:all 0.2s;flex:1;padding:10px;border-radius:10px;font-size:12px;font-weight:700';
+    b1.style.cssText = qual==='jogo1' ? ativo : inativo;
+    b2.style.cssText = qual==='jogo2' ? ativo : inativo;
+  }
+  // Atualizar campos de time
+  const j = qual==='jogo1' ? cfgUnico.jogoAtivo : cfgUnico2.jogoAtivo;
+  if(j){
+    document.getElementById('uResF1').textContent = j.f1;
+    document.getElementById('uResT1').textContent = j.t1;
+    document.getElementById('uResF2').textContent = j.f2;
+    document.getElementById('uResT2').textContent = j.t2;
+    document.getElementById('uResG1').value = 0;
+    document.getElementById('uResG2').value = 0;
+    const ind = document.getElementById('apuracaoIndicadorNome');
+    if(ind) ind.textContent = `${j.f1} ${j.t1} × ${j.t2} ${j.f2}`;
+  }
+  // Bônus (só jogo 1 suporta)
+  const bw = document.getElementById('unicoBonusResWrap');
+  if(bw) bw.style.display = (qual==='jogo1'&&cfgUnico.tbBonus&&cfgUnico.bonusQ)?'block':'none';
+}
+
+function renderApuracaoUI(){
+  const temJ1 = !!cfgUnico.jogoAtivo;
+  const temJ2 = !!cfgUnico2.jogoAtivo;
+  const selector = document.getElementById('apuracaoSelectorWrap');
+  const indicador = document.getElementById('apuracaoIndicador');
+  const semJogo = document.getElementById('apuracaoSemJogo');
+  const btnApurar = document.getElementById('btnApurarUnico');
+  const btnLimpar = document.getElementById('btnLimparResUnico');
+  const placarRow = document.querySelector('#admUnicoPanel .placar-row');
+
+  if(!temJ1 && !temJ2){
+    // Nenhum jogo ativo
+    if(selector) selector.style.display='none';
+    if(indicador) indicador.style.display='none';
+    if(semJogo) semJogo.style.display='block';
+    if(btnApurar) btnApurar.style.display='none';
+    if(btnLimpar) btnLimpar.style.display='none';
+    if(placarRow) placarRow.style.display='none';
+    return;
+  }
+
+  // Pelo menos 1 jogo ativo
+  if(semJogo) semJogo.style.display='none';
+  if(btnApurar) btnApurar.style.display='block';
+  if(btnLimpar) btnLimpar.style.display='block';
+  if(placarRow) placarRow.style.display='flex';
+
+  if(temJ1 && temJ2){
+    // 2 jogos — mostrar seletor
+    if(selector) selector.style.display='block';
+    if(indicador) indicador.style.display='none';
+    // Labels dos botões
+    const b1 = document.getElementById('apuracaoBtnJ1');
+    const b2 = document.getElementById('apuracaoBtnJ2');
+    if(b1) b1.textContent = `⚡ ${cfgUnico.jogoAtivo.t1} × ${cfgUnico.jogoAtivo.t2}`;
+    if(b2) b2.textContent = `⚡ ${cfgUnico2.jogoAtivo.t1} × ${cfgUnico2.jogoAtivo.t2}`;
+    // Selecionar o primeiro por padrão
+    selecionarApuracao(apuracaoJogoSel||'jogo1');
+  } else {
+    // 1 jogo — mostrar só indicador
+    if(selector) selector.style.display='none';
+    if(indicador) indicador.style.display='block';
+    apuracaoJogoSel = temJ1 ? 'jogo1' : 'jogo2';
+    const j = temJ1 ? cfgUnico.jogoAtivo : cfgUnico2.jogoAtivo;
+    const ind = document.getElementById('apuracaoIndicadorNome');
+    if(ind) ind.textContent = `${j.f1} ${j.t1} × ${j.t2} ${j.f2}`;
+    // Popular campos
+    document.getElementById('uResF1').textContent = j.f1;
+    document.getElementById('uResT1').textContent = j.t1;
+    document.getElementById('uResF2').textContent = j.f2;
+    document.getElementById('uResT2').textContent = j.t2;
+  }
+}
+
+async function apurarUnicoAtual(){
   const g1=parseInt(document.getElementById('uResG1').value)||0;
   const g2=parseInt(document.getElementById('uResG2').value)||0;
   const bonus_ans=document.getElementById('unicoBonusResVal')?.value.trim()||'';
-  await sb.from('resultado_unico').upsert({id:1,g1,g2,bonus_ans,updated_at:new Date().toISOString()});
-  const j=cfgUnico.jogoAtivo;
-  cfgUnico.aceitar=false;
-  cfgUnico.jogoAtivo=null; // Clear active game after result
-  await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
-  resultadoUnico={g1,g2,bonus_ans};
-  updateHeader();
-  await addFeed('🏆',`Resultado jogo extra: ${j?.f1||''}${g1}×${g2}${j?.f2||''}`);
-  if('Notification'in window&&Notification.permission==='granted') new Notification('Bolão Copa 2026 — Encerrado!',{body:`Resultado: ${g1} × ${g2}`});
-  toast('Resultado apurado! 🏆','ok');
+
+  if(apuracaoJogoSel==='jogo2'){
+    // Apurar Extra 2
+    const j=cfgUnico2.jogoAtivo;
+    await sb.from('resultado_unico').upsert({id:2,g1,g2,bonus_ans:'',jogo_extra_id:'jogo2',updated_at:new Date().toISOString()});
+    cfgUnico2.aceitar=false; cfgUnico2.jogoAtivo=null;
+    await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
+    await addFeed('🏆',`Resultado Extra 2: ${j?.f1||''}${g1}×${g2}${j?.f2||''}`);
+    toast('Extra 2 apurado! 🏆','ok');
+  } else {
+    // Apurar Extra 1 (jogo padrão)
+    await sb.from('resultado_unico').upsert({id:1,g1,g2,bonus_ans,updated_at:new Date().toISOString()});
+    const j=cfgUnico.jogoAtivo;
+    cfgUnico.aceitar=false; cfgUnico.jogoAtivo=null;
+    await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
+    resultadoUnico={g1,g2,bonus_ans};
+    updateHeader();
+    await addFeed('🏆',`Resultado jogo extra: ${j?.f1||''}${g1}×${g2}${j?.f2||''}`);
+    if('Notification'in window&&Notification.permission==='granted') new Notification('Bolão Copa 2026 — Encerrado!',{body:`Resultado: ${g1} × ${g2}`});
+    toast('Resultado apurado! 🏆','ok');
+  }
+  renderAdminUnicoUnificado();
+}
+
+async function limparResUnicoAtual(){
+  if(apuracaoJogoSel==='jogo2'){
+    await sb.from('resultado_unico').delete().eq('id',2);
+    cfgUnico2.aceitar=true;
+    await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
+    toast('Resultado Extra 2 limpo','info');
+  } else {
+    await sb.from('resultado_unico').upsert({id:1,g1:null,g2:null,bonus_ans:'',updated_at:new Date().toISOString()});
+    cfgUnico.aceitar=true;
+    await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
+    resultadoUnico=null; updateHeader(); renderFormPalpite();
+    toast('Resultado limpo','info');
+  }
+  renderApuracaoUI();
+}
+
+async function apurarUnico(){
+  // Mantida para compatibilidade — redireciona para nova função
+  apuracaoJogoSel='jogo1';
+  await apurarUnicoAtual();
 }
 
 async function limparResUnico(){
@@ -2535,7 +2687,10 @@ function loadCfgUnico(){
   document.getElementById('unicoP1').value=cfgUnico.p1||70;
   document.getElementById('unicoP2').value=cfgUnico.p2||20;
   document.getElementById('unicoP3').value=cfgUnico.p3||10;
-  // Campos Pix Jogo Extra removidos do painel (QR Code via MP substitui)
+  document.getElementById('unicoPixTipo').value=cfgUnico.pixTipo||'CPF';
+  document.getElementById('unicoPixChave').value=cfgUnico.pixChave||'';
+  document.getElementById('unicoPixNome').value=cfgUnico.pixNome||'';
+  document.getElementById('unicoPixBanco').value=cfgUnico.pixBanco||'';
   document.getElementById('unicoBonusQ').value=cfgUnico.bonusQ||'';
   document.getElementById('apiKeyInput').value=apiKey||'';
   const adminKeyEl=document.getElementById('apiKeyInputAdmin');if(adminKeyEl)adminKeyEl.value=apiKey||'';
@@ -2554,7 +2709,10 @@ async function salvarCfgUnico(){
     p1:parseInt(document.getElementById('unicoP1').value)||70,
     p2:parseInt(document.getElementById('unicoP2').value)||20,
     p3:parseInt(document.getElementById('unicoP3').value)||10,
-    // Pix Jogo Extra gerenciado via Mercado Pago — campos removidos do painel
+    pixTipo:document.getElementById('unicoPixTipo').value,
+    pixChave:document.getElementById('unicoPixChave').value.trim(),
+    pixNome:document.getElementById('unicoPixNome').value.trim(),
+    pixBanco:document.getElementById('unicoPixBanco').value.trim(),
     tbGV:getT('tbU1'),tbTG:getT('tbU2'),tbGP:getT('tbU3'),
     tbBonus:getT('tbUBonus'),bonusQ:document.getElementById('unicoBonusQ').value.trim(),
     tbOrdem:getT('tbUOrdem'),aceitar:getT('tbUAceitar'),
@@ -2779,6 +2937,8 @@ function renderAdminUnicoUnificado(){
   renderSmartJogos('unified');
   // Show pending palpites for both extras
   renderAdminPendUnico();
+  // Atualizar UI de apuração com base nos jogos ativos
+  renderApuracaoUI();
 }
 
 function renderJogosAtivos(){
