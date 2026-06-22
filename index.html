@@ -989,7 +989,7 @@ let palpitesUnico = [];  // all unico palpites (both games)
 let resultadosMata = {};
 let resultadoUnico = null;
 let feedList = [];
-let apiKey = localStorage.getItem('apiKey')||'';
+let apiKey = '';
 let selectedFase = 'oitavas';
 let selectedUnicoIdx = null;
 let liveInterval = null;
@@ -1036,9 +1036,12 @@ async function loadAll(){
       sb.from('resultado_unico').select('*').eq('id',1).single(),
       sb.from('feed').select('*').order('created_at',{ascending:false}).limit(30),
     ]);
-    cfgMata = cfgs?.find(c=>c.id==='mata')?.dados||{valor:20,p1:60,p2:25,p3:15,pixChave:'',pixNome:'',pixBanco:'',pixTipo:'CPF',faseAtiva:'oitavas',jogosAtivos:[],adminPwd:'copa2026'};
-    cfgUnico = cfgs?.find(c=>c.id==='unico')?.dados||{valor:10,p1:70,p2:20,p3:10,pixChave:'',pixNome:'',pixBanco:'',pixTipo:'CPF',aceitar:true,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true,adminPwd:'copa2026'};
+    cfgMata = cfgs?.find(c=>c.id==='mata')?.dados||{valor:20,p1:60,p2:25,p3:15,faseAtiva:'oitavas',jogosAtivos:[],adminPwd:'copa2026'};
+    cfgUnico = cfgs?.find(c=>c.id==='unico')?.dados||{valor:10,p1:70,p2:20,p3:10,aceitar:true,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true,adminPwd:'copa2026'};
     cfgUnico2 = cfgs?.find(c=>c.id==='unico2')?.dados||{valor:10,p1:70,p2:20,p3:10,aceitar:false,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true};
+    // Carregar apiKey do Supabase
+    const cfgGeral = cfgs?.find(c=>c.id==='geral')?.dados||{};
+    if(cfgGeral.apiKey) apiKey = cfgGeral.apiKey;
     palpitesMata = pm||[];
     palpitesUnico = pu||[];
     resultadosMata = Object.fromEntries((rm||[]).map(r=>[r.jogo_id,{g1:r.g1,g2:r.g2}]));
@@ -1987,7 +1990,6 @@ async function fetchLive(manual=false){
 async function salvarApiKey(){
   apiKey=document.getElementById('apiKeyInput').value.trim();
   if(!apiKey) return toast('Cole a API key primeiro','err');
-  localStorage.setItem('apiKey',apiKey);
   const st=document.getElementById('apiStatus');
   st.style.display='block';st.textContent='Testando...';st.style.color='var(--txt2)';
   try{
@@ -2740,32 +2742,91 @@ function getJogosPorDias(diasAhead){
     .sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
 }
 
-function renderSmartJogos(tipo){
+// Converte jogo da API para formato interno
+function apiMatchToJogo(m){
+  const gameUTC = new Date(m.utcDate);
+  const gameBR = new Date(gameUTC.getTime() - 3*60*60*1000);
+  const day = String(gameBR.getDate()).padStart(2,'0');
+  const month = String(gameBR.getMonth()+1).padStart(2,'0');
+  const hh = String(gameBR.getHours()).padStart(2,'0');
+  const mm = String(gameBR.getMinutes()).padStart(2,'0');
+  const time = mm==='00' ? `${hh}h` : `${hh}h${mm}`;
+  const t1 = m.homeTeam?.shortName||m.homeTeam?.name||'?';
+  const t2 = m.awayTeam?.shortName||m.awayTeam?.name||'?';
+  return {
+    t1, t2,
+    f1: getCountryFlag(m.homeTeam?.name||t1),
+    f2: getCountryFlag(m.awayTeam?.name||t2),
+    date: `${day}/${month}`,
+    time,
+    fase: m.group ? m.group.replace('GROUP_','Grupo ') : (m.stage||''),
+    apiId: m.id,
+  };
+}
+
+async function renderSmartJogos(tipo){
   const listId = 'admUnicoList';
   const c = document.getElementById(listId);
   if(!c) return;
 
-  let jogos = getJogosPorDias(1);
-  if(!jogos.length){
-    jogos = getJogosPorDias(3);
+  c.innerHTML='<div style="text-align:center;padding:12px;color:var(--txt3);font-size:12px">⚽ Buscando jogos...</div>';
+
+  let jogos = [];
+  let fromAPI = false;
+
+  // Tentar buscar da API (hoje + amanha)
+  if(apiKey){
+    try{
+      const now = new Date();
+      const d0 = now.toISOString().split('T')[0];
+      const d1 = new Date(now.getTime()+24*60*60*1000).toISOString().split('T')[0];
+      const d2 = new Date(now.getTime()+48*60*60*1000).toISOString().split('T')[0];
+      const res = await fetch(`/api/football?key=${apiKey}&path=competitions/2000/matches&dateFrom=${d0}&dateTo=${d2}&status=SCHEDULED,TIMED`);
+      if(res.ok){
+        const data = await res.json();
+        const matches = data.matches||[];
+        // Filtrar apenas jogos futuros no horario de Brasilia
+        const nowUTC = new Date();
+        const futuros = matches.filter(m=>{
+          const gameUTC = new Date(m.utcDate);
+          return gameUTC > new Date(nowUTC.getTime() - 40*60*1000);
+        });
+        if(futuros.length){
+          jogos = futuros.map(apiMatchToJogo);
+          fromAPI = true;
+        }
+      }
+    } catch(e){ console.warn('API falhou, usando fallback:', e); }
   }
+
+  // Fallback: GRUPOS_JOGOS hardcoded
+  if(!jogos.length){
+    jogos = getJogosPorDias(1);
+    if(!jogos.length) jogos = getJogosPorDias(3);
+  }
+
   if(!jogos.length){
     c.innerHTML='<div class="empty"><div class="empty-text">Nenhum jogo disponível nos próximos dias</div></div>';
     return;
   }
 
+  // Agrupar por data
   const porData = {};
   jogos.forEach(j=>{ if(!porData[j.date]) porData[j.date]=[]; porData[j.date].push(j); });
 
-  c.innerHTML = Object.entries(porData).map(([data, jogosData])=>`
+  const fonte = fromAPI
+    ? '<div style="font-size:10px;color:var(--verde);text-align:right;margin-bottom:4px">✓ Horários via API (tempo real)</div>'
+    : '<div style="font-size:10px;color:var(--txt3);text-align:right;margin-bottom:4px">⚠️ Horários estimados (sem API)</div>';
+
+  c.innerHTML = fonte + Object.entries(porData).map(([data, jogosData])=>`
     <div style="font-size:11px;color:var(--txt3);margin:10px 0 6px;text-transform:uppercase;letter-spacing:1px;font-weight:700">${data}</div>
     ${jogosData.map(j=>{
-      const gi=GRUPOS_JOGOS.indexOf(j);
+      const jogoStr = encodeURIComponent(JSON.stringify(j));
       const isAtivo1=cfgUnico.jogoAtivo?.t1===j.t1&&cfgUnico.jogoAtivo?.t2===j.t2;
       const isAtivo2=cfgUnico2.jogoAtivo?.t1===j.t1&&cfgUnico2.jogoAtivo?.t2===j.t2;
       const isAtivo=isAtivo1||isAtivo2;
       const label=isAtivo1?'✓ Extra 1':isAtivo2?'✓ Extra 2':'Ativar';
-      return `<div class="match-sel ${isAtivo?'selected':''}" onclick="ativarJogoExtra(${gi})" style="cursor:pointer">
+      return `<div class="match-sel ${isAtivo?'selected':''}" onclick="ativarJogoExtraObj(decodeJogo(this))" data-jogo="${jogoStr}" style="cursor:pointer">
         <div class="match-sel-flags">${j.f1} ${j.f2}</div>
         <div class="match-sel-info">
           <div class="match-sel-name">${j.t1} × ${j.t2}</div>
@@ -2777,6 +2838,34 @@ function renderSmartJogos(tipo){
       </div>`;
     }).join('')}`
   ).join('');
+}
+
+function decodeJogo(el){
+  try{ return JSON.parse(decodeURIComponent(el.dataset.jogo)); } catch(e){ return null; }
+}
+
+async function ativarJogoExtraObj(j){
+  if(!j) return;
+  // Desativar se ja ativo
+  const isAtivo1=cfgUnico.jogoAtivo?.t1===j.t1&&cfgUnico.jogoAtivo?.t2===j.t2;
+  const isAtivo2=cfgUnico2.jogoAtivo?.t1===j.t1&&cfgUnico2.jogoAtivo?.t2===j.t2;
+  if(isAtivo1){ await desativarExtra('unico'); return; }
+  if(isAtivo2){ await desativarExtra('unico2'); return; }
+  // Verificar limite
+  const numAtivos=(cfgUnico.jogoAtivo?1:0)+(cfgUnico2.jogoAtivo?1:0);
+  if(numAtivos>=2){ toast('Já tem 2 jogos extras ativos! Desative um antes.','err'); return; }
+  // Ativar no primeiro slot livre
+  if(!cfgUnico.jogoAtivo){
+    cfgUnico.jogoAtivo={...j}; cfgUnico.aceitar=true;
+    await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
+  } else {
+    cfgUnico2.jogoAtivo={...j}; cfgUnico2.aceitar=true;
+    await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
+  }
+  await addFeed('⚡',`Jogo Extra aberto: ${j.t1} × ${j.t2}`);
+  toast(`✓ ${j.t1} × ${j.t2} ativado!`,'ok');
+  renderAdminUnicoUnificado();
+  updateHeader();
 }
 
 async function ativarJogoUnicoIdx(gi){
@@ -2920,7 +3009,8 @@ async function salvarApiKeyAdmin(){
   const key=document.getElementById('apiKeyInputAdmin')?.value.trim();
   if(!key) return toast('Cole a API key primeiro','err');
   apiKey=key;
-  localStorage.setItem('apiKey',apiKey);
+  // Salvar no Supabase (fonte única, funciona em qualquer dispositivo)
+  await sb.from('config').upsert({id:'geral',dados:{apiKey},updated_at:new Date().toISOString()});
   const st=document.getElementById('apiStatusAdmin');
   if(st){st.style.display='block';st.textContent='Testando...';st.style.color='var(--txt2)';}
   try{
