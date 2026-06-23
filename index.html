@@ -598,7 +598,7 @@ select option{background:var(--bg);}
         <button class="btn btn-verde" onclick="salvarResultadoMata()">Salvar Resultado ✓</button>
         <div class="text-sm mt8 text-center" id="resMataStatus"></div>
         <div class="divider"></div>
-        <div class="card-title">Aprovação — Mata-Mata</div>
+        <div class="card-title">Ativação Manual — Fallback Pix 🔄</div>
         <div id="admPendMata"><div class="loading"><span class="loading-spinner">⚽</span></div></div>
         <div class="divider"></div>
         <div class="card-title">Configurações</div>
@@ -609,8 +609,15 @@ select option{background:var(--bg);}
         <div class="divider-amarelo"></div>
         <div class="toggle-row" style="margin-top:12px">
           <div class="toggle-info">
+            <div class="toggle-label">Aceitar palpites</div>
+            <div class="toggle-sub">Desative para bloquear palpites sem encerrar inscrições</div>
+          </div>
+          <button class="toggle on" id="tbMataAceitar" onclick="this.classList.toggle('on')"></button>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
             <div class="toggle-label">Inscrições abertas</div>
-            <div class="toggle-sub">Feche antes de abrir os palpites para fixar o grupo</div>
+            <div class="toggle-sub">Feche para impedir novos participantes no grupo</div>
           </div>
           <button class="toggle on" id="tbMataInscricoes" onclick="this.classList.toggle('on')"></button>
         </div>
@@ -636,7 +643,7 @@ select option{background:var(--bg);}
         <div class="card-title">Resultado Manual — Fallback</div>
         <div id="admResultadoManual"></div>
         <div class="divider"></div>
-        <div class="card-title">Aprovação — Jogo Extra</div>
+        <div class="card-title">Ativação Manual — Fallback Pix 🔄</div>
         <div id="admPendUnico"><div class="loading"><span class="loading-spinner">⚽</span></div></div>
         <div class="divider"></div>
         <div class="card-title">Configurações</div>
@@ -1205,6 +1212,10 @@ function renderFormPalpite(){
     const jogosAtivos=(cfgMata.jogosAtivos||[]).map(id=>fase?.jogos.find(j=>j.id===id)).filter(Boolean);
     if(cfgMata.inscricoesAbertas===false && !palpitesMata.find(p=>p.status==='pendente'||p.status==='ativo')){
       card.innerHTML=`<div class="modo-tag mata">🏆 Bolão Mata-Mata</div><div class="empty"><div class="empty-icon">🔒</div><div class="empty-text">Inscrições encerradas.<br>O grupo do mata-mata está fechado.</div></div>`;
+      return;
+    }
+    if(cfgMata.aceitarPalpites===false){
+      card.innerHTML=`<div class="modo-tag mata">🏆 Bolão Mata-Mata</div><div class="empty"><div class="empty-icon">🔒</div><div class="empty-text">Palpites bloqueados pelo organizador.<br>Aguarde a liberação!</div></div>`;
       return;
     }
     if(!jogosAtivos.length){
@@ -2247,6 +2258,7 @@ function loadCfgMata(){
   document.getElementById('mataP3').value=cfgMata.p3||15;
 
   setT('tbMataInscricoes', cfgMata.inscricoesAbertas!==false);
+  setT('tbMataAceitar', cfgMata.aceitarPalpites!==false);
 }
 
 async function salvarCfgMata(){
@@ -2257,6 +2269,7 @@ async function salvarCfgMata(){
     p3:parseInt(document.getElementById('mataP3').value)||15,
 
     inscricoesAbertas:getT('tbMataInscricoes'),
+    aceitarPalpites:getT('tbMataAceitar'),
   };
   await sb.from('config').upsert({id:'mata',dados:cfgMata,updated_at:new Date().toISOString()});
   updateHeader();updatePixDisplay();renderFormPalpite();toast('Configurações salvas!','ok');
