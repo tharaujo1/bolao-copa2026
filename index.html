@@ -388,18 +388,28 @@ select option{background:var(--bg);}
 
 <!-- PALPITAR -->
 <div class="screen active" id="screen-palpitar">
-  <div class="card gold">
+  <!-- Card Mata-Mata -->
+  <div class="card gold" style="margin-bottom:8px">
     <div class="flex-between" style="margin-bottom:10px">
-      <span class="card-title" style="margin-bottom:0" id="statusTitle">Carregando...</span>
-      <span class="badge badge-verde" id="statusBadge">...</span>
+      <span class="card-title" style="margin-bottom:0">🏆 Mata-Mata</span>
+      <span class="badge badge-verde" id="statusBadgeMata">Aberto</span>
     </div>
     <div class="stats-row">
-      <div class="stat"><div class="stat-val" id="stTotal">—</div><div class="stat-lbl">Total</div></div>
-      <div class="stat"><div class="stat-val" id="stAtivos">—</div><div class="stat-lbl">Ativos</div></div>
-      <div class="stat"><div class="stat-val" id="stPend">—</div><div class="stat-lbl">Pendentes</div></div>
-      <div class="stat"><div class="stat-val" id="stBolada">—</div><div class="stat-lbl">Bolada</div></div>
+      <div class="stat"><div class="stat-val" id="stTotalMata">—</div><div class="stat-lbl">Total</div></div>
+      <div class="stat"><div class="stat-val" id="stAtivosMata">—</div><div class="stat-lbl">Ativos</div></div>
+      <div class="stat"><div class="stat-val" id="stPendMata">—</div><div class="stat-lbl">Pendentes</div></div>
+      <div class="stat"><div class="stat-val" id="stBoladaMata">—</div><div class="stat-lbl">Bolada</div></div>
     </div>
   </div>
+  <!-- Cards Jogo Extra (dinamicos — criados pelo JS) -->
+  <div id="statsExtraContainer"></div>
+  <!-- IDs legados para compatibilidade -->
+  <span id="statusTitle" style="display:none"></span>
+  <span id="statusBadge" style="display:none"></span>
+  <span id="stTotal" style="display:none"></span>
+  <span id="stAtivos" style="display:none"></span>
+  <span id="stPend" style="display:none"></span>
+  <span id="stBolada" style="display:none"></span>
   <div id="welcomeBanner" style="display:none;background:linear-gradient(135deg,var(--verde-escuro),var(--azul));border-radius:14px;padding:14px 16px;margin-bottom:12px;border:1.5px solid var(--amarelo);display:none">
     <div style="font-size:11px;color:rgba(255,255,255,0.6);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px">Bem-vindo de volta 👋</div>
     <div id="welcomeName" style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--amarelo);letter-spacing:2px"></div>
@@ -1002,6 +1012,7 @@ let feedList = [];
 let apiKey = localStorage.getItem('apiKey')||'';
 let selectedFase = 'dezesseis';
 let selectedUnicoIdx = null;
+let participantesData = [];
 let liveInterval = null;
 let lastGoals = 0;
 let realtimeSubs = [];
@@ -1054,17 +1065,20 @@ async function loadAll(){
     resultadosMata = Object.fromEntries((rm||[]).map(r=>[r.jogo_id,{g1:r.g1,g2:r.g2}]));
     resultadoUnico = ru||null;
     feedList = feed||[];
-    updateHeader();
-    renderFormPalpite();
-    renderPtsBody();
-    renderTbBody();
-    renderFeed();
-    updatePixDisplay();
-    renderPagList();
+    try{ updateHeader(); }catch(e1){ console.error('updateHeader:',e1); }
+    try{ renderFormPalpite(); }catch(e2){ console.error('renderFormPalpite:',e2); }
+    try{ renderPtsBody(); }catch(e3){ console.error('renderPtsBody:',e3); }
+    try{ renderTbBody(); }catch(e4){ console.error('renderTbBody:',e4); }
+    try{ renderFeed(); }catch(e5){ console.error('renderFeed:',e5); }
+    try{ updatePixDisplay(); }catch(e6){ console.error('updatePixDisplay:',e6); }
+    try{ renderPagList(); }catch(e7){ console.error('renderPagList:',e7); }
   }catch(e){
-    toast('Erro ao carregar dados','err');
-    console.error(e);
+    console.error('loadAll erro geral:',e);
   }
+  // Carregar participantes isolado
+  sb.from('participantes').select('pago,pago_mata,pago_unico,pago_unico2,nome,whats')
+    .then(({data})=>{ if(data){ participantesData=data; try{updateHeader();}catch(e){} } })
+    .catch(e=>console.warn('participantes:',e));
 }
 
 // ═══════════════════════════════════════
@@ -1139,6 +1153,7 @@ function updateHeader(){
   ['modeMata','rankMata','pagMata','admMata'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle('active',isMata); });
   ['modeUnico','rankUnico','pagUnico','admUnico'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle('active',!isMata); });
 
+  // Header central
   if(isMata){
     const fase=FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
     document.getElementById('hFlag1').textContent='🏆';
@@ -1148,48 +1163,77 @@ function updateHeader(){
     document.getElementById('hScore').textContent=fase?fase.label:'—';
     document.getElementById('hScoreLbl').textContent='Fase Ativa';
     document.getElementById('hDate').textContent=`${(cfgMata.jogosAtivos||[]).length} jogos abertos`;
-    const ativos=palpitesMata.filter(p=>p.status==='ativo');
-    const pend=palpitesMata.filter(p=>p.status==='pendente');
-    document.getElementById('stTotal').textContent=palpitesMata.length;
-    document.getElementById('stAtivos').textContent=ativos.length;
-    document.getElementById('stPend').textContent=pend.length;
-    document.getElementById('stBolada').textContent='R$'+(ativos.length*(cfgMata.valor||20));
-    document.getElementById('statusTitle').textContent='Bolão Mata-Mata';
-    const sb2=document.getElementById('statusBadge');
-    sb2.textContent='Aberto';sb2.className='badge badge-verde';
   } else {
-    const j=cfgUnico.jogoAtivo;
-    document.getElementById('hFlag1').textContent=j?j.f1:'⚡';
-    document.getElementById('hTeam1').textContent=j?j.t1:'Jogo Extra';
-    document.getElementById('hFlag2').textContent=j?j.f2:'🎯';
-    document.getElementById('hTeam2').textContent=j?j.t2:'Aguardando';
+    const j=cfgUnico.jogoAtivo||cfgUnico2.jogoAtivo;
     const r=resultadoUnico;
     const rValid=r&&r.g1!==null&&r.g2!==null;
-    // If result exists, show neutral state — game is over
-    if(rValid){
+    if(j && !rValid){
+      document.getElementById('hFlag1').textContent=j.f1;
+      document.getElementById('hTeam1').textContent=j.t1;
+      document.getElementById('hFlag2').textContent=j.f2;
+      document.getElementById('hTeam2').textContent=j.t2;
+      document.getElementById('hScore').textContent='?×?';
+      document.getElementById('hScoreLbl').textContent='Aguardando';
+      document.getElementById('hDate').textContent=`${j.date} · ${j.time}`;
+    } else if(rValid){
       document.getElementById('hFlag1').textContent='⚡';
       document.getElementById('hTeam1').textContent='Jogo Extra';
       document.getElementById('hFlag2').textContent='🏁';
       document.getElementById('hTeam2').textContent='Encerrado';
       document.getElementById('hScore').textContent=`${r.g1}×${r.g2}`;
       document.getElementById('hScoreLbl').textContent='Resultado Final';
-      document.getElementById('hDate').textContent=j?`${j.t1} × ${j.t2}`:'—';
     } else {
+      document.getElementById('hFlag1').textContent='⚡';
+      document.getElementById('hTeam1').textContent='Jogo Extra';
+      document.getElementById('hFlag2').textContent='🎯';
+      document.getElementById('hTeam2').textContent='Aguardando';
       document.getElementById('hScore').textContent='?×?';
-      document.getElementById('hScoreLbl').textContent=j?'Aguardando':'Configure no Admin';
-      document.getElementById('hDate').textContent=j?`${j.date} · ${j.time}`:'Configure no Admin';
+      document.getElementById('hScoreLbl').textContent='Configure no Admin';
+      document.getElementById('hDate').textContent='Configure no Admin';
     }
-    const ativos=palpitesUnico.filter(p=>p.status==='ativo');
-    const pend=palpitesUnico.filter(p=>p.status==='pendente');
-    document.getElementById('stTotal').textContent=palpitesUnico.length;
-    document.getElementById('stAtivos').textContent=ativos.length;
-    document.getElementById('stPend').textContent=pend.length;
-    document.getElementById('stBolada').textContent='R$'+(ativos.length*(cfgUnico.valor||10));
-    document.getElementById('statusTitle').textContent='Bolão Jogo Extra';
-    const sb2=document.getElementById('statusBadge');
-    if(r){sb2.textContent='Encerrado';sb2.className='badge badge-amarelo';}
-    else if(!cfgUnico.aceitar){sb2.textContent='Fechado';sb2.className='badge badge-danger';}
-    else{sb2.textContent='Aberto';sb2.className='badge badge-verde';}
+  }
+
+  // Card Mata-Mata — usa participantesData como fonte
+  const _parts = Array.isArray(participantesData) ? participantesData : [];
+  const partAtivos = _parts.filter(p=>p.pago_mata||p.pago);
+  const partPend = _parts.filter(p=>!p.pago_mata&&!p.pago);
+  const el = id=>document.getElementById(id);
+  if(el('stTotalMata')) el('stTotalMata').textContent = _parts.length||'—';
+  if(el('stAtivosMata')) el('stAtivosMata').textContent = partAtivos.length||'—';
+  if(el('stPendMata')) el('stPendMata').textContent = partPend.length||'—';
+  if(el('stBoladaMata')) el('stBoladaMata').textContent = _parts.length?'R$'+(partAtivos.length*(cfgMata.valor||50)):'—';
+
+  // Cards Jogo Extra — um por jogo ativo
+  const extraContainer = document.getElementById('statsExtraContainer');
+  if(extraContainer){
+    extraContainer.innerHTML = '';
+    const jogosAtivos2 = [];
+    if(cfgUnico.jogoAtivo) jogosAtivos2.push({j:cfgUnico.jogoAtivo, slot:'jogo1', cfg:cfgUnico, res:resultadoUnico});
+    if(cfgUnico2.jogoAtivo) jogosAtivos2.push({j:cfgUnico2.jogoAtivo, slot:'jogo2', cfg:cfgUnico2, res:null});
+    jogosAtivos2.forEach(({j,slot,cfg,res})=>{
+      const ativosSlot = palpitesUnico.filter(p=>p.status==='ativo'&&(p.jogo_extra_id||'jogo1')===slot);
+      const pendSlot = palpitesUnico.filter(p=>p.status==='pendente'&&(p.jogo_extra_id||'jogo1')===slot);
+      const encerrado = res&&res.g1!==null;
+      const badgeHTML = encerrado?'<span class="badge badge-amarelo">Encerrado</span>':
+                        !cfg.aceitar?'<span class="badge badge-danger">Fechado</span>':
+                        '<span class="badge badge-verde">Aberto</span>';
+      const div = document.createElement('div');
+      div.className='card';
+      div.style.cssText='margin-bottom:8px;border-color:var(--border2)';
+      div.innerHTML=`
+        <div class="flex-between" style="margin-bottom:10px">
+          <span class="card-title" style="margin-bottom:0">⚡ Jogo Extra</span>
+          ${badgeHTML}
+        </div>
+        <div style="font-size:12px;color:var(--txt2);margin-bottom:8px">${j.f1} ${j.t1} × ${j.t2} ${j.f2} — ${j.date} · ${j.time}</div>
+        <div class="stats-row">
+          <div class="stat"><div class="stat-val">${ativosSlot.length+pendSlot.length||'—'}</div><div class="stat-lbl">Total</div></div>
+          <div class="stat"><div class="stat-val">${ativosSlot.length||'—'}</div><div class="stat-lbl">Ativos</div></div>
+          <div class="stat"><div class="stat-val">${pendSlot.length||'—'}</div><div class="stat-lbl">Pendentes</div></div>
+          <div class="stat"><div class="stat-val" style="color:var(--amarelo)">R$${ativosSlot.length*(cfg.valor||10)}</div><div class="stat-lbl">Bolada</div></div>
+        </div>`;
+      extraContainer.appendChild(div);
+    });
   }
 }
 
@@ -1236,30 +1280,57 @@ function renderFormPalpite(){
     if(sNome){const f=document.getElementById('mNome');if(f)f.value=sNome;}
     if(sWhats){const f=document.getElementById('mWhats');if(f)f.value=sWhats;}
   } else {
-    const j=cfgUnico.jogoAtivo;
-    if(!j){ card.innerHTML=`<div class="modo-tag unico">⚡ Jogo Extra</div><div class="empty"><div class="empty-icon">⚡</div><div class="empty-text">Nenhum jogo extra ativo.<br>Aguarde o link do organizador!</div></div>`; return; }
-    if(resultadoUnico){ card.innerHTML=`<div class="modo-tag unico">⚡ Jogo Extra</div><div class="empty"><div class="empty-icon">🏁</div><div class="empty-text">Jogo encerrado. Veja o Ranking!</div></div>`; return; }
-    if(!cfgUnico.aceitar){ card.innerHTML=`<div class="modo-tag unico">⚡ Jogo Extra</div><div class="empty"><div class="empty-icon">🔒</div><div class="empty-text">Palpites fechados.</div></div>`; return; }
-    card.innerHTML=`
-      <div class="modo-tag unico">⚡ Jogo Extra</div>
-      <div class="card-title">Seu Palpite</div>
-      <label>Seu nome</label>
-      <input type="text" id="uNome" placeholder="Como te chamam?" maxlength="30">
-      <label>WhatsApp <span style="color:var(--danger)">*</span> <span style="font-size:10px;color:var(--txt3)">(identificador único)</span></label>
-      <input type="tel" id="uWhats" placeholder="(11) 99999-9999" maxlength="20">
-      <div class="placar-row">
-        <div class="pl-team"><div class="pl-flag">${j.f1}</div><div class="pl-name">${j.t1}</div><input type="number" id="uG1" value="0" min="0" max="20"></div>
-        <div class="pl-vs">✕</div>
-        <div class="pl-team"><div class="pl-flag">${j.f2}</div><div class="pl-name">${j.t2}</div><input type="number" id="uG2" value="0" min="0" max="20"></div>
-      </div>
-      ${cfgUnico.tbBonus&&cfgUnico.bonusQ?`<label>${cfgUnico.bonusQ}</label><input type="text" id="uBonus" placeholder="Sua resposta" maxlength="60">`:''}
-      <button class="btn btn-verde" onclick="enviarUnico()">Enviar Palpite ⚽</button>
-    `;
-    // Pre-fill from modal/localStorage
-    const sNome2=sessionStorage.getItem('cadastro_nome')||localStorage.getItem('bolao_nome');
-    const sWhats2=sessionStorage.getItem('cadastro_whats')||localStorage.getItem('bolao_whats');
-    if(sNome2){const f=document.getElementById('uNome');if(f)f.value=sNome2;}
-    if(sWhats2){const f=document.getElementById('uWhats');if(f)f.value=sWhats2;}
+    const _uNome=sessionStorage.getItem('cadastro_nome')||localStorage.getItem('bolao_nome')||'';
+    const _uWhats=(sessionStorage.getItem('cadastro_whats')||localStorage.getItem('bolao_whats')||'').replace(/\D/g,'');
+
+    // Coletar jogos extras ativos
+    const jogosExtras=[];
+    if(cfgUnico.jogoAtivo&&!resultadoUnico&&cfgUnico.aceitar)
+      jogosExtras.push({j:cfgUnico.jogoAtivo,slot:'jogo1',cfg:cfgUnico,idG1:'uG1',idG2:'uG2',fn:'enviarUnico'});
+    if(cfgUnico2.jogoAtivo&&cfgUnico2.aceitar)
+      jogosExtras.push({j:cfgUnico2.jogoAtivo,slot:'jogo2',cfg:cfgUnico2,idG1:'uG1b',idG2:'uG2b',fn:'enviarUnico2'});
+
+    if(!jogosExtras.length){
+      card.innerHTML=`<div class="modo-tag unico">⚡ Jogo Extra</div><div class="empty"><div class="empty-icon">⚡</div><div class="empty-text">Nenhum jogo extra ativo.<br>Aguarde o link do organizador!</div></div>`;
+      return;
+    }
+
+    let html='<div class="modo-tag unico">⚡ Jogo Extra</div>';
+    html+=`<div style="background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+      <div style="font-size:22px">👤</div>
+      <div><div style="font-size:13px;font-weight:700;color:var(--txt)">${_uNome}</div><div style="font-size:11px;color:var(--txt3)">${_uWhats}</div></div>
+    </div>
+    <input type="hidden" id="uNome" value="${_uNome}">
+    <input type="hidden" id="uWhats" value="${_uWhats}">`;
+
+    jogosExtras.forEach(({j,slot,cfg,idG1,idG2,fn})=>{
+      const _palpite=_uWhats?palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')=== _uWhats&&(p.jogo_extra_id||'jogo1')===slot):null;
+      if(jogosExtras.length>1){
+        html+=`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--amarelo);margin:12px 0 8px">${j.f1} ${j.t1} × ${j.t2} ${j.f2} — ${j.date} · ${j.time}</div>`;
+      }
+      if(_palpite){
+        const _isAtivo=_palpite.status==='ativo';
+        html+=`<div style="background:var(--bg);border-radius:12px;padding:12px;margin-bottom:8px">
+          <div style="display:flex;align-items:center;justify-content:center;gap:14px;padding:6px 0">
+            <div style="text-align:center"><div style="font-size:26px">${j.f1}</div><div style="font-size:10px;color:var(--txt2);margin-top:3px">${j.t1}</div></div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:38px;color:var(--amarelo)">${_palpite.g1} × ${_palpite.g2}</div>
+            <div style="text-align:center"><div style="font-size:26px">${j.f2}</div><div style="font-size:10px;color:var(--txt2);margin-top:3px">${j.t2}</div></div>
+          </div>
+        </div>
+        ${_isAtivo
+          ?'<div style="background:var(--success-pale);border:1px solid var(--verde);border-radius:10px;padding:10px;text-align:center;margin-bottom:8px"><div style="font-size:14px;font-weight:700;color:var(--success-light)">✅ Palpite ativo! Boa sorte! 🇧🇷</div></div>'
+          :'<div style="background:var(--warning-pale);border:1px solid var(--warning);border-radius:10px;padding:10px;text-align:center;margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:#FFB74D">⚠️ Aguardando pagamento — pague na aba Pagar</div></div>'
+        }`;
+      } else {
+        html+=`<div class="placar-row">
+          <div class="pl-team"><div class="pl-flag">${j.f1}</div><div class="pl-name">${j.t1}</div><input type="number" id="${idG1}" value="" min="0" max="20" inputmode="numeric" placeholder="0" onclick="this.select()"></div>
+          <div class="pl-vs">✕</div>
+          <div class="pl-team"><div class="pl-flag">${j.f2}</div><div class="pl-name">${j.t2}</div><input type="number" id="${idG2}" value="" min="0" max="20" inputmode="numeric" placeholder="0" onclick="this.select()"></div>
+        </div>
+        <button class="btn btn-verde" onclick="${fn}()" style="margin-bottom:12px">Enviar Palpite ⚽</button>`;
+      }
+    });
+    card.innerHTML=html;
   }
 }
 
@@ -1330,6 +1401,30 @@ async function enviarUnico(){
   } else {
     toast(`${nome}, palpite enviado! Agora pague o Pix 💸`,'ok');
   }
+  renderFormPalpite();
+}
+
+async function enviarUnico2(){
+  const nome=document.getElementById('uNome')?.value.trim();
+  const whats=document.getElementById('uWhats')?.value.trim();
+  if(!nome||!whats) return toast('Dados obrigatórios!','err');
+  const whatsLimpo=whats.replace(/\D/g,'');
+  if(!cfgUnico2.aceitar) return toast('Palpites fechados!','err');
+  const jaExiste=palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo&&p.jogo_extra_id==='jogo2');
+  if(jaExiste) return toast('Você já palpitou neste jogo!','err');
+  const g1=parseInt(document.getElementById('uG1b')?.value)||0;
+  const g2=parseInt(document.getElementById('uG2b')?.value)||0;
+  let statusInicial='pendente';
+  try{
+    const {data:p2}=await sb.from('participantes').select('pago_unico2').eq('whats',whatsLimpo).single();
+    if(p2?.pago_unico2) statusInicial='ativo';
+  }catch(e){}
+  const {error}=await sb.from('palpites_unico').insert({nome,whats,g1,g2,bonus:'',status:statusInicial,jogo_extra_id:'jogo2',ts:Date.now()});
+  if(error) return toast('Erro ao salvar.','err');
+  await addFeed('⚡',`${nome} entrou no jogo extra 2`);
+  const {data:pu}=await sb.from('palpites_unico').select('*').order('ts');
+  if(pu) palpitesUnico=pu;
+  toast(statusInicial==='ativo'?`${nome}, palpite ativado! ✓`:`${nome}, palpite enviado! Pague o Pix 💸`,'ok');
   renderFormPalpite();
 }
 
@@ -1591,9 +1686,10 @@ async function renderPagOpcoes(){
   if(cfgUnico.jogoAtivo){
     const j1=cfgUnico.jogoAtivo;
     const jaU1 = pagoUnico || palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===myWhats&&(p.jogo_extra_id||'jogo1')==='jogo1'&&p.status==='ativo');
+    const pendU1 = !jaU1 && palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===myWhats&&(p.jogo_extra_id||'jogo1')==='jogo1'&&p.status==='pendente');
     opcoes.push({
       id:'unico', label:`⚡ Extra — ${j1.t1} × ${j1.t2}`, sub:`${j1.date} · ${j1.time}`,
-      valor:cfgUnico.valor||10, jaAtivo:!!jaU1,
+      valor:cfgUnico.valor||10, jaAtivo:!!jaU1, pendente:!!pendU1,
       disponivel:cfgUnico.aceitar&&!jaU1,
     });
   }
@@ -1616,7 +1712,8 @@ async function renderPagOpcoes(){
         <div style="font-size:15px;font-weight:700;color:${o.jaAtivo?'var(--verde)':'var(--txt)'}">${o.label}</div>
         <div style="font-size:11px;color:var(--txt3);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px">${o.sub}</div>
         ${o.jaAtivo?'<div style="font-size:12px;color:var(--verde);margin-top:4px;font-weight:600">✅ Você já está ativo neste bolão</div>':''}
-        ${!o.disponivel&&!o.jaAtivo?'<div style="font-size:11px;color:var(--txt3);margin-top:2px">Inscrições fechadas</div>':''}
+        ${o.pendente?'<div style="font-size:12px;color:#FFB74D;margin-top:4px;font-weight:600">⚠️ Palpite enviado — pague o Pix para ativar</div>':''}
+        ${!o.disponivel&&!o.jaAtivo&&!o.pendente?'<div style="font-size:11px;color:var(--txt3);margin-top:2px">Inscrições fechadas</div>':''}
       </div>
       <div style="text-align:right;flex-shrink:0">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--amarelo)">R$ ${o.valor}</div>
@@ -2236,7 +2333,7 @@ function isFutureGame(dateStr, timeStr){
   const gameUTC = new Date(Date.UTC(2026, month-1, day, gameHour+3, gameMin));
   const nowUTC = new Date();
   // Game hasn't started yet = future (give 5 min grace after kickoff)
-  return gameUTC > new Date(nowUTC.getTime() - 40*60*1000);
+  return gameUTC > new Date(nowUTC.getTime() - 5*60*1000);
 }
 
 function filtroUnico(fase,el){
