@@ -1202,14 +1202,14 @@ function updateHeader(){
     }
   }
 
-  // Card Mata-Mata
-  const ativosMata=palpitesMata.filter(p=>p.status==='ativo');
-  const pendMata=palpitesMata.filter(p=>p.status==='pendente');
+  // Card Mata-Mata usa participantesData como fonte de verdade
   const el=id=>document.getElementById(id);
-  if(el('stTotalMata')) el('stTotalMata').textContent=palpitesMata.length;
-  if(el('stAtivosMata')) el('stAtivosMata').textContent=ativosMata.length;
-  if(el('stPendMata')) el('stPendMata').textContent=pendMata.length;
-  if(el('stBoladaMata')) el('stBoladaMata').textContent='R$'+(ativosMata.length*(cfgMata.valor||50));
+  const partAtivos = participantesData.filter(p=>p.pago_mata||p.pago);
+  const partPend = participantesData.filter(p=>!p.pago_mata&&!p.pago);
+  if(el('stTotalMata')) el('stTotalMata').textContent=participantesData.length;
+  if(el('stAtivosMata')) el('stAtivosMata').textContent=partAtivos.length;
+  if(el('stPendMata')) el('stPendMata').textContent=partPend.length;
+  if(el('stBoladaMata')) el('stBoladaMata').textContent='R$'+(partAtivos.length*(cfgMata.valor||50));
   const badgeMata=el('statusBadgeMata');
   if(badgeMata){ badgeMata.textContent='Aberto'; badgeMata.className='badge badge-verde'; }
 
