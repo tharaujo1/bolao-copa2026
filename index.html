@@ -2646,7 +2646,15 @@ async function carregarParticipantes(){
               </button>
             </div>`
           :`<div style="color:var(--txt3);margin-top:4px;font-size:11px">💳 Pix não informado</div>`}
-        <div style="color:var(--txt3);font-size:10px;margin-top:4px">${new Date(p.created_at).toLocaleDateString('pt-BR')} ${new Date(p.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
+          <div style="color:var(--txt3);font-size:10px">${new Date(p.created_at).toLocaleDateString('pt-BR')} ${new Date(p.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
+          <button onclick="excluirParticipante('${p.id}','${p.nome}')"
+            style="background:var(--danger-pale);border:1px solid var(--danger);color:#EF5350;
+            border-radius:8px;padding:4px 10px;font-size:10px;font-weight:700;
+            cursor:pointer;font-family:'Inter',sans-serif;touch-action:manipulation">
+            🗑 Excluir
+          </button>
+        </div>
       </div>`).join('');
   } catch(e){
     c.innerHTML=`<div style="text-align:center;padding:12px;color:var(--danger)">Erro: ${e.message}</div>`;
@@ -2681,6 +2689,22 @@ async function togglePago(id, whats, campo, valor){
     }
     await carregarParticipantes();
     toast(valor ? '✓ Pagamento confirmado!' : 'Pagamento desmarcado','ok');
+  } catch(e){
+    toast('Erro: '+e.message,'err');
+  }
+}
+
+async function excluirParticipante(id, nome){
+  if(!confirm(`Excluir ${nome}? Esta ação não pode ser desfeita.`)) return;
+  try{
+    const r = await fetch('/api/participantes', {
+      method: 'DELETE',
+      headers: { 'x-master-key': 'tharaujo2026', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    });
+    if(!r.ok) throw new Error('Erro '+r.status);
+    toast(`${nome} excluído.`,'info');
+    await carregarParticipantes();
   } catch(e){
     toast('Erro: '+e.message,'err');
   }
@@ -3585,7 +3609,6 @@ async function loginInit(){
 }
 
 function showLoginParaRecadastro(whats, nome){
-  // Mostrar tela de login com dados pre-preenchidos para recadastro
   const overlay = document.getElementById('tutorialOverlay');
   overlay.classList.remove('hidden');
   document.querySelectorAll('.nav-tab').forEach(t=>{
@@ -3593,16 +3616,25 @@ function showLoginParaRecadastro(whats, nome){
     t.style.opacity='0.4';
   });
   setTimeout(()=>{
-    // Ir direto para step 2 (nome + pix) com whats pre-preenchido
     document.getElementById('loginStep1').style.display='none';
     document.getElementById('loginStep2').style.display='block';
+    // Pre-preencher whats (usado no submit) e nome
     const inputWhats = document.getElementById('loginWhats');
     if(inputWhats) inputWhats.value = whats;
     const inputNome = document.getElementById('loginNome');
-    if(inputNome){ inputNome.value = nome; }
-    // Mostrar aviso amigavel
-    const status = document.getElementById('loginStatus');
-    if(status) status.textContent = 'Complete seu cadastro para continuar';
+    if(inputNome) inputNome.value = nome;
+    // Mostrar whats e nome no topo do step 2 para confirmação
+    const step2 = document.getElementById('loginStep2');
+    const aviso = document.createElement('div');
+    aviso.style.cssText='background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:16px;display:flex;align-items:center;gap:10px';
+    aviso.innerHTML=`<div style="font-size:22px">👤</div><div><div style="font-size:13px;font-weight:700;color:var(--txt)">${nome}</div><div style="font-size:11px;color:var(--txt3)">${whats}</div></div>`;
+    step2.insertBefore(aviso, step2.firstChild);
+    // Mensagem explicativa
+    const msg = step2.querySelector('.cadastro-msg')||document.createElement('div');
+    msg.className='cadastro-msg';
+    msg.style.cssText='background:var(--amarelo-pale);border:1px solid var(--border2);border-radius:10px;padding:10px;margin-bottom:16px;font-size:12px;color:var(--txt2);text-align:center';
+    msg.textContent='🔑 Complete seu cadastro adicionando sua chave Pix para receber prêmios.';
+    step2.insertBefore(msg, aviso.nextSibling);
     document.getElementById('loginPix')?.focus();
   }, 200);
 }
