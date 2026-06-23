@@ -388,18 +388,40 @@ select option{background:var(--bg);}
 
 <!-- PALPITAR -->
 <div class="screen active" id="screen-palpitar">
-  <div class="card gold">
+  <!-- Card Mata-Mata -->
+  <div class="card gold" style="margin-bottom:8px">
     <div class="flex-between" style="margin-bottom:10px">
-      <span class="card-title" style="margin-bottom:0" id="statusTitle">Carregando...</span>
-      <span class="badge badge-verde" id="statusBadge">...</span>
+      <span class="card-title" style="margin-bottom:0">🏆 Mata-Mata</span>
+      <span class="badge badge-verde" id="statusBadgeMata">Aberto</span>
     </div>
     <div class="stats-row">
-      <div class="stat"><div class="stat-val" id="stTotal">—</div><div class="stat-lbl">Total</div></div>
-      <div class="stat"><div class="stat-val" id="stAtivos">—</div><div class="stat-lbl">Ativos</div></div>
-      <div class="stat"><div class="stat-val" id="stPend">—</div><div class="stat-lbl">Pendentes</div></div>
-      <div class="stat"><div class="stat-val" id="stBolada">—</div><div class="stat-lbl">Bolada</div></div>
+      <div class="stat"><div class="stat-val" id="stTotalMata">—</div><div class="stat-lbl">Total</div></div>
+      <div class="stat"><div class="stat-val" id="stAtivosMata">—</div><div class="stat-lbl">Ativos</div></div>
+      <div class="stat"><div class="stat-val" id="stPendMata">—</div><div class="stat-lbl">Pendentes</div></div>
+      <div class="stat"><div class="stat-val" id="stBoladaMata">—</div><div class="stat-lbl">Bolada</div></div>
     </div>
   </div>
+  <!-- Card Jogo Extra (so aparece quando ativo) -->
+  <div class="card" id="statsExtraCard" style="margin-bottom:8px;border-color:var(--border2);display:none">
+    <div class="flex-between" style="margin-bottom:10px">
+      <span class="card-title" style="margin-bottom:0">⚡ Jogo Extra</span>
+      <span class="badge badge-verde" id="statusBadgeExtra">Aberto</span>
+    </div>
+    <div id="statsExtraJogo" style="font-size:12px;color:var(--txt2);margin-bottom:8px"></div>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val" id="stTotalExtra">—</div><div class="stat-lbl">Total</div></div>
+      <div class="stat"><div class="stat-val" id="stAtivosExtra">—</div><div class="stat-lbl">Ativos</div></div>
+      <div class="stat"><div class="stat-val" id="stPendExtra">—</div><div class="stat-lbl">Pendentes</div></div>
+      <div class="stat"><div class="stat-val" id="stBoladaExtra">—</div><div class="stat-lbl">Bolada</div></div>
+    </div>
+  </div>
+  <!-- IDs legados para compatibilidade -->
+  <span id="statusTitle" style="display:none"></span>
+  <span id="statusBadge" style="display:none"></span>
+  <span id="stTotal" style="display:none"></span>
+  <span id="stAtivos" style="display:none"></span>
+  <span id="stPend" style="display:none"></span>
+  <span id="stBolada" style="display:none"></span>
   <div id="welcomeBanner" style="display:none;background:linear-gradient(135deg,var(--verde-escuro),var(--azul));border-radius:14px;padding:14px 16px;margin-bottom:12px;border:1.5px solid var(--amarelo);display:none">
     <div style="font-size:11px;color:rgba(255,255,255,0.6);letter-spacing:1px;text-transform:uppercase;margin-bottom:2px">Bem-vindo de volta 👋</div>
     <div id="welcomeName" style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--amarelo);letter-spacing:2px"></div>
@@ -1147,6 +1169,7 @@ function updateHeader(){
   ['modeMata','rankMata','pagMata','admMata'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle('active',isMata); });
   ['modeUnico','rankUnico','pagUnico','admUnico'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle('active',!isMata); });
 
+  // Header central
   if(isMata){
     const fase=FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
     document.getElementById('hFlag1').textContent='🏆';
@@ -1156,24 +1179,14 @@ function updateHeader(){
     document.getElementById('hScore').textContent=fase?fase.label:'—';
     document.getElementById('hScoreLbl').textContent='Fase Ativa';
     document.getElementById('hDate').textContent=`${(cfgMata.jogosAtivos||[]).length} jogos abertos`;
-    const ativos=palpitesMata.filter(p=>p.status==='ativo');
-    const pend=palpitesMata.filter(p=>p.status==='pendente');
-    document.getElementById('stTotal').textContent=palpitesMata.length;
-    document.getElementById('stAtivos').textContent=ativos.length;
-    document.getElementById('stPend').textContent=pend.length;
-    document.getElementById('stBolada').textContent='R$'+(ativos.length*(cfgMata.valor||20));
-    document.getElementById('statusTitle').textContent='Bolão Mata-Mata';
-    const sb2=document.getElementById('statusBadge');
-    sb2.textContent='Aberto';sb2.className='badge badge-verde';
   } else {
     const j=cfgUnico.jogoAtivo;
+    const r=resultadoUnico;
+    const rValid=r&&r.g1!==null&&r.g2!==null;
     document.getElementById('hFlag1').textContent=j?j.f1:'⚡';
     document.getElementById('hTeam1').textContent=j?j.t1:'Jogo Extra';
     document.getElementById('hFlag2').textContent=j?j.f2:'🎯';
     document.getElementById('hTeam2').textContent=j?j.t2:'Aguardando';
-    const r=resultadoUnico;
-    const rValid=r&&r.g1!==null&&r.g2!==null;
-    // If result exists, show neutral state — game is over
     if(rValid){
       document.getElementById('hFlag1').textContent='⚡';
       document.getElementById('hTeam1').textContent='Jogo Extra';
@@ -1187,17 +1200,42 @@ function updateHeader(){
       document.getElementById('hScoreLbl').textContent=j?'Aguardando':'Configure no Admin';
       document.getElementById('hDate').textContent=j?`${j.date} · ${j.time}`:'Configure no Admin';
     }
-    const ativos=palpitesUnico.filter(p=>p.status==='ativo');
-    const pend=palpitesUnico.filter(p=>p.status==='pendente');
-    document.getElementById('stTotal').textContent=palpitesUnico.length;
-    document.getElementById('stAtivos').textContent=ativos.length;
-    document.getElementById('stPend').textContent=pend.length;
-    document.getElementById('stBolada').textContent='R$'+(ativos.length*(cfgUnico.valor||10));
-    document.getElementById('statusTitle').textContent='Bolão Jogo Extra';
-    const sb2=document.getElementById('statusBadge');
-    if(r){sb2.textContent='Encerrado';sb2.className='badge badge-amarelo';}
-    else if(!cfgUnico.aceitar){sb2.textContent='Fechado';sb2.className='badge badge-danger';}
-    else{sb2.textContent='Aberto';sb2.className='badge badge-verde';}
+  }
+
+  // Card Mata-Mata
+  const ativosMata=palpitesMata.filter(p=>p.status==='ativo');
+  const pendMata=palpitesMata.filter(p=>p.status==='pendente');
+  const el=id=>document.getElementById(id);
+  if(el('stTotalMata')) el('stTotalMata').textContent=palpitesMata.length;
+  if(el('stAtivosMata')) el('stAtivosMata').textContent=ativosMata.length;
+  if(el('stPendMata')) el('stPendMata').textContent=pendMata.length;
+  if(el('stBoladaMata')) el('stBoladaMata').textContent='R$'+(ativosMata.length*(cfgMata.valor||50));
+  const badgeMata=el('statusBadgeMata');
+  if(badgeMata){ badgeMata.textContent='Aberto'; badgeMata.className='badge badge-verde'; }
+
+  // Card Jogo Extra (so mostra se tiver jogo ativo)
+  const extraCard=el('statsExtraCard');
+  const j1=cfgUnico.jogoAtivo||cfgUnico2.jogoAtivo;
+  if(extraCard){
+    if(j1){
+      extraCard.style.display='block';
+      const ativosExtra=palpitesUnico.filter(p=>p.status==='ativo');
+      const pendExtra=palpitesUnico.filter(p=>p.status==='pendente');
+      if(el('statsExtraJogo')) el('statsExtraJogo').textContent=j1?`${j1.f1} ${j1.t1} × ${j1.t2} ${j1.f2} — ${j1.date} · ${j1.time}`:'';
+      if(el('stTotalExtra')) el('stTotalExtra').textContent=ativosExtra.length+pendExtra.length;
+      if(el('stAtivosExtra')) el('stAtivosExtra').textContent=ativosExtra.length;
+      if(el('stPendExtra')) el('stPendExtra').textContent=pendExtra.length;
+      if(el('stBoladaExtra')) el('stBoladaExtra').textContent='R$'+(ativosExtra.length*(cfgUnico.valor||10));
+      const r=resultadoUnico;
+      const badgeExtra=el('statusBadgeExtra');
+      if(badgeExtra){
+        if(r&&r.g1!==null){badgeExtra.textContent='Encerrado';badgeExtra.className='badge badge-amarelo';}
+        else if(!cfgUnico.aceitar){badgeExtra.textContent='Fechado';badgeExtra.className='badge badge-danger';}
+        else{badgeExtra.textContent='Aberto';badgeExtra.className='badge badge-verde';}
+      }
+    } else {
+      extraCard.style.display='none';
+    }
   }
 }
 
@@ -1254,6 +1292,34 @@ function renderFormPalpite(){
     if(!cfgUnico.aceitar){ card.innerHTML=`<div class="modo-tag unico">⚡ Jogo Extra</div><div class="empty"><div class="empty-icon">🔒</div><div class="empty-text">Palpites fechados.</div></div>`; return; }
     const _uNome=sessionStorage.getItem('cadastro_nome')||localStorage.getItem('bolao_nome')||'';
     const _uWhats=(sessionStorage.getItem('cadastro_whats')||localStorage.getItem('bolao_whats')||'').replace(/\D/g,'');
+    // Verificar se ja palpitou
+    const _palpiteExistente = _uWhats ? palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')=== _uWhats) : null;
+    if(_palpiteExistente){
+      const _isAtivo = _palpiteExistente.status === 'ativo';
+      card.innerHTML=`
+        <div class="modo-tag unico">⚡ Jogo Extra</div>
+        <div class="card-title">Seu Palpite</div>
+        <div style="background:var(--bg);border-radius:12px;padding:14px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:center;gap:16px;padding:8px 0">
+            <div style="text-align:center"><div style="font-size:28px">${j.f1}</div><div style="font-size:11px;color:var(--txt2);margin-top:4px">${j.t1}</div></div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:42px;color:var(--amarelo)">${_palpiteExistente.g1} × ${_palpiteExistente.g2}</div>
+            <div style="text-align:center"><div style="font-size:28px">${j.f2}</div><div style="font-size:11px;color:var(--txt2);margin-top:4px">${j.t2}</div></div>
+          </div>
+        </div>
+        ${_isAtivo
+          ? `<div style="background:var(--success-pale);border:1px solid var(--verde);border-radius:10px;padding:12px;text-align:center">
+              <div style="font-size:20px">✅</div>
+              <div style="font-size:14px;font-weight:700;color:var(--success-light);margin-top:4px">Palpite ativo!</div>
+              <div style="font-size:12px;color:var(--txt2);margin-top:2px">Pagamento confirmado. Boa sorte! 🇧🇷</div>
+            </div>`
+          : `<div style="background:var(--warning-pale);border:1px solid var(--warning);border-radius:10px;padding:12px;text-align:center">
+              <div style="font-size:20px">⚠️</div>
+              <div style="font-size:14px;font-weight:700;color:#FFB74D;margin-top:4px">Aguardando pagamento</div>
+              <div style="font-size:12px;color:var(--txt2);margin-top:2px">Seu palpite está salvo. Pague o Pix na aba <strong>Pagar</strong> para ativar.</div>
+            </div>`
+        }`;
+      return;
+    }
     card.innerHTML=`
       <div class="modo-tag unico">⚡ Jogo Extra</div>
       <div class="card-title">Seu Palpite</div>
