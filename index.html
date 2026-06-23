@@ -3755,35 +3755,26 @@ async function loginInit(){
   const lsWhats = localStorage.getItem('bolao_whats');
 
   if(lsNome && lsWhats){
-    // Verificar se existe no banco antes de entrar
-    try{
-      const r = await fetch(`/api/login?whats=${lsWhats.replace(/\D/g,'')}`);
-      if(r.ok){
-        const result = await r.json();
-        if(result.found){
-          // Existe no banco — entra direto
-          sessionStorage.setItem('cadastro_nome', lsNome);
-          sessionStorage.setItem('cadastro_whats', lsWhats);
-          document.getElementById('tutorialOverlay').classList.add('hidden');
-          enableNav();
-          showWelcomeBanner();
-          return;
-        } else {
-          // Tem localStorage mas NAO esta no banco — pedir recadastro
-          showLoginParaRecadastro(lsWhats, lsNome);
-          return;
+    // Entra direto pelo localStorage — sem bloquear
+    sessionStorage.setItem('cadastro_nome', lsNome);
+    sessionStorage.setItem('cadastro_whats', lsWhats);
+    document.getElementById('tutorialOverlay').classList.add('hidden');
+    enableNav();
+    showWelcomeBanner();
+    // Verificar banco em background para recadastro silencioso se necessario
+    fetch(`/api/login?whats=${lsWhats.replace(/\D/g,'')}`)
+      .then(r=>r.ok?r.json():{found:true})
+      .then(result=>{
+        if(!result.found){
+          sb.from('participantes').upsert({
+            nome: lsNome,
+            whats: lsWhats.replace(/\D/g,''),
+            pix_tipo: 'Outro',
+            pix_chave: ''
+          },{onConflict:'whats'}).catch(()=>{});
         }
-      }
-    } catch(e){
-      // API falhou — entrar pelo localStorage (offline fallback)
-      console.warn('Verificacao banco falhou, usando localStorage:', e);
-      sessionStorage.setItem('cadastro_nome', lsNome);
-      sessionStorage.setItem('cadastro_whats', lsWhats);
-      document.getElementById('tutorialOverlay').classList.add('hidden');
-      enableNav();
-      showWelcomeBanner();
-      return;
-    }
+      }).catch(()=>{});
+    return;
   }
 
   // Sem localStorage — verificar sessionStorage
