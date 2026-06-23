@@ -2996,27 +2996,38 @@ function decodeJogo(el){
 
 async function ativarJogoExtraObj(j){
   if(!j) return;
-  // Desativar se ja ativo
   const isAtivo1=cfgUnico.jogoAtivo?.t1===j.t1&&cfgUnico.jogoAtivo?.t2===j.t2;
   const isAtivo2=cfgUnico2.jogoAtivo?.t1===j.t1&&cfgUnico2.jogoAtivo?.t2===j.t2;
   if(isAtivo1){ await desativarExtra('unico'); return; }
   if(isAtivo2){ await desativarExtra('unico2'); return; }
-  // Verificar limite
   const numAtivos=(cfgUnico.jogoAtivo?1:0)+(cfgUnico2.jogoAtivo?1:0);
   if(numAtivos>=2){ toast('Já tem 2 jogos extras ativos! Desative um antes.','err'); return; }
-  // Ativar no primeiro slot livre
   if(!cfgUnico.jogoAtivo){
     cfgUnico.jogoAtivo={...j}; cfgUnico.aceitar=true;
     await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
+    // Resetar pago_unico de todos — novo jogo = novo pagamento
+    await fetch('/api/participantes', {
+      method:'PATCH',
+      headers:{'x-master-key':'tharaujo2026','Content-Type':'application/json'},
+      body:JSON.stringify({resetField:'pago_unico'})
+    });
   } else {
     cfgUnico2.jogoAtivo={...j}; cfgUnico2.aceitar=true;
     await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
+    // Resetar pago_unico2 de todos
+    await fetch('/api/participantes', {
+      method:'PATCH',
+      headers:{'x-master-key':'tharaujo2026','Content-Type':'application/json'},
+      body:JSON.stringify({resetField:'pago_unico2'})
+    });
   }
   await addFeed('⚡',`Jogo Extra aberto: ${j.t1} × ${j.t2}`);
   toast(`✓ ${j.t1} × ${j.t2} ativado!`,'ok');
   renderAdminUnicoUnificado();
   updateHeader();
+  iniciarPolling();
 }
+
 
 async function ativarJogoUnicoIdx(gi){
   const j=GRUPOS_JOGOS[gi];
