@@ -1095,6 +1095,10 @@ async function loadAll(){
     toast('Erro ao carregar dados','err');
     console.error(e);
   }
+  // Carregar participantes direto do Supabase (isolado)
+  sb.from('participantes').select('pago,pago_mata,pago_unico,pago_unico2')
+    .then(({data})=>{ if(data){ participantesData=data; updateHeader(); } })
+    .catch(e2=>console.warn('participantes nao carregados:',e2));
 }
 
 // ═══════════════════════════════════════
@@ -1204,12 +1208,13 @@ function updateHeader(){
 
   // Card Mata-Mata usa participantesData como fonte de verdade
   const el=id=>document.getElementById(id);
-  const partAtivos = participantesData.filter(p=>p.pago_mata||p.pago);
-  const partPend = participantesData.filter(p=>!p.pago_mata&&!p.pago);
-  if(el('stTotalMata')) el('stTotalMata').textContent=participantesData.length;
-  if(el('stAtivosMata')) el('stAtivosMata').textContent=partAtivos.length;
-  if(el('stPendMata')) el('stPendMata').textContent=partPend.length;
-  if(el('stBoladaMata')) el('stBoladaMata').textContent='R$'+(partAtivos.length*(cfgMata.valor||50));
+  const _parts = Array.isArray(participantesData) ? participantesData : [];
+  const partAtivos = _parts.filter(p=>p.pago_mata||p.pago);
+  const partPend = _parts.filter(p=>!p.pago_mata&&!p.pago);
+  if(el('stTotalMata')) el('stTotalMata').textContent=_parts.length||'—';
+  if(el('stAtivosMata')) el('stAtivosMata').textContent=partAtivos.length||'—';
+  if(el('stPendMata')) el('stPendMata').textContent=partPend.length||'—';
+  if(el('stBoladaMata')) el('stBoladaMata').textContent=_parts.length?'R$'+(partAtivos.length*(cfgMata.valor||50)):'—';
   const badgeMata=el('statusBadgeMata');
   if(badgeMata){ badgeMata.textContent='Aberto'; badgeMata.className='badge badge-verde'; }
 
