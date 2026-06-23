@@ -55,5 +55,22 @@ export default async function handler(req, res) {
     }
   }
 
+  if (req.method === 'DELETE') {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ error: 'id required' });
+    try {
+      const r = await fetch(`${SUPA_URL}/rest/v1/participantes?id=eq.${id}`, {
+        method: 'DELETE',
+        headers: {
+          'apikey': SERVICE_KEY,
+          'Authorization': `Bearer ${SERVICE_KEY}`,
+        }
+      });
+      return res.status(200).json({ deleted: true });
+    } catch (e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
   return res.status(405).json({ error: 'Method not allowed' });
 }
