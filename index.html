@@ -3656,43 +3656,44 @@ async function verificarLogin(){
   status.textContent = '';
 
   try{
-    // Use secure serverless function to check — avoids RLS issues
     const r = await fetch(`/api/login?whats=${whatsLimpo}`);
-    
-    let found = null;
     if(r.ok){
       const result = await r.json();
-      found = result.found ? result : null;
-    }
-
-    if(found){
-      // Already registered — log in
-      status.textContent = `✅ Olá, ${found.nome}! Entrando...`;
-      localStorage.setItem('bolao_nome', found.nome);
-      localStorage.setItem('bolao_whats', found.whats);
-      sessionStorage.setItem('cadastro_nome', found.nome);
-      sessionStorage.setItem('cadastro_whats', found.whats);
-      setTimeout(()=>{
-        document.getElementById('tutorialOverlay').classList.add('hidden');
-        enableNav();
-        showWelcomeBanner();
-        toast(`Bem-vindo de volta, ${found.nome}! 👋`,'ok');
-      }, 800);
+      if(result.found){
+        // Cadastrado — entra direto
+        status.textContent = `✅ Olá, ${result.nome}! Entrando...`;
+        localStorage.setItem('bolao_nome', result.nome);
+        localStorage.setItem('bolao_whats', result.whats);
+        sessionStorage.setItem('cadastro_nome', result.nome);
+        sessionStorage.setItem('cadastro_whats', result.whats);
+        setTimeout(()=>{
+          document.getElementById('tutorialOverlay').classList.add('hidden');
+          enableNav();
+          showWelcomeBanner();
+          toast(`Bem-vindo de volta, ${result.nome}! 👋`,'ok');
+        }, 800);
+      } else {
+        // Novo usuario — pedir cadastro
+        btn.textContent = 'Entrar →';
+        btn.disabled = false;
+        document.getElementById('loginStep1').style.display='none';
+        document.getElementById('loginStep2').style.display='block';
+        setTimeout(()=>{ document.getElementById('loginNome')?.focus(); }, 200);
+      }
     } else {
-      // New user — show registration form
-      btn.textContent = 'Entrar →';
-      btn.disabled = false;
-      document.getElementById('loginStep1').style.display='none';
-      document.getElementById('loginStep2').style.display='block';
-      setTimeout(()=>{ document.getElementById('loginNome')?.focus(); }, 200);
+      throw new Error('API erro '+r.status);
     }
   } catch(e){
     console.error('Login error:', e);
-    // On error, show registration form
+    // API falhou — deixar cadastrar normalmente
     btn.textContent = 'Entrar →';
     btn.disabled = false;
+    status.textContent = 'Digite seu nome e Pix para continuar';
     document.getElementById('loginStep1').style.display='none';
     document.getElementById('loginStep2').style.display='block';
+    // Pre-preencher whats no hidden field do step2
+    const loginWhatsEl = document.getElementById('loginWhats');
+    if(loginWhatsEl) loginWhatsEl.value = whats;
     setTimeout(()=>{ document.getElementById('loginNome')?.focus(); }, 200);
   }
 }
