@@ -998,7 +998,7 @@ let resultadosMata = {};
 let resultadoUnico = null;
 let feedList = [];
 let apiKey = '';
-let selectedFase = 'oitavas';
+let selectedFase = 'dezesseis';
 let selectedUnicoIdx = null;
 let liveInterval = null;
 let lastGoals = 0;
@@ -1044,7 +1044,7 @@ async function loadAll(){
       sb.from('resultado_unico').select('*').eq('id',1).single(),
       sb.from('feed').select('*').order('created_at',{ascending:false}).limit(30),
     ]);
-    cfgMata = cfgs?.find(c=>c.id==='mata')?.dados||{valor:20,p1:60,p2:25,p3:15,faseAtiva:'oitavas',jogosAtivos:[],adminPwd:'copa2026'};
+    cfgMata = cfgs?.find(c=>c.id==='mata')?.dados||{valor:20,p1:60,p2:25,p3:15,faseAtiva:'dezesseis',jogosAtivos:[],adminPwd:'copa2026'};
     cfgUnico = cfgs?.find(c=>c.id==='unico')?.dados||{valor:10,p1:70,p2:20,p3:10,aceitar:true,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true,adminPwd:'copa2026'};
     cfgUnico2 = cfgs?.find(c=>c.id==='unico2')?.dados||{valor:10,p1:70,p2:20,p3:10,aceitar:false,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true};
     // Carregar apiKey do Supabase
@@ -1589,7 +1589,7 @@ async function renderPagOpcoes(){
 
   const jaMataAtivo = pagoMata || palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===myWhats&&p.status==='ativo');
   opcoes.push({
-    id:'mata', label:'🏆 Mata-Mata', sub:'Todas as fases — Oitavas até a Final',
+    id:'mata', label:'🏆 Mata-Mata', sub:'Todas as fases — 16-avos até a Final',
     valor:cfgMata.valor||50, jaAtivo:!!jaMataAtivo,
     disponivel:!jaMataAtivo,
   });
