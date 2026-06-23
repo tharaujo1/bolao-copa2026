@@ -3518,32 +3518,38 @@ async function loginInit(){
   const lsWhats = localStorage.getItem('bolao_whats');
 
   if(lsNome && lsWhats){
-    sessionStorage.setItem('cadastro_nome', lsNome);
-    sessionStorage.setItem('cadastro_whats', lsWhats);
-    document.getElementById('tutorialOverlay').classList.add('hidden');
-    enableNav();
-    showWelcomeBanner();
-    // Verificar em background se existe no banco — se nao, recadastrar
+    // Verificar se existe no banco antes de entrar
     try{
       const r = await fetch(`/api/login?whats=${lsWhats.replace(/\D/g,'')}`);
       if(r.ok){
         const result = await r.json();
-        if(!result.found){
-          await sb.from('participantes').upsert({
-            nome: lsNome,
-            whats: lsWhats.replace(/\D/g,''),
-            pix_tipo: 'Outro',
-            pix_chave: ''
-          }, {onConflict:'whats'});
-          console.log('Recadastro silencioso:', lsNome);
+        if(result.found){
+          // Existe no banco — entra direto
+          sessionStorage.setItem('cadastro_nome', lsNome);
+          sessionStorage.setItem('cadastro_whats', lsWhats);
+          document.getElementById('tutorialOverlay').classList.add('hidden');
+          enableNav();
+          showWelcomeBanner();
+          return;
+        } else {
+          // Tem localStorage mas NAO esta no banco — pedir recadastro
+          showLoginParaRecadastro(lsWhats, lsNome);
+          return;
         }
       }
-    } catch(e){ console.warn('Verificacao background falhou:', e); }
-    return;
+    } catch(e){
+      // API falhou — entrar pelo localStorage (offline fallback)
+      console.warn('Verificacao banco falhou, usando localStorage:', e);
+      sessionStorage.setItem('cadastro_nome', lsNome);
+      sessionStorage.setItem('cadastro_whats', lsWhats);
+      document.getElementById('tutorialOverlay').classList.add('hidden');
+      enableNav();
+      showWelcomeBanner();
+      return;
+    }
   }
 
-
-  // No localStorage — try sessionStorage
+  // Sem localStorage — verificar sessionStorage
   const ssNome = sessionStorage.getItem('cadastro_nome');
   const ssWhats = sessionStorage.getItem('cadastro_whats');
   if(ssNome && ssWhats){
@@ -3576,6 +3582,29 @@ async function loginInit(){
       input.focus();
     }
   }, 500);
+}
+
+function showLoginParaRecadastro(whats, nome){
+  // Mostrar tela de login com dados pre-preenchidos para recadastro
+  const overlay = document.getElementById('tutorialOverlay');
+  overlay.classList.remove('hidden');
+  document.querySelectorAll('.nav-tab').forEach(t=>{
+    t.style.pointerEvents='none';
+    t.style.opacity='0.4';
+  });
+  setTimeout(()=>{
+    // Ir direto para step 2 (nome + pix) com whats pre-preenchido
+    document.getElementById('loginStep1').style.display='none';
+    document.getElementById('loginStep2').style.display='block';
+    const inputWhats = document.getElementById('loginWhats');
+    if(inputWhats) inputWhats.value = whats;
+    const inputNome = document.getElementById('loginNome');
+    if(inputNome){ inputNome.value = nome; }
+    // Mostrar aviso amigavel
+    const status = document.getElementById('loginStatus');
+    if(status) status.textContent = 'Complete seu cadastro para continuar';
+    document.getElementById('loginPix')?.focus();
+  }, 200);
 }
 
 function enableNav(){
