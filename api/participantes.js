@@ -34,7 +34,21 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'PATCH') {
-    // Update participant (mark as paid etc)
+    // Reset de campo para todos (novo jogo extra)
+    if (req.body?.resetField) {
+      const field = req.body.resetField;
+      const allowed = ['pago_unico', 'pago_unico2'];
+      if (!allowed.includes(field)) return res.status(400).json({ error: 'Campo nao permitido' });
+      try {
+        await fetch(`${SUPA_URL}/rest/v1/participantes?id=neq.00000000-0000-0000-0000-000000000000`, {
+          method: 'PATCH',
+          headers: { 'apikey': SERVICE_KEY, 'Authorization': `Bearer ${SERVICE_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ [field]: false })
+        });
+        return res.status(200).json({ reset: field });
+      } catch(e) { return res.status(500).json({ error: e.message }); }
+    }
+    // Update participante especifico
     const { id, ...updates } = req.body;
     if (!id) return res.status(400).json({ error: 'id required' });
     try {
