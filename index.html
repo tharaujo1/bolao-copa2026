@@ -1685,7 +1685,7 @@ async function renderPagOpcoes(){
     opcoes.push({
       id:'unico', label:`⚡ Extra — ${j1.t1} × ${j1.t2}`, sub:`${j1.date} · ${j1.time}`,
       valor:cfgUnico.valor||10, jaAtivo:!!jaU1,
-      disponivel:cfgUnico.aceitar&&!jaU1&&!temPalpiteUnico,
+      disponivel:cfgUnico.aceitar&&!jaU1,
       pendente:!!pendUnico,
     });
   }
