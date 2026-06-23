@@ -3517,16 +3517,31 @@ async function loginInit(){
   const lsNome = localStorage.getItem('bolao_nome');
   const lsWhats = localStorage.getItem('bolao_whats');
 
-  // If we have localStorage data, trust it and skip login
-  // (The API verify was causing issues with timeouts)
   if(lsNome && lsWhats){
     sessionStorage.setItem('cadastro_nome', lsNome);
     sessionStorage.setItem('cadastro_whats', lsWhats);
     document.getElementById('tutorialOverlay').classList.add('hidden');
     enableNav();
     showWelcomeBanner();
+    // Verificar em background se existe no banco — se nao, recadastrar
+    try{
+      const r = await fetch(`/api/login?whats=${lsWhats.replace(/\D/g,'')}`);
+      if(r.ok){
+        const result = await r.json();
+        if(!result.found){
+          await sb.from('participantes').upsert({
+            nome: lsNome,
+            whats: lsWhats.replace(/\D/g,''),
+            pix_tipo: 'Outro',
+            pix_chave: ''
+          }, {onConflict:'whats'});
+          console.log('Recadastro silencioso:', lsNome);
+        }
+      }
+    } catch(e){ console.warn('Verificacao background falhou:', e); }
     return;
   }
+
 
   // No localStorage — try sessionStorage
   const ssNome = sessionStorage.getItem('cadastro_nome');
