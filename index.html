@@ -1329,6 +1329,12 @@ function renderFormPalpite(){
     <input type="hidden" id="uNome" value="${_uNome}">
     <input type="hidden" id="uWhats" value="${_uWhats}">`;
 
+    // Atualizar palpitesUnico do banco para garantir status correto
+    if(_uWhats){
+      sb.from('palpites_unico').select('*').order('ts')
+        .then(({data})=>{ if(data){ palpitesUnico=data; renderFormPalpite(); } })
+        .catch(()=>{});
+    }
     jogosExtras.forEach(({j,slot,cfg,idG1,idG2,fn})=>{
       const _palpite=_uWhats?palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')=== _uWhats&&(p.jogo_extra_id||'jogo1')===slot):null;
       if(jogosExtras.length>1){
@@ -2627,7 +2633,13 @@ function goTab(screen,tabEl){
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('screen-'+screen).classList.add('active');
   if(tabEl) tabEl.classList.add('active');
-  if(screen==='palpitar') showWelcomeBanner();
+  if(screen==='palpitar'){
+    showWelcomeBanner();
+    // Recarregar palpites para garantir status atualizado
+    sb.from('palpites_unico').select('*').order('ts')
+      .then(({data})=>{ if(data){ palpitesUnico=data; renderFormPalpite(); updateHeader(); } })
+      .catch(()=>{});
+  }
   if(screen==='ranking') renderRanking();
   if(screen==='classificacao') loadClassificacao();
   if(screen==='pagar'){renderPagList();renderPagOpcoes();}
