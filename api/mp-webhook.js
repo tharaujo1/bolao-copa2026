@@ -52,9 +52,24 @@ export default async function handler(req, res) {
 
           // Gravar campos específicos por bolão
           const pagoFields = {};
+          // Extrair jogo_ids do external_reference (formato: whats|modos|base64jogoIds)
+          let jogoIds = {};
+          try {
+            const parts = externalReference.split('|');
+            if (parts[2]) {
+              jogoIds = JSON.parse(Buffer.from(parts[2], 'base64').toString('utf-8'));
+            }
+          } catch(e) {}
+
           if (modos.includes('mata')) pagoFields.pago_mata = true;
-          if (modos.includes('unico')) pagoFields.pago_unico = true;
-          if (modos.includes('unico2')) pagoFields.pago_unico2 = true;
+          if (modos.includes('unico')) {
+            pagoFields.pago_unico = true;
+            if (jogoIds.unico) pagoFields.pago_unico_jogo_id = jogoIds.unico;
+          }
+          if (modos.includes('unico2')) {
+            pagoFields.pago_unico2 = true;
+            if (jogoIds.unico2) pagoFields.pago_unico2_jogo_id = jogoIds.unico2;
+          }
           if (Object.keys(pagoFields).length > 0) {
             await supaRequest(`participantes?whats=eq.${whats}`, 'PATCH', pagoFields);
           }
