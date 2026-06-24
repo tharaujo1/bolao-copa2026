@@ -612,9 +612,7 @@ select option{background:var(--bg);}
         </div>
         <button class="btn btn-verde" onclick="salvarResultadoMata()">Salvar Resultado ✓</button>
         <div class="text-sm mt8 text-center" id="resMataStatus"></div>
-        <div class="divider"></div>
-        <div class="card-title">Aprovação — Mata-Mata</div>
-        <div id="admPendMata"><div class="loading"><span class="loading-spinner">⚽</span></div></div>
+
         <div class="divider"></div>
         <div class="card-title">Configurações</div>
         <label>Valor entrada (R$)</label><input type="number" id="mataValor" value="20">
@@ -622,11 +620,6 @@ select option{background:var(--bg);}
         <label>Premiação 2º (%)</label><input type="number" id="mataP2" value="25">
         <label>Premiação 3º (%)</label><input type="number" id="mataP3" value="15">
         <div class="divider-amarelo"></div>
-        <div class="card-title">Chave Pix — Mata-Mata</div>
-        <label>Tipo</label><select id="mataPixTipo"><option>CPF</option><option>Celular</option><option>Email</option><option>Aleatória</option></select>
-        <label>Chave</label><input type="text" id="mataPixChave">
-        <label>Nome</label><input type="text" id="mataPixNome">
-        <label>Banco</label><input type="text" id="mataPixBanco">
         <div class="toggle-row" style="margin-top:12px">
           <div class="toggle-info">
             <div class="toggle-label">Inscrições abertas</div>
@@ -653,6 +646,7 @@ select option{background:var(--bg);}
           Compartilhar no WhatsApp
         </button>
         <div class="divider"></div>
+        <div id="admVencedoresUnico"></div>
         <div class="card-title">Resultado — Jogo Extra</div>
         <div class="placar-row">
           <div class="pl-team"><div class="pl-flag" id="uResF1">🏴</div><div class="pl-name" id="uResT1">Time A</div><input type="number" id="uResG1" value="0" min="0" max="20"></div>
@@ -665,9 +659,7 @@ select option{background:var(--bg);}
         </div>
         <button class="btn btn-verde" onclick="apurarUnico()">Apurar Resultado ⚽</button>
         <button class="btn btn-gray" onclick="limparResUnico()">Limpar Resultado</button>
-        <div class="divider"></div>
-        <div class="card-title">Aprovação — Jogo Extra</div>
-        <div id="admPendUnico"><div class="loading"><span class="loading-spinner">⚽</span></div></div>
+
         <div class="divider"></div>
         <div class="card-title">Configurações</div>
         <label>Valor entrada (R$)</label><input type="number" id="unicoValor" value="10">
@@ -1203,7 +1195,7 @@ async function renderPagamentoVencedores(slot){
     return p ? `${p.pix_tipo||'Pix'}: ${p.pix_chave||'não cadastrado'}` : 'não cadastrado';
   };
 
-  const container = document.getElementById('admPendUnico');
+  const container = document.getElementById('admVencedoresUnico');
   if(!container) return;
 
   const vencCard = `
@@ -1955,7 +1947,7 @@ function renderPagList(){
   c.innerHTML=lista.map(p=>`<div class="part-item" style="align-items:center">
     <div class="part-avatar">${p.nome[0].toUpperCase()}</div>
     <div class="part-info"><div class="part-name">${p.nome}</div><div class="part-meta">${p.whats||'Sem WhatsApp'}</div></div>
-    <span class="badge ${p.status==='ativo'?'badge-verde':p.status==='rejeitado'?'badge-danger':'badge-warning'}">${p.status==='ativo'?'✓ Ativo':p.status==='rejeitado'?'Rejeitado':'⏳ Pendente'}</span>
+    <span class="badge ${p.status==='ativo'?'badge-verde':'badge-warning'}">${p.status==='ativo'?'✓ Pago e ativo':'⏳ Aguardando Pix'}</span>
   </div>`).join('');
 }
 
@@ -2313,7 +2305,7 @@ function adminMode(m){
   if(u2p) u2p.style.display='none'; // hidden — merged into unico
   const geralPanel=document.getElementById('admGeralPanel');
   if(geralPanel) geralPanel.style.display=m==='geral'?'block':'none';
-  if(m==='mata'){renderAdminPhase();renderAdminPend();loadCfgMata();renderResultadoSel();}
+  if(m==='mata'){renderAdminPhase();loadCfgMata();renderResultadoSel();}
   else if(m==='unico'){renderAdminUnicoUnificado();}
   else if(m==='geral'){
     const base=window.location.href.split('?')[0];
@@ -2465,23 +2457,15 @@ function loadCfgMata(){
   document.getElementById('mataP1').value=cfgMata.p1||60;
   document.getElementById('mataP2').value=cfgMata.p2||25;
   document.getElementById('mataP3').value=cfgMata.p3||15;
-  document.getElementById('mataPixTipo').value=cfgMata.pixTipo||'CPF';
-  document.getElementById('mataPixChave').value=cfgMata.pixChave||'';
-  document.getElementById('mataPixNome').value=cfgMata.pixNome||'';
-  document.getElementById('mataPixBanco').value=cfgMata.pixBanco||'';
   setT('tbMataInscricoes', cfgMata.inscricoesAbertas!==false);
 }
 
 async function salvarCfgMata(){
   cfgMata={...cfgMata,
-    valor:parseFloat(document.getElementById('mataValor').value)||20,
+    valor:parseFloat(document.getElementById('mataValor').value)||50,
     p1:parseInt(document.getElementById('mataP1').value)||60,
     p2:parseInt(document.getElementById('mataP2').value)||25,
     p3:parseInt(document.getElementById('mataP3').value)||15,
-    pixTipo:document.getElementById('mataPixTipo').value,
-    pixChave:document.getElementById('mataPixChave').value.trim(),
-    pixNome:document.getElementById('mataPixNome').value.trim(),
-    pixBanco:document.getElementById('mataPixBanco').value.trim(),
     inscricoesAbertas:getT('tbMataInscricoes'),
   };
   await sb.from('config').upsert({id:'mata',dados:cfgMata,updated_at:new Date().toISOString()});
@@ -2583,13 +2567,24 @@ function shareWAMata(){
   const link=getMataLink();
   const fase=FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
   const faseLabel=fase?fase.label:'Mata-Mata';
-  const msg=`🏆 *Bolão Copa 2026 — ${faseLabel}* ⚽
+  const p1=cfgMata.p1||60, p2=cfgMata.p2||25, p3=cfgMata.p3||15;
+  const msg=`🏆 *Bolão Copa 2026 — Mata-Mata* ⚽
 
 Fui te convidar pro bolão! 🇧🇷
 
-💰 Entrada: R$ ${cfgMata.valor}
-📋 Palpites em todos os jogos da fase
-🔒 Inscrições encerram antes do 1º jogo
+💰 Entrada: R$ ${cfgMata.valor||50} (pagamento único — vale todas as fases)
+📋 Palpites fase a fase: 16-avos, Oitavas, Quartas, Semi e Final
+🔒 Inscrições encerram antes do 1º jogo do mata-mata
+
+💰 *Premiação:*
+🥇 1º lugar → ${p1}% da bolada
+🥈 2º lugar → ${p2}% da bolada
+🥉 3º lugar → ${p3}% da bolada
+
+*Como pontuar:*
+🎯 Placar exato → 10 pts (×multiplicador por fase)
+✅ Vencedor + saldo → 6 pts
+🏅 Só o vencedor → 3 pts
 
 Cadastre-se agora:
 ${link}`;
@@ -2615,9 +2610,15 @@ function shareWA(){
     jogosMsg = `*${j.t1} ${j.f1} × ${j.f2} ${j.t2}*\n📅 ${j.date} às ${j.time}\n💰 Entrada: R$ ${val||10}`;
   }
 
+  const p1u=cfgUnico.p1||70, p2u=cfgUnico.p2||20, p3u=cfgUnico.p3||10;
   const msg = `⚡ *Bolão Jogo Extra — Copa 2026* ⚽
 
 ${jogosMsg}
+
+💰 *Premiação:*
+🥇 1º lugar → ${p1u}% da bolada
+🥈 2º lugar → ${p2u}% da bolada
+${p3u>0?`🥉 3º lugar → ${p3u}% da bolada`:''}
 
 *Como participar:*
 1️⃣ Acesse o app pelo link abaixo
@@ -2721,16 +2722,12 @@ async function salvarCfgUnico(){
     p1:parseInt(document.getElementById('unicoP1').value)||70,
     p2:parseInt(document.getElementById('unicoP2').value)||20,
     p3:parseInt(document.getElementById('unicoP3').value)||10,
-    pixTipo:document.getElementById('unicoPixTipo').value,
-    pixChave:document.getElementById('unicoPixChave').value.trim(),
-    pixNome:document.getElementById('unicoPixNome').value.trim(),
-    pixBanco:document.getElementById('unicoPixBanco').value.trim(),
     tbGV:getT('tbU1'),tbTG:getT('tbU2'),tbGP:getT('tbU3'),
-    tbBonus:getT('tbUBonus'),bonusQ:document.getElementById('unicoBonusQ').value.trim(),
+    tbBonus:getT('tbUBonus'),bonusQ:(document.getElementById('unicoBonusQ')?.value||'').trim(),
     tbOrdem:getT('tbUOrdem'),aceitar:getT('tbUAceitar'),
   };
   await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
-  updateHeader();updatePixDisplay();renderTbBody();updateUnicoResFields();
+  updateHeader();updatePixDisplay();renderTbBody();
   toast('Configurações salvas!','ok');
 }
 
@@ -2894,6 +2891,8 @@ function shareConviteGeral(){
   const base = window.location.href.split('?')[0];
   const valor_mata = cfgMata.valor || 50;
   const valor_unico = cfgUnico.valor || 10;
+  const p1m = cfgMata.p1||60, p2m = cfgMata.p2||25, p3m = cfgMata.p3||15;
+  const p1u = cfgUnico.p1||70, p2u = cfgUnico.p2||20, p3u = cfgUnico.p3||10;
   const msg = `🇧🇷⚽🏆 *BOLÃO BRADESCO — COPA 2026*
 
 Galera, montei um bolão da Copa pra gente competir!
@@ -2901,17 +2900,27 @@ Galera, montei um bolão da Copa pra gente competir!
 *Dois bolões disponíveis:*
 
 🏆 *Mata-Mata — R$ ${valor_mata} por pessoa*
-Grupo fechado. Palpite em todas as fases — oitavas, quartas, semifinal e final. Pontuação acumulada com multiplicadores. Abre quando a fase de grupos terminar.
+Palpite em todas as fases — 16-avos até a Final.
+Pontuação acumulada com multiplicadores por fase.
 
-⚡ *Jogo Extra — R$ ${valor_unico} por pessoa (opcional)*
-Aposta pontual em jogos específicos. Quando eu liberar, você entra ou não — sem compromisso.
+💰 *Premiação Mata-Mata:*
+🥇 1º lugar → ${p1m}% da bolada
+🥈 2º lugar → ${p2m}% da bolada
+🥉 3º lugar → ${p3m}% da bolada
+
+⚡ *Jogo Extra — R$ ${valor_unico} por jogo (opcional)*
+Aposta pontual em jogos específicos. Sem compromisso — entra quando quiser.
+
+💰 *Premiação Jogo Extra:*
+🥇 1º lugar → ${p1u}% da bolada
+🥈 2º lugar → ${p2u}% da bolada
+${p3u>0?`🥉 3º lugar → ${p3u}% da bolada`:''}
 
 *Como pontuar:*
 🎯 Placar exato → 10 pts
 ✅ Vencedor + mesmo saldo de gols → 6 pts
 🏅 Só o vencedor → 3 pts
 🤝 Previu empate e empatou → 1 pt
-_(No Mata-Mata: Quartas ×1,5 · Semi e Final ×2)_
 
 📡 Placares ao vivo em tempo real
 📊 Classificação automática dos grupos
@@ -2948,12 +2957,8 @@ function filtroUnico2(fase,el){
   }).join('');
 }
 function renderAdminUnicoUnificado(){
-  // Show active games
   renderJogosAtivos();
-  // Show upcoming games list
   renderSmartJogos('unified');
-  // Show pending palpites for both extras
-  renderAdminPendUnico();
 }
 
 function renderJogosAtivos(){
