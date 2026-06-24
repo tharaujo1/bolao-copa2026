@@ -683,12 +683,6 @@ select option{background:var(--bg);}
         <div id="unicoBonusQWrap" style="display:none"><label>Texto da pergunta</label><input type="text" id="unicoBonusQ" placeholder="Ex: Quem faz o 1º gol?"></div>
         <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Ordem de envio</div></div><button class="toggle on" id="tbUOrdem" onclick="this.classList.toggle('on')"></button></div>
         <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Aceitar palpites</div></div><button class="toggle on" id="tbUAceitar" onclick="this.classList.toggle('on')"></button></div>
-        <div class="divider-amarelo"></div>
-        <div class="card-title">Chave Pix — Jogo Extra</div>
-        <label>Tipo</label><select id="unicoPixTipo"><option>CPF</option><option>Celular</option><option>Email</option><option>Aleatória</option></select>
-        <label>Chave</label><input type="text" id="unicoPixChave">
-        <label>Nome</label><input type="text" id="unicoPixNome">
-        <label>Banco</label><input type="text" id="unicoPixBanco">
         <button class="btn btn-amarelo mt8" onclick="salvarCfgUnico()">Salvar Configurações</button>
         <button class="btn btn-danger" onclick="limparUnico()">⚠️ Limpar palpites</button>
 
@@ -1107,6 +1101,135 @@ async function loadAll(){
     .catch(e=>console.warn('participantes:',e));
 }
 
+
+// ═══════════════════════════════════════
+// APURAÇÃO AUTOMÁTICA VIA API
+// ═══════════════════════════════════════
+let pollingInterval = null;
+
+function iniciarPollingExtra(){
+  if(pollingInterval) clearInterval(pollingInterval);
+  const temJogoAtivo = cfgUnico.jogoAtivo || cfgUnico2.jogoAtivo;
+  if(!temJogoAtivo || !apiKey) return;
+  pollingInterval = setInterval(verificarResultadosExtra, 60000);
+  verificarResultadosExtra(); // rodar imediatamente
+}
+
+async function verificarResultadosExtra(){
+  if(!apiKey) return;
+  const jogos = [];
+  if(cfgUnico.jogoAtivo && !resultadoUnico) jogos.push({jogo:cfgUnico.jogoAtivo, slot:'unico', cfg:cfgUnico});
+  if(cfgUnico2.jogoAtivo) jogos.push({jogo:cfgUnico2.jogoAtivo, slot:'unico2', cfg:cfgUnico2});
+  if(!jogos.length){ clearInterval(pollingInterval); return; }
+
+  const today = new Date().toISOString().split('T')[0];
+  const amanha = new Date(Date.now()+86400000).toISOString().split('T')[0];
+  try{
+    const res = await fetch(`/api/football?key=${apiKey}&path=competitions/2000/matches&dateFrom=${today}&dateTo=${amanha}`);
+    if(!res.ok) return;
+    const data = await res.json();
+    const matches = data.matches||[];
+
+    for(const {jogo, slot, cfg} of jogos){
+      const match = matches.find(m=>{
+        const h=(m.homeTeam?.name||m.homeTeam?.shortName||'').toLowerCase();
+        const a=(m.awayTeam?.name||m.awayTeam?.shortName||'').toLowerCase();
+        const t1=jogo.t1.toLowerCase().split(' ')[0];
+        const t2=jogo.t2.toLowerCase().split(' ')[0];
+        return h.includes(t1)||t1.includes(h.split(' ')[0])||a.includes(t2)||t2.includes(a.split(' ')[0]);
+      });
+
+      if(match?.status==='FINISHED'){
+        const s = match.score?.fullTime||{};
+        const g1 = s.home??0, g2 = s.away??0;
+        if(slot==='unico'){
+          await sb.from('resultado_unico').upsert({id:1,g1,g2,bonus_ans:'',updated_at:new Date().toISOString()});
+          cfgUnico.aceitar=false;
+          await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
+          resultadoUnico={g1,g2};
+          await addFeed('🏆',`Resultado automático: ${jogo.t1} ${g1}×${g2} ${jogo.t2}`);
+          toast(`⚡ Resultado apurado: ${g1}×${g2}`,'ok');
+          updateHeader(); renderFormPalpite();
+          if(adminUnlocked) renderPagamentoVencedores('unico');
+        } else {
+          await sb.from('resultado_unico').upsert({id:2,g1,g2,bonus_ans:'',jogo_extra_id:'jogo2',updated_at:new Date().toISOString()});
+          cfgUnico2.aceitar=false;
+          await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
+          await addFeed('🏆',`Resultado automático: ${jogo.t1} ${g1}×${g2} ${jogo.t2}`);
+          toast(`⚡ Resultado apurado: ${g1}×${g2}`,'ok');
+        }
+      }
+    }
+  } catch(e){ console.warn('polling erro:',e); }
+}
+
+// ═══════════════════════════════════════
+// PAGAMENTO DOS VENCEDORES
+// ═══════════════════════════════════════
+async function renderPagamentoVencedores(slot){
+  const isSlot1 = slot==='unico';
+  const cfg = isSlot1 ? cfgUnico : cfgUnico2;
+  const j = cfg.jogoAtivo;
+  const resData = isSlot1 ? resultadoUnico : null;
+  if(!j) return;
+
+  // Buscar resultado do banco se slot2
+  let res = resData;
+  if(!isSlot1){
+    const {data} = await sb.from('resultado_unico').select('*').eq('id',2).single().catch(()=>({data:null}));
+    res = data;
+  }
+  if(!res||res.g1===null) return;
+
+  const g1=res.g1, g2=res.g2;
+  const palpites = palpitesUnico
+    .filter(p=>p.status==='ativo'&&(p.jogo_extra_id||'jogo1')===(isSlot1?'jogo1':'jogo2'))
+    .map(p=>({...p, pts: calcUnico(p.g1,p.g2,g1,g2)}))
+    .sort((a,b)=>b.pts-a.pts||a.ts-b.ts);
+
+  if(!palpites.length) return;
+  const total = palpites.length*(cfg.valor||10);
+  const p1val = Math.round(total*(cfg.p1||70)/100);
+  const p2val = Math.round(total*(cfg.p2||20)/100);
+  const p3val = Math.round(total*(cfg.p3||10)/100);
+
+  // Buscar chaves Pix dos vencedores
+  const whatsVenc = [palpites[0]?.whats, palpites[1]?.whats, palpites[2]?.whats].filter(Boolean);
+  const {data:parts} = await sb.from('participantes').select('nome,whats,pix_chave,pix_tipo').in('whats',whatsVenc.map(w=>w.replace(/\D/g,''))).catch(()=>({data:[]}));
+
+  const getPix = (whats) => {
+    const w = whats?.replace(/\D/g,'');
+    const p = (parts||[]).find(x=>x.whats===w);
+    return p ? `${p.pix_tipo||'Pix'}: ${p.pix_chave||'não cadastrado'}` : 'não cadastrado';
+  };
+
+  const container = document.getElementById('admPendUnico');
+  if(!container) return;
+
+  const vencCard = `
+    <div style="background:rgba(255,215,0,0.08);border:1.5px solid var(--amarelo);border-radius:12px;padding:14px;margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:10px">💰 Pagamento — ${j.t1} ${g1}×${g2} ${j.t2}</div>
+      <div style="font-size:12px;color:var(--txt2);margin-bottom:12px">Total arrecadado: <strong style="color:var(--amarelo)">R$ ${total}</strong></div>
+      ${[{p:palpites[0],val:p1val,pos:'🥇',pct:cfg.p1||70},{p:palpites[1],val:p2val,pos:'🥈',pct:cfg.p2||20},{p:palpites[2],val:p3val,pos:'🥉',pct:cfg.p3||10}]
+        .filter(({p})=>p)
+        .map(({p,val,pos,pct})=>`
+        <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="font-size:16px;font-weight:700">${pos} ${p.nome}</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--amarelo)">R$ ${val}</div>
+          </div>
+          <div style="font-size:11px;color:var(--txt2)">Palpite: ${p.g1}×${p.g2} · ${pct}% · ${p.pts} pts</div>
+          <div style="font-size:11px;color:var(--amarelo);margin-top:4px;font-family:monospace">💳 ${getPix(p.whats)}</div>
+          <button onclick="copiarPix('${(parts||[]).find(x=>x.whats===p.whats?.replace(/\D/g,''))?.pix_chave||''}','${p.nome}')"
+            style="margin-top:8px;background:var(--amarelo-pale);border:1px solid var(--border2);color:var(--amarelo);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;width:100%">
+            📋 Copiar chave Pix de ${p.nome}
+          </button>
+        </div>`).join('')}
+    </div>`;
+
+  container.insertAdjacentHTML('afterbegin', vencCard);
+}
+
 // ═══════════════════════════════════════
 // REALTIME
 // ═══════════════════════════════════════
@@ -1417,15 +1540,16 @@ async function enviarUnico(){
   const g1=parseInt(document.getElementById('uG1')?.value)||0;
   const g2=parseInt(document.getElementById('uG2')?.value)||0;
   const bonus=document.getElementById('uBonus')?.value.trim()||'';
-  // Check if already marked as pago
+  // Verificar pagamento pelo ID do jogo especifico (nao boolean generico)
   let statusInicialU = 'pendente';
+  const jogoId = cfgUnico.jogoAtivo?.id || (cfgUnico.jogoAtivo?.t1+'x'+cfgUnico.jogoAtivo?.t2).replace(/\s/g,'');
   try{
     const whatsLimpoU = whats.replace(/\D/g,'');
-    const {data:partU} = await sb.from('participantes').select('pago,pago_unico').eq('whats',whatsLimpoU).single();
-    if(partU?.pago_unico || partU?.pago) statusInicialU = 'ativo';
+    const {data:partU} = await sb.from('participantes').select('pago_unico_jogo_id').eq('whats',whatsLimpoU).single();
+    if(partU?.pago_unico_jogo_id === jogoId) statusInicialU = 'ativo';
   } catch(e){}
 
-  const {error}=await sb.from('palpites_unico').insert({nome,whats,g1,g2,bonus,status:statusInicialU,ts:Date.now()});
+  const {error}=await sb.from('palpites_unico').insert({nome,whats,g1,g2,bonus,status:statusInicialU,jogo_extra_id:'jogo1',ts:Date.now()});
   if(error) return toast('Erro ao salvar. Tente novamente.','err');
   await addFeed('⚡',`${nome} entrou no jogo extra`);
   if(statusInicialU==='ativo'){
@@ -1447,9 +1571,10 @@ async function enviarUnico2(){
   const g1=parseInt(document.getElementById('uG1b')?.value)||0;
   const g2=parseInt(document.getElementById('uG2b')?.value)||0;
   let statusInicial='pendente';
+  const jogoId2 = cfgUnico2.jogoAtivo?.id || (cfgUnico2.jogoAtivo?.t1+'x'+cfgUnico2.jogoAtivo?.t2).replace(/\s/g,'');
   try{
-    const {data:p2}=await sb.from('participantes').select('pago_unico2').eq('whats',whatsLimpo).single();
-    if(p2?.pago_unico2) statusInicial='ativo';
+    const {data:p2}=await sb.from('participantes').select('pago_unico2_jogo_id').eq('whats',whatsLimpo).single();
+    if(p2?.pago_unico2_jogo_id === jogoId2) statusInicial='ativo';
   }catch(e){}
   const {error}=await sb.from('palpites_unico').insert({nome,whats,g1,g2,bonus:'',status:statusInicial,jogo_extra_id:'jogo2',ts:Date.now()});
   if(error) return toast('Erro ao salvar.','err');
@@ -1693,18 +1818,16 @@ async function renderPagOpcoes(){
     }
   } catch(e){}
 
-  // Check individual payment fields
-  let pagoMata=false, pagoUnico=false, pagoUnico2=false;
+  // Verificar pagamento por jogo especifico (nao boolean generico)
+  let pagoMata=false, pagoUnico='', pagoUnico2='';
   try{
-    const r = await fetch('/api/participantes', {headers:{'x-master-key':'tharaujo2026'}});
-    if(r.ok){
-      const list = await r.json();
-      const me = list.find(p=>p.whats?.replace(/\D/g,'')===myWhats);
-      if(me){
-        pagoMata = !!(me.pago_mata || me.pago); // backward compat
-        pagoUnico = !!me.pago_unico;
-        pagoUnico2 = !!me.pago_unico2;
-      }
+    const {data:meData} = await sb.from('participantes')
+      .select('pago,pago_mata,pago_unico_jogo_id,pago_unico2_jogo_id')
+      .eq('whats',myWhats).single();
+    if(meData){
+      pagoMata = !!(meData.pago_mata || meData.pago);
+      pagoUnico = meData.pago_unico_jogo_id||'';
+      pagoUnico2 = meData.pago_unico2_jogo_id||'';
     }
   } catch(e){}
 
@@ -1717,7 +1840,9 @@ async function renderPagOpcoes(){
 
   if(cfgUnico.jogoAtivo){
     const j1=cfgUnico.jogoAtivo;
-    const jaU1 = pagoUnico || palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===myWhats&&(p.jogo_extra_id||'jogo1')==='jogo1'&&p.status==='ativo');
+    const jogoId1 = j1.id || (j1.t1+'x'+j1.t2).replace(/\s/g,'');
+    const pagoEsteJogo1 = pagoUnico === jogoId1; // pago_unico_jogo_id deve bater com o jogo atual
+    const jaU1 = pagoEsteJogo1 || palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===myWhats&&(p.jogo_extra_id||'jogo1')==='jogo1'&&p.status==='ativo');
     const pendU1 = !jaU1 && palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===myWhats&&(p.jogo_extra_id||'jogo1')==='jogo1'&&p.status==='pendente');
     opcoes.push({
       id:'unico', label:`⚡ Extra — ${j1.t1} × ${j1.t2}`, sub:`${j1.date} · ${j1.time}`,
@@ -1881,6 +2006,15 @@ async function gerarPixMP(){
   if(btn){ btn.textContent='Gerando...'; btn.disabled=true; }
 
   try{
+    // Montar jogo_ids para rastreamento exato do pagamento
+    const jogoIds = {};
+    if(selecionados.includes('unico') && cfgUnico.jogoAtivo){
+      jogoIds.unico = cfgUnico.jogoAtivo.id || (cfgUnico.jogoAtivo.t1+'x'+cfgUnico.jogoAtivo.t2).replace(/\s/g,'');
+    }
+    if(selecionados.includes('unico2') && cfgUnico2.jogoAtivo){
+      jogoIds.unico2 = cfgUnico2.jogoAtivo.id || (cfgUnico2.jogoAtivo.t1+'x'+cfgUnico2.jogoAtivo.t2).replace(/\s/g,'');
+    }
+
     const res = await fetch('/api/mp-pix', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1889,7 +2023,8 @@ async function gerarPixMP(){
         nome,
         whats: whats.replace(/\D/g,''),
         descricao: `Bolão Bradesco — ${descricao}`,
-        modo: selecionados.join(','), // e.g. "mata,unico" or "unico2"
+        modo: selecionados.join(','),
+        jogoIds, // IDs dos jogos pagos — gravados no external_reference do MP
       })
     });
     const data = await res.json();
@@ -2880,17 +3015,37 @@ async function ativarJogoExtra(gi){
     return;
   }
 
-  // Activate in first available slot
+  // Activate in first available slot + resetar pago do slot correspondente
   if(!cfgUnico.jogoAtivo){
     cfgUnico.jogoAtivo={...j}; cfgUnico.aceitar=true;
     await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
+    // RESET pago_unico para todos — pagamento do jogo anterior não vale para este novo
+    await fetch('/api/participantes',{
+      method:'PATCH',
+      headers:{'x-master-key':'tharaujo2026','Content-Type':'application/json'},
+      body:JSON.stringify({resetField:'pago_unico'})
+    }).catch(()=>{});
+    // Limpar palpites do slot 1 anteriores
+    await sb.from('palpites_unico').delete()
+      .not('jogo_extra_id','eq','jogo2')
+      .catch(()=>{});
   } else {
     cfgUnico2.jogoAtivo={...j}; cfgUnico2.aceitar=true;
     await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
+    // RESET pago_unico2 para todos — pagamento do jogo anterior não vale para este novo
+    await fetch('/api/participantes',{
+      method:'PATCH',
+      headers:{'x-master-key':'tharaujo2026','Content-Type':'application/json'},
+      body:JSON.stringify({resetField:'pago_unico2'})
+    }).catch(()=>{});
+    // Limpar palpites do slot 2 anteriores
+    await sb.from('palpites_unico').delete()
+      .eq('jogo_extra_id','jogo2')
+      .catch(()=>{});
   }
 
   await addFeed('⚡',`Jogo Extra aberto: ${j.t1} × ${j.t2}`);
-  toast(`✓ ${j.t1} × ${j.t2} ativado!`,'ok');
+  toast(`✓ ${j.t1} × ${j.t2} ativado! Pagamentos resetados.`,'ok');
   renderAdminUnicoUnificado();
   updateHeader();
 }
@@ -3555,6 +3710,7 @@ readParams();
 loginInit();
 loadAll().then(()=>{
   setupRealtime();
+  iniciarPollingExtra(); // apuracao automatica
   if(apiKey){document.getElementById('apiKeyInput').value=apiKey;}
   showWelcomeBanner();
   if('Notification'in window&&Notification.permission==='default'){
