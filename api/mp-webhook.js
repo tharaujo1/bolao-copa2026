@@ -1,4 +1,22 @@
 const SUPA_URL = 'https://yyksiowovekyqkocqshq.supabase.co';
+const TELEGRAM_TOKEN = '8913978204:AAFLPcSOj1mu4HvR9_p5sLOm1exJsDCZWGU';
+const TELEGRAM_CHAT_ID = '792681534';
+
+async function notificarTelegram(mensagem){
+  try{
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: mensagem,
+        parse_mode: 'HTML'
+      })
+    });
+  } catch(e){
+    console.warn('Telegram erro:', e);
+  }
+}
 
 async function supaRequest(path, method = 'GET', body = null) {
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -31,23 +49,21 @@ export default async function handler(req, res) {
       const payment = await mpRes.json();
 
       if (payment.status === 'approved') {
-        // Parse external_reference: "11995564994|mata,unico,unico2"
         const extRef = payment.external_reference || '';
         let whats, modos;
 
         if (extRef.includes('|')) {
           const parts = extRef.split('|');
           whats = parts[0];
-          modos = parts[1].split(','); // ['mata'], ['unico'], ['mata','unico'], etc
+          modos = parts[1].split(',');
         } else {
-          // Fallback to metadata
           whats = payment.metadata?.whats;
           const modo = payment.metadata?.modo || 'mata';
           modos = modo.split(',');
         }
 
         if (whats) {
-          // Buscar nome do participante para notificacao
+          // Buscar nome do participante
           let nomeParticipante = whats;
           try {
             const partRes = await supaRequest(`participantes?whats=eq.${whats}&select=nome`, 'GET');
@@ -61,10 +77,9 @@ export default async function handler(req, res) {
 
           // Gravar campos específicos por bolão
           const pagoFields = {};
-          // Extrair jogo_ids do external_reference (formato: whats|modos|base64jogoIds)
           let jogoIds = {};
           try {
-            const parts = externalReference.split('|');
+            const parts = extRef.split('|');
             if (parts[2]) {
               jogoIds = JSON.parse(Buffer.from(parts[2], 'base64').toString('utf-8'));
             }
@@ -83,7 +98,7 @@ export default async function handler(req, res) {
             await supaRequest(`participantes?whats=eq.${whats}`, 'PATCH', pagoFields);
           }
 
-          // Activate each selected bolão
+          // Ativar palpites
           for (const modo of modos) {
             if (modo === 'mata') {
               await supaRequest(
@@ -103,13 +118,28 @@ export default async function handler(req, res) {
             }
           }
 
-          // Add feed
+          // Feed
           const modosLabel = modos.map(m => m === 'mata' ? 'Mata-Mata' : m === 'unico2' ? 'Extra 2' : 'Extra').join(' + ');
           await supaRequest('feed', 'POST', {
             icon: '💰',
             texto: `Pix confirmado — ${modosLabel}`,
             hora: new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})
           });
+
+          // Notificar Telegram
+          const modosTexto = modos.map(m => {
+            if(m==='mata') return `🏆 Mata-Mata (R$ ${valorPago||'?'})`;
+            if(m==='unico') return `⚡ Jogo Extra (R$ ${valorPago||'?'})`;
+            if(m==='unico2') return `⚡ Jogo Extra 2 (R$ ${valorPago||'?'})`;
+            return m;
+          }).join('\n');
+          await notificarTelegram(
+            `💰 <b>Pagamento confirmado!</b>\n\n` +
+            `👤 ${nomeParticipante}\n` +
+            `📱 ${whats}\n\n` +
+            `${modosTexto}\n\n` +
+            `✅ Palpite ativado automaticamente`
+          );
 
           console.log(`✅ ${whats} ativado: ${modos.join(',')}`);
         }
