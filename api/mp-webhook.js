@@ -47,6 +47,15 @@ export default async function handler(req, res) {
         }
 
         if (whats) {
+          // Buscar nome do participante para notificacao
+          let nomeParticipante = whats;
+          try {
+            const partRes = await supaRequest(`participantes?whats=eq.${whats}&select=nome`, 'GET');
+            const partData = await partRes.json();
+            if(partData?.[0]?.nome) nomeParticipante = partData[0].nome;
+          } catch(e) {}
+          const valorPago = payment.transaction_amount || null;
+
           // Mark as paid (legacy field)
           await supaRequest(`participantes?whats=eq.${whats}`, 'PATCH', { pago: true });
 
