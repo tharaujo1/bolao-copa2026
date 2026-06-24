@@ -586,7 +586,12 @@ select option{background:var(--bg);}
         <div class="card-title">Fase Ativa</div>
         <div class="phase-tabs" id="admPhaseTabs"></div>
         <div id="admMatchList"></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn btn-gray" onclick="selecionarTodosJogos()" style="flex:1;font-size:12px;padding:10px">✓ Todos</button>
+          <button class="btn btn-gray" onclick="limparSelecaoJogos()" style="flex:1;font-size:12px;padding:10px">✗ Limpar</button>
+        </div>
         <button class="btn btn-azul mt8" onclick="ativarFase()">Abrir fase para palpites ✓</button>
+        <button class="btn btn-danger mt8" onclick="fecharPalpitesMata()" style="font-size:12px;padding:11px">🔒 Fechar palpites</button>
 
         <div class="divider"></div>
         <div class="card-title">Convidar para o Mata-Mata</div>
@@ -1475,10 +1480,10 @@ function renderPtsBody(){
   const extra=document.getElementById('ptsExtraInfo');
   if(modo==='mata'){
     b.innerHTML=`<table class="pts-table">
-      <tr><th>Acerto</th><th>Oitavas</th><th>Quartas</th><th>Semi</th><th>Final</th></tr>
-      <tr><td>Placar exato</td><td class="pts-num">10</td><td class="pts-num">15</td><td class="pts-num">20</td><td class="pts-num">20</td></tr>
-      <tr><td>Venc.+saldo</td><td class="pts-num">6</td><td class="pts-num">9</td><td class="pts-num">12</td><td class="pts-num">12</td></tr>
-      <tr><td>Vencedor</td><td class="pts-num">3</td><td class="pts-num">5</td><td class="pts-num">6</td><td class="pts-num">6</td></tr>
+      <tr><th>Acerto</th><th>16-avos</th><th>Oitavas</th><th>Quartas</th><th>Semi</th><th>Final</th></tr>
+      <tr><td>Placar exato</td><td class="pts-num">10</td><td class="pts-num">15</td><td class="pts-num">20</td><td class="pts-num">25</td><td class="pts-num">30</td></tr>
+      <tr><td>Venc.+saldo</td><td class="pts-num">6</td><td class="pts-num">9</td><td class="pts-num">12</td><td class="pts-num">15</td><td class="pts-num">18</td></tr>
+      <tr><td>Vencedor</td><td class="pts-num">3</td><td class="pts-num">5</td><td class="pts-num">6</td><td class="pts-num">8</td><td class="pts-num">9</td></tr>
     </table>`;
     if(extra) extra.innerHTML=`
       <div class="divider"></div>
@@ -2223,10 +2228,37 @@ function toggleJogoMata(id,el){
 
 async function ativarFase(){
   cfgMata.faseAtiva=selectedFase;
+  const n = cfgMata.jogosAtivos?.length||0;
+  if(n===0){
+    toast('Selecione pelo menos 1 jogo antes de abrir!','err');
+    return;
+  }
   await sb.from('config').upsert({id:'mata',dados:cfgMata,updated_at:new Date().toISOString()});
   updateHeader();renderFormPalpite();
-  await addFeed('🏟️',`Fase ${selectedFase} aberta — ${cfgMata.jogosAtivos?.length||0} jogos`);
-  toast(`Fase ${selectedFase} aberta!`,'ok');
+  await addFeed('🏟️',`Fase ${selectedFase} aberta — ${n} jogos`);
+  toast(`✓ ${n} jogos abertos para palpite!`,'ok');
+}
+
+async function fecharPalpitesMata(){
+  cfgMata.jogosAtivos=[];
+  await sb.from('config').upsert({id:'mata',dados:cfgMata,updated_at:new Date().toISOString()});
+  updateHeader();renderFormPalpite();
+  toast('Palpites do Mata-Mata fechados','info');
+}
+
+async function selecionarTodosJogos(){
+  const fase=FASES_MATA.find(f=>f.id===selectedFase);
+  if(!fase) return;
+  cfgMata.jogosAtivos = fase.jogos.map(j=>j.id);
+  // Atualizar visual
+  document.querySelectorAll('#admMatchList .match-sel').forEach(el=>el.classList.add('selected'));
+  toast(`${fase.jogos.length} jogos selecionados`,'ok');
+}
+
+async function limparSelecaoJogos(){
+  cfgMata.jogosAtivos = [];
+  document.querySelectorAll('#admMatchList .match-sel').forEach(el=>el.classList.remove('selected'));
+  toast('Seleção limpa','info');
 }
 
 function renderResultadoSel(){
