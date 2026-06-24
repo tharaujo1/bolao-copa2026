@@ -629,6 +629,9 @@ select option{background:var(--bg);}
         </div>
         <button class="btn btn-amarelo mt8" onclick="salvarCfgMata()">Salvar Configurações</button>
         <button class="btn btn-danger" onclick="limparMata()">⚠️ Limpar palpites</button>
+        <div class="divider"></div>
+        <div id="admVencedoresMata"></div>
+        <button class="btn btn-verde" onclick="renderPagamentoVencedoresMata()" style="font-size:13px">💰 Ver quem pagar — Mata-Mata</button>
       </div>
 
       <!-- ÚNICO PANEL -->
@@ -647,6 +650,7 @@ select option{background:var(--bg);}
         </button>
         <div class="divider"></div>
         <div id="admVencedoresUnico"></div>
+        <button class="btn btn-verde" onclick="renderPagamentoVencedores('unico')" style="font-size:13px;margin-bottom:8px">💰 Ver quem pagar — Jogo Extra</button>
         <div class="card-title">Resultado — Jogo Extra</div>
         <div class="placar-row">
           <div class="pl-team"><div class="pl-flag" id="uResF1">🏴</div><div class="pl-name" id="uResT1">Time A</div><input type="number" id="uResG1" value="0" min="0" max="20"></div>
@@ -1022,6 +1026,8 @@ let apiKey = localStorage.getItem('apiKey')||'';
 let selectedFase = 'dezesseis';
 let selectedUnicoIdx = null;
 let participantesData = [];
+let headerExtraIdx = 0;
+let headerExtraInterval = null;
 let liveInterval = null;
 let lastGoals = 0;
 let realtimeSubs = [];
@@ -1094,6 +1100,156 @@ async function loadAll(){
 }
 
 
+
+// ═══════════════════════════════════════
+// POLLING AUTOMÁTICO MATA-MATA
+// ═══════════════════════════════════════
+let pollingMataInterval = null;
+
+function iniciarPollingMata(){
+  if(pollingMataInterval) clearInterval(pollingMataInterval);
+  if(!apiKey || !cfgMata.jogosAtivos?.length) return;
+  pollingMataInterval = setInterval(verificarResultadosMata, 60000);
+  verificarResultadosMata();
+}
+
+async function verificarResultadosMata(){
+  if(!apiKey || !cfgMata.jogosAtivos?.length) return;
+  const fase = FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
+  if(!fase) return;
+
+  const jogosAtivos = cfgMata.jogosAtivos
+    .map(id=>fase.jogos.find(j=>j.id===id))
+    .filter(Boolean)
+    .filter(j=>!resultadosMata[j.id]); // so busca jogos sem resultado
+
+  if(!jogosAtivos.length) return;
+
+  // Buscar jogos do dia e dias proximos
+  const hoje = new Date();
+  const datas = [];
+  for(let d=-1; d<=1; d++){
+    const dt = new Date(hoje.getTime()+d*86400000);
+    datas.push(dt.toISOString().split('T')[0]);
+  }
+
+  try{
+    for(const data of datas){
+      const res = await fetch(`/api/football?key=${apiKey}&path=competitions/2000/matches&dateFrom=${data}&dateTo=${data}`);
+      if(!res.ok) continue;
+      const data2 = await res.json();
+      const matches = data2.matches||[];
+
+      for(const jogo of jogosAtivos){
+        const match = matches.find(m=>{
+          if(m.status!=='FINISHED') return false;
+          const h=(m.homeTeam?.name||m.homeTeam?.shortName||'').toLowerCase();
+          const a=(m.awayTeam?.name||m.awayTeam?.shortName||'').toLowerCase();
+          const t1=jogo.t1.toLowerCase().replace(/[^a-z]/g,'').substring(0,5);
+          const t2=jogo.t2.toLowerCase().replace(/[^a-z]/g,'').substring(0,5);
+          return (h.includes(t1)||a.includes(t2)||h.includes(t2)||a.includes(t1));
+        });
+
+        if(match){
+          const s = match.score?.fullTime||{};
+          const g1=s.home??0, g2=s.away??0;
+          await sb.from('resultados_mata').upsert({
+            jogo_id:jogo.id, g1, g2,
+            updated_at:new Date().toISOString()
+          });
+          resultadosMata[jogo.id]={g1,g2};
+          await addFeed('⚽',`Resultado automático ${jogo.t1} ${g1}×${g2} ${jogo.t2}`);
+          toast(`⚽ ${jogo.t1} ${g1}×${g2} ${jogo.t2}`,'ok');
+
+          // Atualizar ranking se estiver visivel
+          if(document.getElementById('screen-ranking').classList.contains('active')){
+            renderRanking();
+          }
+
+          // Verificar se todos jogos da fase terminaram
+          const todosTerminados = cfgMata.jogosAtivos
+            .every(id=>resultadosMata[id]);
+          if(todosTerminados){
+            await verificarVencedoresMata();
+          }
+        }
+      }
+    }
+  } catch(e){ console.warn('polling mata erro:',e); }
+}
+
+async function verificarVencedoresMata(){
+  // So verifica vencedores se for a fase final
+  if(cfgMata.faseAtiva !== 'final') return;
+
+  const ativos = palpitesMata.filter(p=>p.status==='ativo');
+  if(!ativos.length) return;
+
+  const ranked = calcularRankingMata(ativos);
+  if(!ranked.length) return;
+
+  const totalBolada = ativos.length*(cfgMata.valor||50);
+  const premios = [
+    {pos:1, pct:cfgMata.p1||60},
+    {pos:2, pct:cfgMata.p2||25},
+  ];
+  if(cfgMata.p3>0) premios.push({pos:3, pct:cfgMata.p3||15});
+
+  // Buscar chaves Pix
+  const whatsVenc = ranked.slice(0,3).map(p=>p.whats?.replace(/\D/g,'')).filter(Boolean);
+  const {data:parts} = await sb.from('participantes')
+    .select('nome,whats,pix_chave,pix_tipo')
+    .in('whats', whatsVenc)
+    .catch(()=>({data:[]}));
+
+  // Salvar vencedores no banco
+  for(const {pos,pct} of premios){
+    const p = ranked[pos-1];
+    if(!p) continue;
+    const part = (parts||[]).find(x=>x.whats===p.whats?.replace(/\D/g,''));
+    const val = Math.round(totalBolada*pct/100);
+    await sb.from('pagamentos_pendentes').upsert({
+      id: `mata_${pos}`,
+      bolao: 'mata',
+      nome: p.nome,
+      whats: p.whats?.replace(/\D/g,''),
+      valor: val,
+      pix_chave: part?.pix_chave||'',
+      pix_tipo: part?.pix_tipo||'',
+      posicao: pos,
+      pago: false
+    }).catch(()=>{});
+  }
+
+  await addFeed('🏆','Vencedores do Mata-Mata apurados! Verifique o Admin.');
+  if(adminUnlocked) renderPagamentoVencedoresMata();
+}
+
+function calcularRankingMata(ativos){
+  return ativos.map(p=>{
+    let total=0, exatos=0, venc=0, diff=0;
+    for(const [jid,res] of Object.entries(resultadosMata)){
+      const pal=p.palpites?.[jid]; if(!pal) continue;
+      const fase=FASES_MATA.find(f=>f.jogos.some(j=>j.id===jid));
+      const mult=fase?.mult||1;
+      const pts=calcMata(pal.g1,pal.g2,res.g1,res.g2,mult);
+      total+=pts;
+      if(pal.g1===res.g1&&pal.g2===res.g2) exatos++;
+      const rp=pal.g1>pal.g2?1:pal.g1<pal.g2?-1:0;
+      const rr=res.g1>res.g2?1:res.g1<res.g2?-1:0;
+      if(rp===rr) venc++;
+      diff+=Math.abs(pal.g1-res.g1)+Math.abs(pal.g2-res.g2);
+    }
+    return{...p,total,exatos,venc,diff};
+  }).sort((a,b)=>{
+    if(b.total!==a.total) return b.total-a.total;
+    if(b.exatos!==a.exatos) return b.exatos-a.exatos;
+    if(b.venc!==a.venc) return b.venc-a.venc;
+    if(a.diff!==b.diff) return a.diff-b.diff;
+    return a.ts-b.ts;
+  });
+}
+
 // ═══════════════════════════════════════
 // APURAÇÃO AUTOMÁTICA VIA API
 // ═══════════════════════════════════════
@@ -1131,6 +1287,13 @@ async function verificarResultadosExtra(){
         return h.includes(t1)||t1.includes(h.split(' ')[0])||a.includes(t2)||t2.includes(a.split(' ')[0]);
       });
 
+      // Salvar placar ao vivo para o header
+      if(match && (match.status==='IN_PLAY'||match.status==='PAUSED'||match.status==='FINISHED')){
+        const sv = match.score?.fullTime||match.score?.halfTime||{};
+        if(!window._placarVivo) window._placarVivo={};
+        window._placarVivo[jogo.t1+jogo.t2] = {g1:sv.home??0, g2:sv.away??0, status:match.status};
+        if(modo!=='mata') updateHeader(); // atualizar header se estiver no modo extra
+      }
       if(match?.status==='FINISHED'){
         const s = match.score?.fullTime||{};
         const g1 = s.home??0, g2 = s.away??0;
@@ -1142,6 +1305,8 @@ async function verificarResultadosExtra(){
           await addFeed('🏆',`Resultado automático: ${jogo.t1} ${g1}×${g2} ${jogo.t2}`);
           toast(`⚡ Resultado apurado: ${g1}×${g2}`,'ok');
           updateHeader(); renderFormPalpite();
+          // Salvar vencedores no banco
+          await salvarVencedoresExtra('unico', jogo, g1, g2);
           if(adminUnlocked) renderPagamentoVencedores('unico');
         } else {
           await sb.from('resultado_unico').upsert({id:2,g1,g2,bonus_ans:'',jogo_extra_id:'jogo2',updated_at:new Date().toISOString()});
@@ -1183,43 +1348,208 @@ async function renderPagamentoVencedores(slot){
   const total = palpites.length*(cfg.valor||10);
   const p1val = Math.round(total*(cfg.p1||70)/100);
   const p2val = Math.round(total*(cfg.p2||20)/100);
-  const p3val = Math.round(total*(cfg.p3||10)/100);
+  const p3val = cfg.p3 ? Math.round(total*cfg.p3/100) : 0;
 
   // Buscar chaves Pix dos vencedores
-  const whatsVenc = [palpites[0]?.whats, palpites[1]?.whats, palpites[2]?.whats].filter(Boolean);
-  const {data:parts} = await sb.from('participantes').select('nome,whats,pix_chave,pix_tipo').in('whats',whatsVenc.map(w=>w.replace(/\D/g,''))).catch(()=>({data:[]}));
+  const numVenc = cfg.p3>0 ? 3 : 2;
+  const whatsVenc = palpites.slice(0,numVenc).map(p=>p.whats).filter(Boolean);
+  const {data:parts} = await sb.from('participantes')
+    .select('nome,whats,pix_chave,pix_tipo')
+    .in('whats', whatsVenc.map(w=>w.replace(/\D/g,'')))
+    .catch(()=>({data:[]}));
 
   const getPix = (whats) => {
     const w = whats?.replace(/\D/g,'');
     const p = (parts||[]).find(x=>x.whats===w);
-    return p ? `${p.pix_tipo||'Pix'}: ${p.pix_chave||'não cadastrado'}` : 'não cadastrado';
+    return p?.pix_chave ? `${p.pix_tipo||'Pix'}: ${p.pix_chave}` : 'Pix não cadastrado';
+  };
+  const getPixChave = (whats) => {
+    const w = whats?.replace(/\D/g,'');
+    return (parts||[]).find(x=>x.whats===w)?.pix_chave||'';
   };
 
   const container = document.getElementById('admVencedoresUnico');
   if(!container) return;
 
+  const premios = [
+    {p:palpites[0], val:p1val, pos:'🥇', pct:cfg.p1||70},
+    {p:palpites[1], val:p2val, pos:'🥈', pct:cfg.p2||20},
+  ];
+  if(cfg.p3>0 && palpites[2]) premios.push({p:palpites[2], val:p3val, pos:'🥉', pct:cfg.p3});
+
+  const jogoKey = slot+'_'+(j.id||(j.t1+j.t2).replace(/\s/g,''));
+
   const vencCard = `
     <div style="background:rgba(255,215,0,0.08);border:1.5px solid var(--amarelo);border-radius:12px;padding:14px;margin-bottom:12px">
-      <div class="card-title" style="margin-bottom:10px">💰 Pagamento — ${j.t1} ${g1}×${g2} ${j.t2}</div>
-      <div style="font-size:12px;color:var(--txt2);margin-bottom:12px">Total arrecadado: <strong style="color:var(--amarelo)">R$ ${total}</strong></div>
-      ${[{p:palpites[0],val:p1val,pos:'🥇',pct:cfg.p1||70},{p:palpites[1],val:p2val,pos:'🥈',pct:cfg.p2||20},{p:palpites[2],val:p3val,pos:'🥉',pct:cfg.p3||10}]
-        .filter(({p})=>p)
-        .map(({p,val,pos,pct})=>`
-        <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:8px">
+      <div class="card-title" style="margin-bottom:4px">💰 Pagar Vencedores</div>
+      <div style="font-size:13px;color:var(--txt2);margin-bottom:12px">${j.t1} ${g1}×${g2} ${j.t2} · Total: <strong style="color:var(--amarelo)">R$ ${total}</strong></div>
+      ${premios.map(({p,val,pos,pct})=>{
+        const jaFoiPago = localStorage.getItem('pago_'+jogoKey+'_'+p.whats?.replace(/\D/g,''));
+        const pixChave = getPixChave(p.whats);
+        return `<div style="background:${jaFoiPago?'rgba(46,125,50,0.15)':'var(--bg)'};border:1px solid ${jaFoiPago?'var(--verde)':'var(--border)'};border-radius:10px;padding:12px;margin-bottom:8px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <div style="font-size:16px;font-weight:700">${pos} ${p.nome}</div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--amarelo)">R$ ${val}</div>
+            <div style="font-size:15px;font-weight:700">${pos} ${p.nome}</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:${jaFoiPago?'var(--verde)':'var(--amarelo)'}">R$ ${val}</div>
           </div>
           <div style="font-size:11px;color:var(--txt2)">Palpite: ${p.g1}×${p.g2} · ${pct}% · ${p.pts} pts</div>
           <div style="font-size:11px;color:var(--amarelo);margin-top:4px;font-family:monospace">💳 ${getPix(p.whats)}</div>
-          <button onclick="copiarPix('${(parts||[]).find(x=>x.whats===p.whats?.replace(/\D/g,''))?.pix_chave||''}','${p.nome}')"
-            style="margin-top:8px;background:var(--amarelo-pale);border:1px solid var(--border2);color:var(--amarelo);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;width:100%">
-            📋 Copiar chave Pix de ${p.nome}
-          </button>
-        </div>`).join('')}
+          <div style="display:flex;gap:8px;margin-top:8px">
+            ${pixChave?`<button onclick="copiarPix('${pixChave}','${p.nome}')"
+              style="flex:1;background:var(--amarelo-pale);border:1px solid var(--border2);color:var(--amarelo);border-radius:8px;padding:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">
+              📋 Copiar Pix
+            </button>`:''}
+            <button onclick="marcarPago('${jogoKey}','${p.whats?.replace(/\D/g,'')}','${p.nome}',this)"
+              style="flex:1;background:${jaFoiPago?'var(--success-pale)':'var(--verde)'};border:1px solid ${jaFoiPago?'var(--verde)':'transparent'};color:#fff;border-radius:8px;padding:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">
+              ${jaFoiPago?'✅ Pago':'✓ Marcar como pago'}
+            </button>
+          </div>
+        </div>`;
+      }).join('')}
     </div>`;
 
-  container.insertAdjacentHTML('afterbegin', vencCard);
+  container.innerHTML = vencCard;
+}
+
+
+async function renderPagamentoVencedoresMata(){
+  const container = document.getElementById('admVencedoresMata');
+  if(!container) return;
+
+  const ativos = palpitesMata.filter(p=>p.status==='ativo');
+  if(!ativos.length){ toast('Nenhum participante ativo ainda','err'); return; }
+  if(!Object.keys(resultadosMata).length){ toast('Insira pelo menos um resultado antes','err'); return; }
+
+  // Verificar se ja tem vencedores salvos no banco
+  const {data:pagSalvos} = await sb.from('pagamentos_pendentes')
+    .select('*').eq('bolao','mata').catch(()=>({data:[]}));
+
+  // Calcular ranking atual
+  const ranked = calcularRankingMata(ativos);
+
+  const totalBolada = ativos.length*(cfgMata.valor||50);
+  const p1val = Math.round(totalBolada*(cfgMata.p1||60)/100);
+  const p2val = Math.round(totalBolada*(cfgMata.p2||25)/100);
+  const p3val = cfgMata.p3>0 ? Math.round(totalBolada*cfgMata.p3/100) : 0;
+
+  const whatsVenc = ranked.slice(0,3).map(p=>p.whats).filter(Boolean);
+  const {data:parts} = await sb.from('participantes')
+    .select('nome,whats,pix_chave,pix_tipo')
+    .in('whats', whatsVenc.map(w=>w.replace(/\D/g,'')))
+    .catch(()=>({data:[]}));
+
+  const getPix = (whats) => {
+    const w = whats?.replace(/\D/g,'');
+    const p = (parts||[]).find(x=>x.whats===w);
+    return p?.pix_chave ? `${p.pix_tipo||'Pix'}: ${p.pix_chave}` : 'Pix não cadastrado';
+  };
+  const getPixChave = (whats) => {
+    const w = whats?.replace(/\D/g,'');
+    return (parts||[]).find(x=>x.whats===w)?.pix_chave||'';
+  };
+
+  const premios = [
+    {p:ranked[0], val:p1val, pos:'🥇', pct:cfgMata.p1||60},
+    {p:ranked[1], val:p2val, pos:'🥈', pct:cfgMata.p2||25},
+  ];
+  if(cfgMata.p3>0 && ranked[2]) premios.push({p:ranked[2], val:p3val, pos:'🥉', pct:cfgMata.p3});
+
+  const jogoKey = 'mata_final';
+  const nRes = Object.keys(resultadosMata).length;
+
+  container.innerHTML = `
+    <div style="background:rgba(255,215,0,0.08);border:1.5px solid var(--amarelo);border-radius:12px;padding:14px;margin-bottom:12px">
+      <div class="card-title" style="margin-bottom:4px">💰 Pagar Vencedores — Mata-Mata</div>
+      <div style="font-size:12px;color:var(--txt2);margin-bottom:4px">Total arrecadado: <strong style="color:var(--amarelo)">R$ ${totalBolada}</strong></div>
+      <div style="font-size:11px;color:var(--txt3);margin-bottom:12px">Baseado em ${nRes} resultado(s) inserido(s) · ${ativos.length} participantes ativos</div>
+      ${premios.filter(({p})=>p).map(({p,val,pos,pct})=>{
+        const jaFoiPago = localStorage.getItem('pago_'+jogoKey+'_'+p.whats?.replace(/\D/g,''));
+        const pixChave = getPixChave(p.whats);
+        return `<div style="background:${jaFoiPago?'rgba(46,125,50,0.15)':'var(--bg)'};border:1px solid ${jaFoiPago?'var(--verde)':'var(--border)'};border-radius:10px;padding:12px;margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="font-size:15px;font-weight:700">${pos} ${p.nome}</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:${jaFoiPago?'var(--verde)':'var(--amarelo)'}">R$ ${val}</div>
+          </div>
+          <div style="font-size:11px;color:var(--txt2)">${pct}% · ${p.total} pts</div>
+          <div style="font-size:11px;color:var(--amarelo);margin-top:4px;font-family:monospace">💳 ${getPix(p.whats)}</div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            ${pixChave?`<button onclick="copiarPix('${pixChave}','${p.nome}')"
+              style="flex:1;background:var(--amarelo-pale);border:1px solid var(--border2);color:var(--amarelo);border-radius:8px;padding:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">
+              📋 Copiar Pix
+            </button>`:''}
+            <button onclick="marcarPago('${jogoKey}','${p.whats?.replace(/\D/g,'')}','${p.nome}',this)"
+              style="flex:1;background:${jaFoiPago?'var(--success-pale)':'var(--verde)'};border:none;color:#fff;border-radius:8px;padding:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">
+              ${jaFoiPago?'✅ Pago':'✓ Marcar como pago'}
+            </button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+
+async function salvarVencedoresExtra(slot, jogo, g1, g2){
+  const cfg = slot==='unico' ? cfgUnico : cfgUnico2;
+  const slotId = slot==='unico' ? 'jogo1' : 'jogo2';
+  const palpites = palpitesUnico
+    .filter(p=>p.status==='ativo'&&(p.jogo_extra_id||'jogo1')===slotId)
+    .map(p=>({...p, pts:calcUnico(p.g1,p.g2,g1,g2)}))
+    .sort((a,b)=>b.pts-a.pts||a.ts-b.ts);
+
+  if(!palpites.length) return;
+  const total = palpites.length*(cfg.valor||10);
+  const jogoKey = slot+'_'+(jogo.id||(jogo.t1+jogo.t2).replace(/\s/g,''));
+
+  const whats = palpites.slice(0,3).map(p=>p.whats?.replace(/\D/g,'')).filter(Boolean);
+  const {data:parts} = await sb.from('participantes')
+    .select('nome,whats,pix_chave,pix_tipo').in('whats',whats).catch(()=>({data:[]}));
+
+  const premios = [{pos:1,pct:cfg.p1||70},{pos:2,pct:cfg.p2||20}];
+  if(cfg.p3>0) premios.push({pos:3,pct:cfg.p3});
+
+  for(const {pos,pct} of premios){
+    const p = palpites[pos-1]; if(!p) continue;
+    const part = (parts||[]).find(x=>x.whats===p.whats?.replace(/\D/g,''));
+    await sb.from('pagamentos_pendentes').upsert({
+      id: jogoKey+'_'+pos,
+      bolao: slot,
+      nome: p.nome,
+      whats: p.whats?.replace(/\D/g,''),
+      valor: Math.round(total*pct/100),
+      pix_chave: part?.pix_chave||'',
+      pix_tipo: part?.pix_tipo||'',
+      posicao: pos,
+      pago: false
+    }).catch(()=>{});
+  }
+}
+
+async function marcarPago(jogoKey, whats, nome, btn){
+  const jaFoiPago = btn.dataset.pago === '1';
+  const novoPago = !jaFoiPago;
+
+  // Salvar no Supabase para persistencia
+  await sb.from('pagamentos_pendentes')
+    .update({pago: novoPago, pago_em: novoPago ? new Date().toISOString() : null})
+    .eq('id', jogoKey+'_'+whats)
+    .catch(()=>{});
+
+  btn.dataset.pago = novoPago ? '1' : '0';
+  if(novoPago){
+    btn.textContent='✅ Pago';
+    btn.style.background='var(--success-pale)';
+    btn.style.borderColor='var(--verde)';
+    btn.style.color='var(--success-light)';
+    btn.parentElement.parentElement.style.background='rgba(46,125,50,0.15)';
+    btn.parentElement.parentElement.style.borderColor='var(--verde)';
+    toast(`✅ ${nome} marcado como pago!`,'ok');
+  } else {
+    btn.textContent='✓ Marcar como pago';
+    btn.style.background='var(--verde)';
+    btn.style.color='#fff';
+    btn.parentElement.parentElement.style.background='var(--bg)';
+    btn.parentElement.parentElement.style.borderColor='var(--border)';
+    toast(`${nome} desmarcado`,'info');
+  }
 }
 
 // ═══════════════════════════════════════
@@ -1305,32 +1635,61 @@ function updateHeader(){
     document.getElementById('hScoreLbl').textContent='Fase Ativa';
     document.getElementById('hDate').textContent=`${(cfgMata.jogosAtivos||[]).length} jogos abertos`;
   } else {
-    const j=cfgUnico.jogoAtivo||cfgUnico2.jogoAtivo;
-    const r=resultadoUnico;
-    const rValid=r&&r.g1!==null&&r.g2!==null;
-    if(j && !rValid){
+    // Coletar jogos extras ativos
+    const jogosHeader = [];
+    if(cfgUnico.jogoAtivo) jogosHeader.push({j:cfgUnico.jogoAtivo, res:resultadoUnico});
+    if(cfgUnico2.jogoAtivo) jogosHeader.push({j:cfgUnico2.jogoAtivo, res:null});
+
+    // Parar intervalo anterior
+    if(headerExtraInterval){ clearInterval(headerExtraInterval); headerExtraInterval=null; }
+
+    function renderHeaderExtra(idx){
+      if(!jogosHeader.length){
+        document.getElementById('hFlag1').textContent='⚡';
+        document.getElementById('hTeam1').textContent='Jogo Extra';
+        document.getElementById('hFlag2').textContent='🎯';
+        document.getElementById('hTeam2').textContent='Aguardando';
+        document.getElementById('hScore').textContent='?×?';
+        document.getElementById('hScoreLbl').textContent='Configure no Admin';
+        document.getElementById('hDate').textContent='Configure no Admin';
+        return;
+      }
+      const {j, res} = jogosHeader[idx % jogosHeader.length];
+      const rValid = res&&res.g1!==null&&res.g2!==null;
       document.getElementById('hFlag1').textContent=j.f1;
       document.getElementById('hTeam1').textContent=j.t1;
       document.getElementById('hFlag2').textContent=j.f2;
       document.getElementById('hTeam2').textContent=j.t2;
-      document.getElementById('hScore').textContent='?×?';
-      document.getElementById('hScoreLbl').textContent='Aguardando';
-      document.getElementById('hDate').textContent=`${j.date} · ${j.time}`;
-    } else if(rValid){
-      document.getElementById('hFlag1').textContent='⚡';
-      document.getElementById('hTeam1').textContent='Jogo Extra';
-      document.getElementById('hFlag2').textContent='🏁';
-      document.getElementById('hTeam2').textContent='Encerrado';
-      document.getElementById('hScore').textContent=`${r.g1}×${r.g2}`;
-      document.getElementById('hScoreLbl').textContent='Resultado Final';
-    } else {
-      document.getElementById('hFlag1').textContent='⚡';
-      document.getElementById('hTeam1').textContent='Jogo Extra';
-      document.getElementById('hFlag2').textContent='🎯';
-      document.getElementById('hTeam2').textContent='Aguardando';
-      document.getElementById('hScore').textContent='?×?';
-      document.getElementById('hScoreLbl').textContent='Configure no Admin';
-      document.getElementById('hDate').textContent='Configure no Admin';
+      if(rValid){
+        document.getElementById('hScore').textContent=`${res.g1}×${res.g2}`;
+        document.getElementById('hScoreLbl').textContent='Resultado Final';
+        document.getElementById('hDate').textContent='Encerrado 🏁';
+      } else {
+        // Tentar mostrar placar ao vivo se disponivel
+        const placarvivo = window._placarVivo?.[j.t1+j.t2];
+        if(placarvivo){
+          document.getElementById('hScore').textContent=`${placarvivo.g1}×${placarvivo.g2}`;
+          document.getElementById('hScoreLbl').textContent='🔴 Ao Vivo';
+        } else {
+          document.getElementById('hScore').textContent='?×?';
+          document.getElementById('hScoreLbl').textContent='Aguardando';
+        }
+        document.getElementById('hDate').textContent=`${j.date} · ${j.time}`;
+      }
+      // Indicador de multiplos jogos
+      if(jogosHeader.length > 1){
+        document.getElementById('hDate').textContent += ` (${(idx%jogosHeader.length)+1}/${jogosHeader.length})`;
+      }
+    }
+
+    renderHeaderExtra(headerExtraIdx);
+
+    // Se tem 2 jogos, alternar a cada 4 segundos
+    if(jogosHeader.length > 1){
+      headerExtraInterval = setInterval(()=>{
+        headerExtraIdx = (headerExtraIdx+1) % jogosHeader.length;
+        renderHeaderExtra(headerExtraIdx);
+      }, 4000);
     }
   }
 
@@ -1688,10 +2047,13 @@ function renderRanking(){
 
   if(isMata){
     resCard.style.display='none';
+    // Mostrar TODOS participantes — ativos + pendentes
+    const todosPartic = palpitesMata;
     const ativos=palpitesMata.filter(p=>p.status==='ativo');
-    if(!ativos.length){container.innerHTML='';empty.style.display='block';premCard.style.display='none';return;}
+    if(!todosPartic.length){container.innerHTML='';empty.style.display='block';premCard.style.display='none';return;}
     empty.style.display='none';
-    const ranked=ativos.map(p=>{
+    const temResultados = Object.keys(resultadosMata).length>0;
+    const ranked=todosPartic.map(p=>{
       let total=0,exatos=0,venc=0,diff=0;
       for(const [jid,res] of Object.entries(resultadosMata)){
         const pal=p.palpites?.[jid];if(!pal) continue;
@@ -1727,15 +2089,23 @@ function renderRanking(){
       premCard.style.display='block';
     } else premCard.style.display='none';
     const pc=['p1','p2','p3'],pp=['g','s','b'],md=['🥇','🥈','🥉'];
-    container.innerHTML=ranked.map((p,i)=>`<div class="rank-item ${pc[i]||''}">
-      <div class="rank-pos ${pp[i]||''}">${i+1}</div>
-      <div class="rank-info">
-        <div class="rank-name">${p.nome} ${md[i]||''}</div>
-        <div class="rank-sub">🎯 ${p.exatos} exatos · ✅ ${p.venc} vencedores</div>
-        ${i>0&&ranked[i-1].total===p.total?'<div class="tb-chip">desempate ativo</div>':''}
-      </div>
-      <div class="rank-pts-col"><div class="rank-pts">${p.total}</div><div class="rank-pts-lbl">pts</div></div>
-    </div>`).join('');
+    container.innerHTML=ranked.map((p,i)=>{
+      const isPend = p.status!=='ativo';
+      return `<div class="rank-item ${pc[i]||''}" style="${isPend?'opacity:0.5':''}">
+        <div class="rank-pos ${pp[i]||''}">${i+1}</div>
+        <div class="rank-info">
+          <div class="rank-name">${p.nome} ${md[i]||''}${isPend?' <span style="font-size:10px;color:var(--warning)">⏳ pendente</span>':''}</div>
+          <div class="rank-sub">${temResultados?`🎯 ${p.exatos} exatos · ✅ ${p.venc} venc · ${p.total} pts`:'Aguardando jogos...'}</div>
+          ${i>0&&ranked[i-1].total===p.total&&p.total>0?'<div class="tb-chip">desempate ativo</div>':''}
+        </div>
+        <div class="rank-pts-col">
+          <div class="rank-pts" style="${!temResultados?'color:var(--txt3);font-size:20px':''}">
+            ${temResultados?p.total:'—'}
+          </div>
+          <div class="rank-pts-lbl">pts</div>
+        </div>
+      </div>`;
+    }).join('');
   } else {
     const j=cfgUnico.jogoAtivo;
     if(j){document.getElementById('rrF1').textContent=j.f1;document.getElementById('rrT1').textContent=j.t1;document.getElementById('rrF2').textContent=j.f2;document.getElementById('rrT2').textContent=j.t2;}
@@ -2610,7 +2980,7 @@ function shareWA(){
     jogosMsg = `*${j.t1} ${j.f1} × ${j.f2} ${j.t2}*\n📅 ${j.date} às ${j.time}\n💰 Entrada: R$ ${val||10}`;
   }
 
-  const p1u=cfgUnico.p1||70, p2u=cfgUnico.p2||20, p3u=cfgUnico.p3||10;
+  const p1u=cfgUnico.p1||70, p2u=cfgUnico.p2||20, p3u=cfgUnico.p3||0;
   const msg = `⚡ *Bolão Jogo Extra — Copa 2026* ⚽
 
 ${jogosMsg}
@@ -2721,7 +3091,7 @@ async function salvarCfgUnico(){
     valor:parseFloat(document.getElementById('unicoValor').value)||10,
     p1:parseInt(document.getElementById('unicoP1').value)||70,
     p2:parseInt(document.getElementById('unicoP2').value)||20,
-    p3:parseInt(document.getElementById('unicoP3').value)||10,
+    p3:parseInt(document.getElementById('unicoP3').value)||0,
     tbGV:getT('tbU1'),tbTG:getT('tbU2'),tbGP:getT('tbU3'),
     tbBonus:getT('tbUBonus'),bonusQ:(document.getElementById('unicoBonusQ')?.value||'').trim(),
     tbOrdem:getT('tbUOrdem'),aceitar:getT('tbUAceitar'),
@@ -2892,7 +3262,7 @@ function shareConviteGeral(){
   const valor_mata = cfgMata.valor || 50;
   const valor_unico = cfgUnico.valor || 10;
   const p1m = cfgMata.p1||60, p2m = cfgMata.p2||25, p3m = cfgMata.p3||15;
-  const p1u = cfgUnico.p1||70, p2u = cfgUnico.p2||20, p3u = cfgUnico.p3||10;
+  const p1u = cfgUnico.p1||70, p2u = cfgUnico.p2||20, p3u = cfgUnico.p3||0;
   const msg = `🇧🇷⚽🏆 *BOLÃO BRADESCO — COPA 2026*
 
 Galera, montei um bolão da Copa pra gente competir!
@@ -3714,7 +4084,8 @@ readParams();
 loginInit();
 loadAll().then(()=>{
   setupRealtime();
-  iniciarPollingExtra(); // apuracao automatica
+  iniciarPollingMata();  // apuracao automatica mata-mata
+  iniciarPollingExtra(); // apuracao automatica extra
   if(apiKey){document.getElementById('apiKeyInput').value=apiKey;}
   showWelcomeBanner();
   if('Notification'in window&&Notification.permission==='default'){
