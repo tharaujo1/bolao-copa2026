@@ -8,13 +8,15 @@ export default async function handler(req, res) {
   const token = process.env.MP_ACCESS_TOKEN;
   if (!token) return res.status(500).json({ error: 'MP_ACCESS_TOKEN not configured' });
 
-  const { valor, nome, whats, descricao, modo } = req.body;
+  const { valor, nome, whats, descricao, modo, jogoIds } = req.body;
   if (!valor || !nome || !whats) {
     return res.status(400).json({ error: 'valor, nome e whats são obrigatórios' });
   }
 
-  // external_reference: "11995564994|mata,unico" — survives intact through webhook
-  const externalRef = `${whats}|${modo || 'mata'}`;
+  // external_reference: "whats|modos|jogoIds" — identifica exatamente qual jogo foi pago
+  // jogoIds ex: {"unico":"PanamaxCroatia","unico2":"ColombiaxCongo"}
+  const jogoIdsStr = jogoIds ? JSON.stringify(jogoIds) : '{}';
+  const externalRef = `${whats}|${modo || 'mata'}|${Buffer.from(jogoIdsStr).toString('base64')}`;
 
   try {
     const idempotencyKey = `bolao-${whats}-${modo}-${Date.now()}`;
