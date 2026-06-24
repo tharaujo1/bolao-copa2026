@@ -669,7 +669,7 @@ select option{background:var(--bg);}
         <label>Valor entrada (R$)</label><input type="number" id="unicoValor" value="10">
         <label>Premiação 1º (%)</label><input type="number" id="unicoP1" value="70">
         <label>Premiação 2º (%)</label><input type="number" id="unicoP2" value="20">
-        <label>Premiação 3º (%)</label><input type="number" id="unicoP3" value="10">
+        <label>Premiação 3º (%) — deixe 0 para não ter 3º lugar</label><input type="number" id="unicoP3" value="0" min="0" max="100">
         <div class="divider"></div>
         <div class="card-title">Desempate</div>
         <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Gols do vencedor</div></div><button class="toggle on" id="tbU1" onclick="this.classList.toggle('on')"></button></div>
@@ -1073,8 +1073,8 @@ async function loadAll(){
       sb.from('feed').select('*').order('created_at',{ascending:false}).limit(30),
     ]);
     cfgMata = cfgs?.find(c=>c.id==='mata')?.dados||{valor:20,p1:60,p2:25,p3:15,pixChave:'',pixNome:'',pixBanco:'',pixTipo:'CPF',faseAtiva:'dezesseis',jogosAtivos:[],adminPwd:'copa2026'};
-    cfgUnico = cfgs?.find(c=>c.id==='unico')?.dados||{valor:10,p1:70,p2:20,p3:10,pixChave:'',pixNome:'',pixBanco:'',pixTipo:'CPF',aceitar:true,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true,adminPwd:'copa2026'};
-    cfgUnico2 = cfgs?.find(c=>c.id==='unico2')?.dados||{valor:10,p1:70,p2:20,p3:10,aceitar:false,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true};
+    cfgUnico = cfgs?.find(c=>c.id==='unico')?.dados||{valor:10,p1:70,p2:20,p3:0,aceitar:true,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true,adminPwd:'copa2026'};
+    cfgUnico2 = cfgs?.find(c=>c.id==='unico2')?.dados||{valor:10,p1:70,p2:20,p3:0,aceitar:false,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true};
     // Carregar apiKey do Supabase (disponivel para todos)
     const cfgGeral = cfgs?.find(c=>c.id==='geral')?.dados||{};
     if(cfgGeral.apiKey){ apiKey=cfgGeral.apiKey; localStorage.setItem('apiKey',apiKey); }
@@ -3069,7 +3069,7 @@ function loadCfgUnico(){
   document.getElementById('unicoValor').value=cfgUnico.valor||10;
   document.getElementById('unicoP1').value=cfgUnico.p1||70;
   document.getElementById('unicoP2').value=cfgUnico.p2||20;
-  document.getElementById('unicoP3').value=cfgUnico.p3||10;
+  document.getElementById('unicoP3').value=cfgUnico.p3||0;
   document.getElementById('unicoPixTipo').value=cfgUnico.pixTipo||'CPF';
   document.getElementById('unicoPixChave').value=cfgUnico.pixChave||'';
   document.getElementById('unicoPixNome').value=cfgUnico.pixNome||'';
