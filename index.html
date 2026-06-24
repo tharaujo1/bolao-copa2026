@@ -880,30 +880,48 @@ const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 // JOGOS DA COPA
 // ═══════════════════════════════════════
 const FASES_MATA = [
-  {id:'oitavas',label:'Oitavas',mult:1,jogos:[
-    {id:'O1',t1:'1º Grupo A',f1:'🏆',t2:'2º Grupo B',f2:'🥈',date:'28/06',time:'16h'},
-    {id:'O2',t1:'1º Grupo C',f1:'🏆',t2:'2º Grupo D',f2:'🥈',date:'28/06',time:'20h'},
-    {id:'O3',t1:'1º Grupo E',f1:'🏆',t2:'2º Grupo F',f2:'🥈',date:'29/06',time:'16h'},
-    {id:'O4',t1:'1º Grupo G',f1:'🏆',t2:'2º Grupo H',f2:'🥈',date:'29/06',time:'20h'},
-    {id:'O5',t1:'1º Grupo B',f1:'🏆',t2:'2º Grupo A',f2:'🥈',date:'30/06',time:'16h'},
-    {id:'O6',t1:'1º Grupo D',f1:'🏆',t2:'2º Grupo C',f2:'🥈',date:'30/06',time:'20h'},
-    {id:'O7',t1:'1º Grupo F',f1:'🏆',t2:'2º Grupo E',f2:'🥈',date:'01/07',time:'16h'},
-    {id:'O8',t1:'1º Grupo H',f1:'🏆',t2:'2º Grupo G',f2:'🥈',date:'01/07',time:'20h'},
+  {id:'dezesseis',label:'16-avos',mult:1,jogos:[
+    {id:'D1',t1:'1º Grupo A',f1:'🏆',t2:'2º Grupo B',f2:'🥈',date:'28/06',time:'16h'},
+    {id:'D2',t1:'1º Grupo C',f1:'🏆',t2:'2º Grupo D',f2:'🥈',date:'28/06',time:'20h'},
+    {id:'D3',t1:'1º Grupo E',f1:'🏆',t2:'2º Grupo F',f2:'🥈',date:'29/06',time:'16h'},
+    {id:'D4',t1:'1º Grupo G',f1:'🏆',t2:'2º Grupo H',f2:'🥈',date:'29/06',time:'20h'},
+    {id:'D5',t1:'1º Grupo B',f1:'🏆',t2:'2º Grupo A',f2:'🥈',date:'30/06',time:'16h'},
+    {id:'D6',t1:'1º Grupo D',f1:'🏆',t2:'2º Grupo C',f2:'🥈',date:'30/06',time:'20h'},
+    {id:'D7',t1:'1º Grupo F',f1:'🏆',t2:'2º Grupo E',f2:'🥈',date:'01/07',time:'16h'},
+    {id:'D8',t1:'1º Grupo H',f1:'🏆',t2:'2º Grupo G',f2:'🥈',date:'01/07',time:'20h'},
+    {id:'D9',t1:'1º Grupo I',f1:'🏆',t2:'2º Grupo J',f2:'🥈',date:'02/07',time:'16h'},
+    {id:'D10',t1:'1º Grupo K',f1:'🏆',t2:'2º Grupo L',f2:'🥈',date:'02/07',time:'20h'},
+    {id:'D11',t1:'1º Grupo J',f1:'🏆',t2:'2º Grupo I',f2:'🥈',date:'03/07',time:'16h'},
+    {id:'D12',t1:'1º Grupo L',f1:'🏆',t2:'2º Grupo K',f2:'🥈',date:'03/07',time:'20h'},
+    {id:'D13',t1:'3º melhor (A/B/C/D)',f1:'🥉',t2:'3º melhor (E/F/G/H)',f2:'🥉',date:'04/07',time:'16h'},
+    {id:'D14',t1:'3º melhor (I/J/K/L)',f1:'🥉',t2:'3º melhor (A/B/C/D)',f2:'🥉',date:'04/07',time:'20h'},
+    {id:'D15',t1:'3º melhor (E/F/G/H)',f1:'🥉',t2:'3º melhor (I/J/K/L)',f2:'🥉',date:'05/07',time:'16h'},
+    {id:'D16',t1:'3º melhor restante',f1:'🥉',t2:'3º melhor restante',f2:'🥉',date:'05/07',time:'20h'},
   ]},
-  {id:'quartas',label:'Quartas',mult:1.5,jogos:[
+  {id:'oitavas',label:'Oitavas',mult:1.5,jogos:[
+    {id:'O1',t1:'Vencedor D1',f1:'⚔️',t2:'Vencedor D2',f2:'⚔️',date:'08/07',time:'16h'},
+    {id:'O2',t1:'Vencedor D3',f1:'⚔️',t2:'Vencedor D4',f2:'⚔️',date:'08/07',time:'20h'},
+    {id:'O3',t1:'Vencedor D5',f1:'⚔️',t2:'Vencedor D6',f2:'⚔️',date:'09/07',time:'16h'},
+    {id:'O4',t1:'Vencedor D7',f1:'⚔️',t2:'Vencedor D8',f2:'⚔️',date:'09/07',time:'20h'},
+    {id:'O5',t1:'Vencedor D9',f1:'⚔️',t2:'Vencedor D10',f2:'⚔️',date:'10/07',time:'16h'},
+    {id:'O6',t1:'Vencedor D11',f1:'⚔️',t2:'Vencedor D12',f2:'⚔️',date:'10/07',time:'20h'},
+    {id:'O7',t1:'Vencedor D13',f1:'⚔️',t2:'Vencedor D14',f2:'⚔️',date:'11/07',time:'16h'},
+    {id:'O8',t1:'Vencedor D15',f1:'⚔️',t2:'Vencedor D16',f2:'⚔️',date:'11/07',time:'20h'},
+  ]},
+  {id:'quartas',label:'Quartas',mult:2,jogos:[
     {id:'Q1',t1:'Vencedor O1',f1:'⚔️',t2:'Vencedor O2',f2:'⚔️',date:'04/07',time:'16h'},
     {id:'Q2',t1:'Vencedor O3',f1:'⚔️',t2:'Vencedor O4',f2:'⚔️',date:'04/07',time:'20h'},
     {id:'Q3',t1:'Vencedor O5',f1:'⚔️',t2:'Vencedor O6',f2:'⚔️',date:'05/07',time:'16h'},
     {id:'Q4',t1:'Vencedor O7',f1:'⚔️',t2:'Vencedor O8',f2:'⚔️',date:'05/07',time:'20h'},
   ]},
-  {id:'semi',label:'Semifinal',mult:2,jogos:[
+  {id:'semi',label:'Semifinal',mult:2.5,jogos:[
     {id:'S1',t1:'Vencedor Q1',f1:'🔥',t2:'Vencedor Q2',f2:'🔥',date:'09/07',time:'16h'},
     {id:'S2',t1:'Vencedor Q3',f1:'🔥',t2:'Vencedor Q4',f2:'🔥',date:'09/07',time:'20h'},
   ]},
   {id:'terceiro',label:'3º Lugar',mult:1.5,jogos:[
     {id:'T1',t1:'Perdedor S1',f1:'🥉',t2:'Perdedor S2',f2:'🥉',date:'12/07',time:'16h'},
   ]},
-  {id:'final',label:'Final',mult:2,jogos:[
+  {id:'final',label:'Final',mult:3,jogos:[
     {id:'F1',t1:'Vencedor S1',f1:'🏆',t2:'Vencedor S2',f2:'🏆',date:'19/07',time:'16h'},
   ]},
 ];
@@ -1060,6 +1078,9 @@ async function loadAll(){
     cfgMata = cfgs?.find(c=>c.id==='mata')?.dados||{valor:20,p1:60,p2:25,p3:15,pixChave:'',pixNome:'',pixBanco:'',pixTipo:'CPF',faseAtiva:'dezesseis',jogosAtivos:[],adminPwd:'copa2026'};
     cfgUnico = cfgs?.find(c=>c.id==='unico')?.dados||{valor:10,p1:70,p2:20,p3:10,pixChave:'',pixNome:'',pixBanco:'',pixTipo:'CPF',aceitar:true,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true,adminPwd:'copa2026'};
     cfgUnico2 = cfgs?.find(c=>c.id==='unico2')?.dados||{valor:10,p1:70,p2:20,p3:10,aceitar:false,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true};
+    // Carregar apiKey do Supabase (disponivel para todos)
+    const cfgGeral = cfgs?.find(c=>c.id==='geral')?.dados||{};
+    if(cfgGeral.apiKey){ apiKey=cfgGeral.apiKey; localStorage.setItem('apiKey',apiKey); }
     palpitesMata = pm||[];
     palpitesUnico = pu||[];
     resultadosMata = Object.fromEntries((rm||[]).map(r=>[r.jogo_id,{g1:r.g1,g2:r.g2}]));
@@ -3024,13 +3045,15 @@ async function salvarApiKeyAdmin(){
   if(!key) return toast('Cole a API key primeiro','err');
   apiKey=key;
   localStorage.setItem('apiKey',apiKey);
+  // Salvar no Supabase para todos os usuarios
+  await sb.from('config').upsert({id:'geral',dados:{apiKey:key},updated_at:new Date().toISOString()});
   const st=document.getElementById('apiStatusAdmin');
   if(st){st.style.display='block';st.textContent='Testando...';st.style.color='var(--txt2)';}
   try{
     const res=await fetch(`/api/football?key=${apiKey}&path=competitions`);
     if(res.ok){
-      if(st){st.textContent='✅ Conectado!';st.style.color='#6EC98A';}
-      toast('API conectada!','ok');
+      if(st){st.textContent='✅ Conectado e salvo para todos!';st.style.color='#6EC98A';}
+      toast('API conectada e salva!','ok');
       await addFeed('📡','API football-data.org conectada');
     } else {
       if(st){st.textContent='❌ Erro '+res.status;st.style.color='#EF5350';}
