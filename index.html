@@ -1403,14 +1403,17 @@ function renderFormPalpite(){
       card.innerHTML=`<div class="modo-tag mata">🏆 Bolão Mata-Mata</div><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Aguardando o organizador abrir a fase.<br>Os palpites serão liberados fase a fase.</div></div>`;
       return;
     }
+    const _mNome=sessionStorage.getItem('cadastro_nome')||localStorage.getItem('bolao_nome')||'';
+    const _mWhats=(sessionStorage.getItem('cadastro_whats')||localStorage.getItem('bolao_whats')||'').replace(/\D/g,'');
     card.innerHTML=`
       <div class="modo-tag mata">🏆 Bolão Mata-Mata</div>
       <div class="card-title">Seus Palpites — ${fase?.label||''}</div>
-      <label>Seu nome</label>
-      <input type="text" id="mNome" placeholder="Como te chamam?" maxlength="30">
-      <label>WhatsApp <span style="color:var(--danger)">*</span> <span style="font-size:10px;color:var(--txt3)">(usado como identificador único)</span></label>
-      <input type="tel" id="mWhats" placeholder="(11) 99999-9999" maxlength="20">
-      <div class="card-sub" style="margin-top:-8px;margin-bottom:12px">⚠️ Use sempre o mesmo número. Ele garante que você não se cadastre duas vezes.</div>
+      <input type="hidden" id="mNome" value="${_mNome}">
+      <input type="hidden" id="mWhats" value="${_mWhats}">
+      <div style="background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+        <div style="font-size:22px">👤</div>
+        <div><div style="font-size:13px;font-weight:700;color:var(--txt)">${_mNome}</div><div style="font-size:11px;color:var(--txt3)">${_mWhats}</div></div>
+      </div>
       <div class="card-sub">Palpite em todos os <strong>${jogosAtivos.length} jogos</strong> da fase. Prazo: até o 1º jogo começar.</div>
       ${jogosAtivos.map(j=>`
         <div style="margin-bottom:16px">
@@ -1423,11 +1426,7 @@ function renderFormPalpite(){
         </div>`).join('')}
       <button class="btn btn-azul" onclick="enviarMata()">Enviar Palpites ⚽</button>
     `;
-    // Pre-fill from modal/localStorage
-    const sNome=sessionStorage.getItem('cadastro_nome')||localStorage.getItem('bolao_nome');
-    const sWhats=sessionStorage.getItem('cadastro_whats')||localStorage.getItem('bolao_whats');
-    if(sNome){const f=document.getElementById('mNome');if(f)f.value=sNome;}
-    if(sWhats){const f=document.getElementById('mWhats');if(f)f.value=sWhats;}
+
   } else {
     const _uNome=sessionStorage.getItem('cadastro_nome')||localStorage.getItem('bolao_nome')||'';
     const _uWhats=(sessionStorage.getItem('cadastro_whats')||localStorage.getItem('bolao_whats')||'').replace(/\D/g,'');
