@@ -1827,10 +1827,26 @@ function renderFormPalpite(){
           :'<div style="background:var(--warning-pale);border:1px solid var(--warning);border-radius:10px;padding:10px;text-align:center;margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:#FFB74D">⚠️ Aguardando pagamento — pague na aba Pagar</div></div>'
         }`;
       } else {
-        html+=`<div class="placar-row">
-          <div class="pl-team"><div class="pl-flag">${j.f1}</div><div class="pl-name">${j.t1}</div><input type="tel" id="${idG1}" value="" inputmode="numeric" pattern="[0-9]*" placeholder="0" onclick="this.select()" style="font-size:32px;font-weight:700;text-align:center;background:#111;border:2px solid var(--border);border-radius:12px;color:#fff;padding:12px;width:80px"></div>
-          <div class="pl-vs">✕</div>
-          <div class="pl-team"><div class="pl-flag">${j.f2}</div><div class="pl-name">${j.t2}</div><input type="tel" id="${idG2}" value="" inputmode="numeric" pattern="[0-9]*" placeholder="0" onclick="this.select()" style="font-size:32px;font-weight:700;text-align:center;background:#111;border:2px solid var(--border);border-radius:12px;color:#fff;padding:12px;width:80px"></div>
+        html+=`<div class="placar-row" style="gap:12px">
+          <div class="pl-team">
+            <div class="pl-flag">${j.f1}</div>
+            <div class="pl-name">${j.t1}</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:10px;justify-content:center">
+              <button onclick="ajustarPlacar('${idG1}',-1)" style="width:40px;height:40px;border-radius:50%;background:var(--card);border:1.5px solid var(--border);color:var(--txt);font-size:22px;font-weight:700;cursor:pointer">−</button>
+              <span id="${idG1}" data-val="0" style="font-size:40px;font-weight:900;color:#fff;min-width:44px;text-align:center;line-height:1">0</span>
+              <button onclick="ajustarPlacar('${idG1}',1)" style="width:40px;height:40px;border-radius:50%;background:var(--amarelo);border:none;color:#000;font-size:22px;font-weight:700;cursor:pointer">+</button>
+            </div>
+          </div>
+          <div class="pl-vs" style="font-size:24px;padding-top:28px">×</div>
+          <div class="pl-team">
+            <div class="pl-flag">${j.f2}</div>
+            <div class="pl-name">${j.t2}</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:10px;justify-content:center">
+              <button onclick="ajustarPlacar('${idG2}',-1)" style="width:40px;height:40px;border-radius:50%;background:var(--card);border:1.5px solid var(--border);color:var(--txt);font-size:22px;font-weight:700;cursor:pointer">−</button>
+              <span id="${idG2}" data-val="0" style="font-size:40px;font-weight:900;color:#fff;min-width:44px;text-align:center;line-height:1">0</span>
+              <button onclick="ajustarPlacar('${idG2}',1)" style="width:40px;height:40px;border-radius:50%;background:var(--amarelo);border:none;color:#000;font-size:22px;font-weight:700;cursor:pointer">+</button>
+            </div>
+          </div>
         </div>
         <button class="btn btn-verde" onclick="${fn}()" style="margin-bottom:12px">Enviar Palpite ⚽</button>`;
       }
@@ -1876,6 +1892,15 @@ async function enviarMata(){
   renderFormPalpite();
 }
 
+
+function ajustarPlacar(id, delta){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const val = Math.max(0, Math.min(20, (parseInt(el.dataset.val)||0) + delta));
+  el.dataset.val = val;
+  el.textContent = val;
+}
+
 async function enviarUnico(){
   const nome=document.getElementById('uNome')?.value.trim();
   const whats=document.getElementById('uWhats')?.value.trim();
@@ -1887,12 +1912,9 @@ async function enviarUnico(){
   if(resultadoUnico) return toast('Resultado já apurado!','err');
   if(palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo)) return toast('Este WhatsApp já está cadastrado!','err');
   if(palpitesUnico.find(p=>p.nome.toLowerCase()===nome.toLowerCase())) return toast('Este nome já está cadastrado!','err');
-  const _v1=document.getElementById('uG1')?.value?.trim();
-  const _v2=document.getElementById('uG2')?.value?.trim();
-  if(_v1===''||_v1===undefined||_v2===''||_v2===undefined) return toast('Digite o placar antes de enviar! ⚽','err');
-  const g1=parseInt(_v1);
-  const g2=parseInt(_v2);
-  if(isNaN(g1)||isNaN(g2)) return toast('Placar inválido','err');
+  const g1 = parseInt(document.getElementById('uG1')?.dataset?.val??'');
+  const g2 = parseInt(document.getElementById('uG2')?.dataset?.val??'');
+  if(isNaN(g1)||isNaN(g2)) return toast('Ajuste o placar antes de enviar! ⚽','err');
   const bonus=document.getElementById('uBonus')?.value.trim()||'';
   // Verificar pagamento pelo ID do jogo especifico (nao boolean generico)
   let statusInicialU = 'pendente';
@@ -1922,12 +1944,9 @@ async function enviarUnico2(){
   if(!cfgUnico2.aceitar) return toast('Palpites fechados!','err');
   const jaExiste=palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo&&p.jogo_extra_id==='jogo2');
   if(jaExiste) return toast('Você já palpitou neste jogo!','err');
-  const _v1b=document.getElementById('uG1b')?.value?.trim();
-  const _v2b=document.getElementById('uG2b')?.value?.trim();
-  if(_v1b===''||_v1b===undefined||_v2b===''||_v2b===undefined) return toast('Digite o placar antes de enviar! ⚽','err');
-  const g1=parseInt(_v1b);
-  const g2=parseInt(_v2b);
-  if(isNaN(g1)||isNaN(g2)) return toast('Placar inválido','err');
+  const g1 = parseInt(document.getElementById('uG1b')?.dataset?.val??'');
+  const g2 = parseInt(document.getElementById('uG2b')?.dataset?.val??'');
+  if(isNaN(g1)||isNaN(g2)) return toast('Ajuste o placar antes de enviar! ⚽','err');
   let statusInicial='pendente';
   const jogoId2 = cfgUnico2.jogoAtivo?.id || (cfgUnico2.jogoAtivo?.t1+'x'+cfgUnico2.jogoAtivo?.t2).replace(/\s/g,'');
   try{
