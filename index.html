@@ -1434,9 +1434,16 @@ async function toggleVerPalpitesExtra(){
   // Buscar palpites
   const {data:palpites} = await sb.from('palpites_unico').select('*').order('ts',{ascending:false});
 
+  // Buscar quem pagou o jogo extra
+  const jogoId1 = jogoAtivo?.id || (jogoAtivo?.t1+'x'+jogoAtivo?.t2||'').replace(/\s/g,'');
+  const jogoId2 = jogoAtivo2?.id || (jogoAtivo2?.t1+'x'+jogoAtivo2?.t2||'').replace(/\s/g,'');
+  const {data:partsData} = await sb.from('participantes')
+    .select('whats,pago_unico_jogo_id,pago_unico2_jogo_id').catch(()=>({data:[]}));
+
   const renderSlot = (jogo, slot) => {
     if(!jogo) return '';
     const label = slot==='jogo1' ? 'Extra 1' : 'Extra 2';
+    const jogoId = slot==='jogo1' ? jogoId1 : jogoId2;
     // Deduplica — pega só o mais recente por whats
     const vistos = {};
     const pals = (palpites||[]).filter(p=>(p.jogo_extra_id||'jogo1')===slot);
@@ -1445,14 +1452,28 @@ async function toggleVerPalpitesExtra(){
     const rows = todos.map(part=>{
       const w = part.whats?.replace(/\D/g,'');
       const pal = dedup.find(p=>p.whats?.replace(/\D/g,'')=== w);
-      if(!pal) return `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border2)">
-        <span style="font-size:12px">${part.nome}</span>
+      const partPag = (partsData||[]).find(p=>p.whats===w);
+      const pagou = slot==='jogo1'
+        ? partPag?.pago_unico_jogo_id === jogoId
+        : partPag?.pago_unico2_jogo_id === jogoId;
+      const pagBadge = pagou
+        ? '<span style="font-size:10px;background:rgba(0,200,100,0.15);border:1px solid var(--verde);color:var(--verde);border-radius:6px;padding:1px 6px;margin-left:4px">💰 Pago</span>'
+        : '<span style="font-size:10px;background:rgba(255,100,0,0.1);border:1px solid #FF6B00;color:#FF6B00;border-radius:6px;padding:1px 6px;margin-left:4px">⏳ Não pagou</span>';
+
+      if(!pal) return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border2)">
+        <div style="display:flex;align-items:center;gap:4px">
+          <span style="font-size:12px">${part.nome}</span>
+          ${pagou?pagBadge:''}
+        </div>
         <span style="font-size:11px;color:var(--txt3)">❌ não palpitou</span>
       </div>`;
       const cor = pal.status==='ativo'?'var(--verde)':'#FFB74D';
       const icon = pal.status==='ativo'?'✅':'⚠️';
       return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border2)">
-        <span style="font-size:12px">${part.nome}</span>
+        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+          <span style="font-size:12px">${part.nome}</span>
+          ${pagBadge}
+        </div>
         <span style="font-size:13px;font-weight:700;color:${cor}">${icon} ${pal.g1} × ${pal.g2}</span>
       </div>`;
     }).join('');
