@@ -631,7 +631,9 @@ select option{background:var(--bg);}
         <button class="btn btn-danger" onclick="limparMata()">⚠️ Limpar palpites</button>
         <div class="divider"></div>
         <div id="admVencedoresMata"></div>
-        <button class="btn btn-verde" onclick="renderPagamentoVencedoresMata()" style="font-size:13px">💰 Ver quem pagar — Mata-Mata</button>
+        <button class="btn btn-verde" onclick="renderPagamentoVencedoresMata()" style="font-size:13px;margin-bottom:8px">💰 Ver quem pagar — Mata-Mata</button>
+        <button class="btn" onclick="toggleVerPalpitesMata()" style="font-size:13px;background:var(--card);border:1px solid var(--border)">👁 Ver Palpites — Mata-Mata</button>
+        <div id="admPalpitesMata" style="display:none"></div>
       </div>
 
       <!-- ÚNICO PANEL -->
@@ -651,6 +653,8 @@ select option{background:var(--bg);}
         <div class="divider"></div>
         <div id="admVencedoresUnico"></div>
         <button class="btn btn-verde" onclick="renderPagamentoVencedores('unico')" style="font-size:13px;margin-bottom:8px">💰 Ver quem pagar — Jogo Extra</button>
+        <button class="btn" onclick="toggleVerPalpitesExtra()" style="font-size:13px;margin-bottom:8px;background:var(--card);border:1px solid var(--border)">👁 Ver Palpites — Jogo Extra</button>
+        <div id="admPalpitesExtra" style="display:none"></div>
         <div class="card-title">Resultado — Jogo Extra</div>
         <div class="placar-row">
           <div class="pl-team"><div class="pl-flag" id="uResF1">🏴</div><div class="pl-name" id="uResT1">Time A</div><input type="number" id="uResG1" value="0" min="0" max="20"></div>
@@ -1414,6 +1418,94 @@ async function renderPagamentoVencedores(slot){
   container.innerHTML = vencCard;
 }
 
+
+async function toggleVerPalpitesExtra(){
+  const el = document.getElementById('admPalpitesExtra');
+  if(!el) return;
+  if(el.style.display!=='none'){ el.style.display='none'; return; }
+  el.style.display='block';
+  el.innerHTML='<div style="color:var(--txt3);font-size:12px;padding:8px">Carregando...</div>';
+
+  // Buscar todos participantes ativos no mata-mata
+  const todos = participantesData.filter(p=>p.pago_mata||p.pago);
+  const jogoAtivo = cfgUnico.jogoAtivo;
+  const jogoAtivo2 = cfgUnico2.jogoAtivo;
+
+  // Buscar palpites
+  const {data:palpites} = await sb.from('palpites_unico').select('*').order('ts',{ascending:false});
+
+  const renderSlot = (jogo, slot) => {
+    if(!jogo) return '';
+    const label = slot==='jogo1' ? 'Extra 1' : 'Extra 2';
+    // Deduplica — pega só o mais recente por whats
+    const vistos = {};
+    const pals = (palpites||[]).filter(p=>(p.jogo_extra_id||'jogo1')===slot);
+    const dedup = pals.filter(p=>{ const w=p.whats?.replace(/\D/g,''); if(vistos[w]) return false; vistos[w]=true; return true; });
+
+    const rows = todos.map(part=>{
+      const w = part.whats?.replace(/\D/g,'');
+      const pal = dedup.find(p=>p.whats?.replace(/\D/g,'')=== w);
+      if(!pal) return `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border2)">
+        <span style="font-size:12px">${part.nome}</span>
+        <span style="font-size:11px;color:var(--txt3)">❌ não palpitou</span>
+      </div>`;
+      const cor = pal.status==='ativo'?'var(--verde)':'#FFB74D';
+      const icon = pal.status==='ativo'?'✅':'⚠️';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border2)">
+        <span style="font-size:12px">${part.nome}</span>
+        <span style="font-size:13px;font-weight:700;color:${cor}">${icon} ${pal.g1} × ${pal.g2}</span>
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:12px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--amarelo);text-transform:uppercase;margin-bottom:6px">⚡ ${label} — ${jogo.t1} × ${jogo.t2}</div>
+      ${rows}
+    </div>`;
+  };
+
+  el.innerHTML = `<div style="background:var(--card);border-radius:10px;padding:12px;margin-bottom:8px">
+    ${renderSlot(jogoAtivo,'jogo1')}
+    ${renderSlot(jogoAtivo2,'jogo2')}
+  </div>`;
+}
+
+async function toggleVerPalpitesMata(){
+  const el = document.getElementById('admPalpitesMata');
+  if(!el) return;
+  if(el.style.display!=='none'){ el.style.display='none'; return; }
+  el.style.display='block';
+  el.innerHTML='<div style="color:var(--txt3);font-size:12px;padding:8px">Carregando...</div>';
+
+  const todos = participantesData.filter(p=>p.pago_mata||p.pago);
+  const fase = FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
+  const jogosAtivos = fase?.jogos?.filter(j=>cfgMata.jogosAtivos?.includes(j.id))||[];
+
+  // Deduplica palpites mata por whats
+  const vistos = {};
+  const pals = palpitesMata.filter(p=>{ const w=p.whats?.replace(/\D/g,''); if(vistos[w]) return false; vistos[w]=true; return true; });
+
+  const rows = todos.map(part=>{
+    const w = part.whats?.replace(/\D/g,'');
+    const pal = pals.find(p=>p.whats?.replace(/\D/g,'')=== w);
+    if(!pal) return `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border2)">
+      <span style="font-size:12px">${part.nome}</span>
+      <span style="font-size:11px;color:var(--txt3)">❌ não palpitou</span>
+    </div>`;
+    const qtd = Object.keys(pal.palpites||{}).length;
+    const total = jogosAtivos.length||16;
+    const cor = pal.status==='ativo'?'var(--verde)':'#FFB74D';
+    const icon = pal.status==='ativo'?'✅':'⚠️';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border2)">
+      <span style="font-size:12px">${part.nome}</span>
+      <span style="font-size:11px;color:${cor}">${icon} ${qtd}/${total} jogos</span>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `<div style="background:var(--card);border-radius:10px;padding:12px;margin-bottom:8px">
+    <div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--amarelo);text-transform:uppercase;margin-bottom:6px">🏆 ${fase?.label||'Mata-Mata'}</div>
+    ${rows}
+  </div>`;
+}
 
 async function renderPagamentoVencedoresMata(){
   const container = document.getElementById('admVencedoresMata');
