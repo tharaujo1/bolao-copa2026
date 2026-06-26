@@ -351,6 +351,32 @@ select option{background:var(--bg);}
 .mata-score{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--amarelo);min-width:50px;text-align:center;}
 .mata-score.pending{color:var(--txt3);font-size:14px;font-family:'Inter',sans-serif;font-weight:600;}
 .mata-phase-label{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--txt3);padding:10px 0 4px;}
+
+/* MODAL PALPITE MATA-MATA */
+.mata-modal-overlay {
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,0.85);z-index:9999;
+  display:flex;align-items:flex-end;justify-content:center;
+  animation:fadeIn 0.2s ease;
+}
+.mata-modal-box {
+  background:var(--card);border-radius:20px 20px 0 0;
+  padding:20px 16px 32px;width:100%;max-width:480px;
+  animation:slideUp 0.25s ease;
+}
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.mata-modal-progress {
+  font-size:11px;color:var(--txt3);letter-spacing:1px;
+  text-transform:uppercase;text-align:center;margin-bottom:4px;
+}
+.mata-modal-progressbar {
+  height:3px;background:var(--border);border-radius:2px;margin-bottom:16px;overflow:hidden;
+}
+.mata-modal-progressbar-fill {
+  height:100%;background:var(--amarelo);border-radius:2px;transition:width 0.3s;
+}
+
 </style>
 </head>
 <body>
@@ -1033,6 +1059,7 @@ let participantesData = [];
 let headerExtraIdx = 0;
 let headerExtraInterval = null;
 let _placarUnico = {uG1:0, uG2:0, uG1b:0, uG2b:0};
+let _mataModal = {jogoId:null, g1:0, g2:0, aberto:false};
 let liveInterval = null;
 let lastGoals = 0;
 let realtimeSubs = [];
@@ -1108,6 +1135,166 @@ async function loadAll(){
 }
 
 
+
+
+// ═══════════════════════════════════════
+// MODAL PALPITE MATA-MATA
+// ═══════════════════════════════════════
+function abrirModalMata(jogoId){
+  const fase = FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
+  const jogosAtivos = (cfgMata.jogosAtivos||[]).map(id=>fase?.jogos.find(j=>j.id===id)).filter(Boolean);
+  const j = jogosAtivos.find(x=>x.id===jogoId);
+  if(!j) return;
+
+  const myWhatsM = (localStorage.getItem('bolao_whats')||'').replace(/\D/g,'');
+  const meuPalpite = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===myWhatsM);
+  const palAtual = meuPalpite?.palpites?.[jogoId];
+  const idx = jogosAtivos.indexOf(j);
+  const total = jogosAtivos.length;
+  const pctP = Math.round((idx)/total*100);
+
+  // Contar consenso dos outros
+  const outrosPals = palpitesMata.filter(p=>p.whats?.replace(/\D/g,'')!==myWhatsM&&p.palpites?.[jogoId]);
+  let vitH=0,emp=0,vitA=0;
+  outrosPals.forEach(p=>{ const pal=p.palpites[jogoId]; if(pal.g1>pal.g2)vitH++; else if(pal.g1===pal.g2)emp++; else vitA++; });
+  const tot2 = outrosPals.length;
+  const barraHTML = tot2>=2 ? `
+    <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:8px 10px;margin-bottom:14px">
+      <div style="font-size:10px;color:var(--txt3);margin-bottom:6px;text-align:center">📊 O que o grupo acha (${tot2} palpites)</div>
+      <div style="display:flex;gap:3px;align-items:flex-end;height:36px">
+        ${[{pct:Math.round(vitH/tot2*100),cor:'#3D7AFF',label:j.t1},{pct:Math.round(emp/tot2*100),cor:'#888',label:'Empate'},{pct:Math.round(vitA/tot2*100),cor:'#FF4444',label:j.t2}]
+          .map(({pct,cor,label})=>`<div style="flex:${Math.max(pct,5)};display:flex;flex-direction:column;align-items:center">
+            <div style="font-size:10px;color:${cor};font-weight:700;margin-bottom:2px">${pct}%</div>
+            <div style="height:${Math.max(pct/3,4)}px;background:${cor};border-radius:2px;width:100%;opacity:0.7"></div>
+            <div style="font-size:8px;color:var(--txt3);margin-top:2px;text-align:center">${label.split(' ')[0]}</div>
+          </div>`).join('')}
+      </div>
+    </div>` : '';
+
+  const g1init = palAtual?.g1??0;
+  const g2init = palAtual?.g2??0;
+  _mataModal = {jogoId, g1:g1init, g2:g2init, aberto:true};
+
+  const proxJ = jogosAtivos[idx+1];
+
+  const overlay = document.createElement('div');
+  overlay.className='mata-modal-overlay';
+  overlay.id='mataModalOverlay';
+  overlay.onclick=(e)=>{ if(e.target===overlay) fecharModalMata(); };
+  overlay.innerHTML=`
+    <div class="mata-modal-box">
+      <div class="mata-modal-progress">Jogo ${idx+1} de ${total}</div>
+      <div class="mata-modal-progressbar"><div class="mata-modal-progressbar-fill" style="width:${pctP}%"></div></div>
+      ${barraHTML}
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px">
+        <div style="text-align:center">
+          <div style="font-size:36px">${j.f1}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--txt);margin-top:4px">${j.t1}</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:10px;justify-content:center">
+            <button data-modal-target="mg1" data-delta="-1" class="btn-modal-adj" style="width:40px;height:40px;border-radius:50%;background:var(--card);border:1.5px solid var(--border);color:var(--txt);font-size:22px;font-weight:700;cursor:pointer">−</button>
+            <span id="mg1" style="font-size:42px;font-weight:900;color:#fff;min-width:46px;text-align:center;line-height:1">${g1init}</span>
+            <button data-modal-target="mg1" data-delta="1" class="btn-modal-adj" style="width:40px;height:40px;border-radius:50%;background:var(--amarelo);border:none;color:#000;font-size:22px;font-weight:700;cursor:pointer">+</button>
+          </div>
+        </div>
+        <div style="font-size:24px;color:var(--txt3);padding-top:16px">×</div>
+        <div style="text-align:center">
+          <div style="font-size:36px">${j.f2}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--txt);margin-top:4px">${j.t2}</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:10px;justify-content:center">
+            <button data-modal-target="mg2" data-delta="-1" class="btn-modal-adj" style="width:40px;height:40px;border-radius:50%;background:var(--card);border:1.5px solid var(--border);color:var(--txt);font-size:22px;font-weight:700;cursor:pointer">−</button>
+            <span id="mg2" style="font-size:42px;font-weight:900;color:#fff;min-width:46px;text-align:center;line-height:1">${g2init}</span>
+            <button data-modal-target="mg2" data-delta="1" class="btn-modal-adj" style="width:40px;height:40px;border-radius:50%;background:var(--amarelo);border:none;color:#000;font-size:22px;font-weight:700;cursor:pointer">+</button>
+          </div>
+        </div>
+      </div>
+      <button id="btnEnviarModal" onclick="enviarPalpiteMataModal()" class="btn btn-verde" style="margin-bottom:8px">
+        ${palAtual?'✅ Atualizar palpite':'⚽ Enviar palpite'}
+      </button>
+      ${proxJ?`<button onclick="proximoJogoModal('${proxJ.id}')" class="btn" style="background:var(--card);border:1px solid var(--border);font-size:13px;margin-bottom:8px">Próximo jogo →</button>`:''}
+      <button onclick="fecharModalMata()" class="btn" style="background:transparent;border:none;color:var(--txt3);font-size:12px">Fechar</button>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  // Event delegation para botões do modal
+  overlay.addEventListener('click', e=>{
+    const btn = e.target.closest('.btn-modal-adj');
+    if(!btn) return;
+    e.stopPropagation();
+    const target = btn.dataset.modalTarget;
+    const delta = parseInt(btn.dataset.delta);
+    const el = document.getElementById(target);
+    if(!el) return;
+    const key = target==='mg1'?'g1':'g2';
+    _mataModal[key] = Math.max(0, Math.min(20, (_mataModal[key]||0)+delta));
+    el.textContent = _mataModal[key];
+  });
+}
+
+function fecharModalMata(){
+  const ov = document.getElementById('mataModalOverlay');
+  if(ov) ov.remove();
+  _mataModal.aberto = false;
+}
+
+function proximoJogoModal(jogoId){
+  fecharModalMata();
+  setTimeout(()=>abrirModalMata(jogoId), 150);
+}
+
+async function enviarPalpiteMataModal(){
+  const nome = document.getElementById('mNome')?.value.trim() || localStorage.getItem('bolao_nome');
+  const whats = document.getElementById('mWhats')?.value.trim() || localStorage.getItem('bolao_whats');
+  if(!nome||!whats) return toast('Faça login primeiro','err');
+  const whatsLimpo = whats.replace(/\D/g,'');
+  const jogoId = _mataModal.jogoId;
+  const g1 = _mataModal.g1;
+  const g2 = _mataModal.g2;
+
+  // Buscar palpite existente
+  const palExist = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
+
+  const btn = document.getElementById('btnEnviarModal');
+  if(btn){ btn.textContent='Salvando...'; btn.disabled=true; }
+
+  if(palExist){
+    // Atualizar jogo específico no JSON existente
+    const novosPalpites = {...(palExist.palpites||{}), [jogoId]:{g1,g2}};
+    const {error} = await sb.from('palpites_mata')
+      .update({palpites:novosPalpites, ts:Date.now()})
+      .eq('whats', whatsLimpo);
+    if(error){ toast('Erro ao salvar','err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
+    // Atualizar local
+    palExist.palpites = novosPalpites;
+  } else {
+    // Primeiro palpite — criar registro
+    let statusInicial='pendente';
+    try{
+      const {data:part}=await sb.from('participantes').select('pago_mata,pago').eq('whats',whatsLimpo).single();
+      if(part?.pago_mata||part?.pago) statusInicial='ativo';
+    }catch(e){}
+    const novosPalpites = {[jogoId]:{g1,g2}};
+    const {error}=await sb.from('palpites_mata').insert({nome,whats,palpites:novosPalpites,status:statusInicial,ts:Date.now()});
+    if(error){ toast('Erro ao salvar','err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
+    palpitesMata.push({nome,whats,palpites:novosPalpites,status:statusInicial,ts:Date.now()});
+  }
+
+  toast(`✅ ${g1}×${g2} salvo!`,'ok');
+
+  // Verificar próximo jogo sem palpite
+  const fase = FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
+  const jogosAtivos = (cfgMata.jogosAtivos||[]).map(id=>fase?.jogos.find(j=>j.id===id)).filter(Boolean);
+  const palAtual = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
+  const palJogosAtual = palAtual?.palpites||{};
+  const proxSemPalpite = jogosAtivos.find(j=>!palJogosAtual[j.id]&&j.id!==jogoId);
+
+  fecharModalMata();
+  renderFormPalpite(); // Atualizar lista
+
+  if(proxSemPalpite){
+    setTimeout(()=>abrirModalMata(proxSemPalpite.id), 300);
+  }
+}
 
 // ═══════════════════════════════════════
 // POLLING AUTOMÁTICO MATA-MATA
@@ -1851,6 +2038,13 @@ function updateHeader(){
       const div = document.createElement('div');
       div.className='card';
       div.style.cssText='margin-bottom:8px;border-color:var(--border2)';
+      // Bolada = quem pagou (pago_unico_jogo_id bate com o jogo ativo)
+      const jogoIdSlot = j.id ? String(j.id) : null;
+      const pagantesSlot = jogoIdSlot
+        ? participantesData.filter(p=>String(p.pago_unico_jogo_id||'')=== jogoIdSlot).length
+        : ativosSlot.length;
+      const bolada = pagantesSlot * (cfg.valor||10);
+
       div.innerHTML=`
         <div class="flex-between" style="margin-bottom:10px">
           <span class="card-title" style="margin-bottom:0">⚡ Jogo Extra</span>
@@ -1861,7 +2055,7 @@ function updateHeader(){
           <div class="stat"><div class="stat-val">${ativosSlot.length+pendSlot.length||'—'}</div><div class="stat-lbl">Total</div></div>
           <div class="stat"><div class="stat-val">${ativosSlot.length||'—'}</div><div class="stat-lbl">Ativos</div></div>
           <div class="stat"><div class="stat-val">${pendSlot.length||'—'}</div><div class="stat-lbl">Pendentes</div></div>
-          <div class="stat"><div class="stat-val" style="color:var(--amarelo)">R$${ativosSlot.length*(cfg.valor||10)}</div><div class="stat-lbl">Bolada</div></div>
+          <div class="stat"><div class="stat-val" style="color:var(--amarelo)">R$${bolada}</div><div class="stat-lbl">Bolada</div></div>
         </div>`;
       extraContainer.appendChild(div);
     });
@@ -1885,28 +2079,57 @@ function renderFormPalpite(){
       card.innerHTML=`<div class="modo-tag mata">🏆 Bolão Mata-Mata</div><div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Aguardando o organizador abrir a fase.<br>Os palpites serão liberados fase a fase.</div></div>`;
       return;
     }
+
+    // Buscar palpite existente desta pessoa
+    const myWhatsM = (localStorage.getItem('bolao_whats')||'').replace(/\D/g,'');
+    const meuPalpiteMata = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===myWhatsM);
+    const palJogos = meuPalpiteMata?.palpites||{};
+    const totalJogos = jogosAtivos.length;
+    const palpitados = Object.keys(palJogos).filter(id=>jogosAtivos.find(j=>j.id===id)).length;
+    const completo = palpitados === totalJogos;
     const _mNome=sessionStorage.getItem('cadastro_nome')||localStorage.getItem('bolao_nome')||'';
     const _mWhats=(sessionStorage.getItem('cadastro_whats')||localStorage.getItem('bolao_whats')||'').replace(/\D/g,'');
+    // Barra de progresso
+    const pctProgress = totalJogos>0 ? Math.round(palpitados/totalJogos*100) : 0;
+
     card.innerHTML=`
       <div class="modo-tag mata">🏆 Bolão Mata-Mata</div>
-      <div class="card-title">Seus Palpites — ${fase?.label||''}</div>
       <input type="hidden" id="mNome" value="${_mNome}">
       <input type="hidden" id="mWhats" value="${_mWhats}">
-      <div style="background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+      <div style="background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
         <div style="font-size:22px">👤</div>
-        <div><div style="font-size:13px;font-weight:700;color:var(--txt)">${_mNome}</div><div style="font-size:11px;color:var(--txt3)">${_mWhats}</div></div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:var(--txt)">${_mNome}</div>
+          <div style="font-size:11px;color:var(--txt3)">${_mWhats}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:16px;font-weight:900;color:${completo?'var(--verde)':'var(--amarelo)'}">${palpitados}/${totalJogos}</div>
+          <div style="font-size:10px;color:var(--txt3)">palpites</div>
+        </div>
       </div>
-      <div class="card-sub">Palpite em todos os <strong>${jogosAtivos.length} jogos</strong> da fase. Prazo: até o 1º jogo começar.</div>
-      ${jogosAtivos.map(j=>`
-        <div style="margin-bottom:16px">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--txt2);margin-bottom:8px">${j.date} · ${j.time}</div>
-          <div class="placar-row">
-            <div class="pl-team"><div class="pl-flag">${j.f1}</div><div class="pl-name">${j.t1}</div><input type="number" id="p_${j.id}_1" value="0" min="0" max="20"></div>
-            <div class="pl-vs">✕</div>
-            <div class="pl-team"><div class="pl-flag">${j.f2}</div><div class="pl-name">${j.t2}</div><input type="number" id="p_${j.id}_2" value="0" min="0" max="20"></div>
+      <div style="height:4px;background:var(--border);border-radius:2px;margin-bottom:14px;overflow:hidden">
+        <div style="height:100%;width:${pctProgress}%;background:${completo?'var(--verde)':'var(--amarelo)'};border-radius:2px;transition:width 0.4s"></div>
+      </div>
+      ${completo?'<div style="background:var(--success-pale);border:1px solid var(--verde);border-radius:10px;padding:10px;text-align:center;margin-bottom:12px;font-size:13px;font-weight:700;color:var(--success-light)">✅ Todos os palpites enviados! Boa sorte! 🇧🇷</div>':''}
+      <div style="font-size:11px;color:var(--txt3);margin-bottom:10px;letter-spacing:0.5px">${fase?.label||''} · ${totalJogos} jogos · toque para palpitar</div>
+      ${jogosAtivos.map((j,idx)=>{
+        const pal = palJogos[j.id];
+        const temPalpite = pal!==undefined && pal!==null;
+        return `<div onclick="abrirModalMata('${j.id}')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:10px;margin-bottom:8px;cursor:pointer;border:1.5px solid ${temPalpite?'rgba(0,155,58,0.3)':'var(--border)'}">
+          <div style="flex:1;display:flex;align-items:center;gap:8px">
+            <span style="font-size:20px">${j.f1}</span>
+            <div>
+              <div style="font-size:12px;font-weight:700">${j.t1} × ${j.t2}</div>
+              <div style="font-size:10px;color:var(--txt3)">${j.date} · ${j.time}</div>
+            </div>
+            <span style="font-size:20px">${j.f2}</span>
           </div>
-        </div>`).join('')}
-      <button class="btn btn-azul" onclick="enviarMata()">Enviar Palpites ⚽</button>
+          ${temPalpite
+            ?`<div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--amarelo);min-width:52px;text-align:right">${pal.g1} × ${pal.g2}</div>`
+            :`<div style="font-size:11px;color:var(--amarelo);font-weight:700;min-width:52px;text-align:right">📝 Palpitar</div>`
+          }
+        </div>`;
+      }).join('')}
     `;
 
   } else {
