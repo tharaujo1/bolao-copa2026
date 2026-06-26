@@ -1927,17 +1927,59 @@ function renderFormPalpite(){
       }
       if(_palpite){
         const _isAtivo=_palpite.status==='ativo';
-        html+=`<div style="background:var(--bg);border-radius:12px;padding:12px;margin-bottom:8px">
-          <div style="display:flex;align-items:center;justify-content:center;gap:14px;padding:6px 0">
-            <div style="text-align:center"><div style="font-size:26px">${j.f1}</div><div style="font-size:10px;color:var(--txt2);margin-top:3px">${j.t1}</div></div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:38px;color:var(--amarelo)">${_palpite.g1} × ${_palpite.g2}</div>
-            <div style="text-align:center"><div style="font-size:26px">${j.f2}</div><div style="font-size:10px;color:var(--txt2);margin-top:3px">${j.t2}</div></div>
+        const _editando=_placarEditando[slot];
+        // Verificar se ainda pode editar (5min antes do jogo)
+        let _podeEditar = cfg.aceitar;
+        if(j.date && j.time){
+          try{
+            const [d,m]=j.date.split('/'); const t=j.time.replace('h',':00');
+            const _jdt=new Date(`2026-${m}-${d}T${t}-03:00`);
+            _podeEditar = _podeEditar && ((_jdt-new Date())/60000)>5;
+          }catch(e){}
+        }
+
+        if(_editando){
+          // Modo edição com botões +/-
+          html+=`<div style="background:rgba(254,223,0,0.06);border:1.5px solid var(--amarelo);border-radius:12px;padding:12px;margin-bottom:8px">
+            <div style="font-size:11px;color:var(--amarelo);font-weight:700;text-align:center;margin-bottom:10px;letter-spacing:1px">✏️ ALTERANDO PALPITE</div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:6px 0">
+              <div style="text-align:center">
+                <div style="font-size:26px">${j.f1}</div>
+                <div style="font-size:10px;color:var(--txt2);margin-top:3px">${j.t1}</div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:8px;justify-content:center">
+                  <button data-target="${idG1}" data-delta="-1" class="btn-placar-adj" style="width:38px;height:38px;border-radius:50%;background:var(--card);border:1.5px solid var(--border);color:var(--txt);font-size:20px;font-weight:700;cursor:pointer">−</button>
+                  <span id="${idG1}" data-val="${_palpite.g1}" style="font-size:38px;font-weight:900;color:#fff;min-width:40px;text-align:center;line-height:1">${_palpite.g1}</span>
+                  <button data-target="${idG1}" data-delta="1" class="btn-placar-adj" style="width:38px;height:38px;border-radius:50%;background:var(--amarelo);border:none;color:#000;font-size:20px;font-weight:700;cursor:pointer">+</button>
+                </div>
+              </div>
+              <div style="font-size:22px;color:var(--txt3);padding-top:20px">×</div>
+              <div style="text-align:center">
+                <div style="font-size:26px">${j.f2}</div>
+                <div style="font-size:10px;color:var(--txt2);margin-top:3px">${j.t2}</div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:8px;justify-content:center">
+                  <button data-target="${idG2}" data-delta="-1" class="btn-placar-adj" style="width:38px;height:38px;border-radius:50%;background:var(--card);border:1.5px solid var(--border);color:var(--txt);font-size:20px;font-weight:700;cursor:pointer">−</button>
+                  <span id="${idG2}" data-val="${_palpite.g2}" style="font-size:38px;font-weight:900;color:#fff;min-width:40px;text-align:center;line-height:1">${_palpite.g2}</span>
+                  <button data-target="${idG2}" data-delta="1" class="btn-placar-adj" style="width:38px;height:38px;border-radius:50%;background:var(--amarelo);border:none;color:#000;font-size:20px;font-weight:700;cursor:pointer">+</button>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-        ${_isAtivo
-          ?'<div style="background:var(--success-pale);border:1px solid var(--verde);border-radius:10px;padding:10px;text-align:center;margin-bottom:8px"><div style="font-size:14px;font-weight:700;color:var(--success-light)">✅ Palpite ativo! Boa sorte! 🇧🇷</div></div>'
-          :'<div style="background:var(--warning-pale);border:1px solid var(--warning);border-radius:10px;padding:10px;text-align:center;margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:#FFB74D">⚠️ Aguardando pagamento — pague na aba Pagar</div></div>'
-        }`;
+          <button class="btn btn-verde" onclick="${fn}(true)" style="margin-bottom:6px">✅ Confirmar alteração</button>
+          <button class="btn" onclick="cancelarEdicao('${slot}')" style="background:var(--card);border:1px solid var(--border);font-size:12px;margin-bottom:8px">✕ Cancelar</button>`;
+        } else {
+          html+=`<div style="background:var(--bg);border-radius:12px;padding:12px;margin-bottom:8px">
+            <div style="display:flex;align-items:center;justify-content:center;gap:14px;padding:6px 0">
+              <div style="text-align:center"><div style="font-size:26px">${j.f1}</div><div style="font-size:10px;color:var(--txt2);margin-top:3px">${j.t1}</div></div>
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:38px;color:var(--amarelo)">${_palpite.g1} × ${_palpite.g2}</div>
+              <div style="text-align:center"><div style="font-size:26px">${j.f2}</div><div style="font-size:10px;color:var(--txt2);margin-top:3px">${j.t2}</div></div>
+            </div>
+          </div>
+          ${_isAtivo
+            ?'<div style="background:var(--success-pale);border:1px solid var(--verde);border-radius:10px;padding:10px;text-align:center;margin-bottom:8px"><div style="font-size:14px;font-weight:700;color:var(--success-light)">✅ Palpite ativo! Boa sorte! 🇧🇷</div></div>'
+            :'<div style="background:var(--warning-pale);border:1px solid var(--warning);border-radius:10px;padding:10px;text-align:center;margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:#FFB74D">⚠️ Aguardando pagamento — pague na aba Pagar</div></div>'
+          }
+          ${_podeEditar?`<button class="btn" onclick="iniciarEdicao('${slot}')" style="background:rgba(254,223,0,0.08);border:1px solid var(--amarelo);color:var(--amarelo);font-size:12px;margin-bottom:8px">✏️ Alterar palpite</button>`:''}`;
+        }
       } else {
         html+=`<div class="placar-row" style="gap:12px">
           <div class="pl-team">
@@ -2010,6 +2052,20 @@ async function enviarMata(){
 }
 
 
+
+// Estado de edição de palpite
+let _placarEditando = {jogo1: false, jogo2: false};
+
+function iniciarEdicao(slot){
+  _placarEditando[slot] = true;
+  renderFormPalpite();
+}
+
+function cancelarEdicao(slot){
+  _placarEditando[slot] = false;
+  renderFormPalpite();
+}
+
 function ajustarPlacar(id, delta){
   _placarUnico[id] = Math.max(0, Math.min(20, (_placarUnico[id]||0) + delta));
   const el = document.getElementById(id);
@@ -2027,7 +2083,7 @@ document.addEventListener('click', function(e){
   ajustarPlacar(targetId, delta);
 });
 
-async function enviarUnico(){
+async function enviarUnico(editando=false){
   const nome=document.getElementById('uNome')?.value.trim();
   const whats=document.getElementById('uWhats')?.value.trim();
   if(!nome) return toast('Digite seu nome!','err');
@@ -2036,17 +2092,29 @@ async function enviarUnico(){
   if(whatsLimpo.length<10) return toast('WhatsApp inválido. Use DDD + número.','err');
   if(!cfgUnico.aceitar) return toast('Palpites fechados!','err');
   if(resultadoUnico) return toast('Resultado já apurado!','err');
-  if(palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo&&(p.jogo_extra_id||'jogo1')==='jogo1')) return toast('Você já palpitou neste jogo!','err');
+  const _palExist=palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo&&(p.jogo_extra_id||'jogo1')==='jogo1');
+  if(_palExist && !editando) return toast('Você já palpitou neste jogo!','err');
   const g1 = _placarUnico['uG1']??null;
   const g2 = _placarUnico['uG2']??null;
   if(g1===null||g2===null) return toast('Ajuste o placar antes de enviar! ⚽','err');
   const bonus=document.getElementById('uBonus')?.value.trim()||'';
-  // Verificar pagamento pelo ID do jogo especifico (nao boolean generico)
+
+  if(editando && _palExist){
+    // Atualizar palpite existente
+    const {error}=await sb.from('palpites_unico').update({g1,g2,bonus,ts:Date.now()}).eq('whats',whatsLimpo).eq('jogo_extra_id','jogo1');
+    if(error) return toast('Erro ao atualizar. Tente novamente.','err');
+    toast(`✅ Palpite atualizado para ${g1}×${g2}!`,'ok');
+    palpitesUnico=palpitesUnico.map(p=>p.whats?.replace(/\D/g,'')===whatsLimpo&&(p.jogo_extra_id||'jogo1')==='jogo1'?{...p,g1,g2,bonus}:p);
+    _placarEditando.jogo1=false;
+    renderFormPalpite();
+    return;
+  }
+
+  // Novo palpite
   let statusInicialU = 'pendente';
   const jogoId = cfgUnico.jogoAtivo?.id || (cfgUnico.jogoAtivo?.t1+'x'+cfgUnico.jogoAtivo?.t2).replace(/\s/g,'');
   try{
-    const whatsLimpoU = whats.replace(/\D/g,'');
-    const {data:partU} = await sb.from('participantes').select('pago_unico_jogo_id').eq('whats',whatsLimpoU).single();
+    const {data:partU} = await sb.from('participantes').select('pago_unico_jogo_id').eq('whats',whatsLimpo).single();
     if(partU?.pago_unico_jogo_id === jogoId) statusInicialU = 'ativo';
   } catch(e){}
 
@@ -2058,6 +2126,7 @@ async function enviarUnico(){
   } else {
     toast(`${nome}, palpite enviado! Agora pague o Pix 💸`,'ok');
   }
+  _placarEditando.jogo1=false;
   renderFormPalpite();
 }
 
