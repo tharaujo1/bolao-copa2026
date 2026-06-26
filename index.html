@@ -1912,6 +1912,8 @@ function renderFormPalpite(){
     }
 
     let html='<div class="modo-tag unico">⚡ Jogo Extra</div>';
+    // Barra de consenso
+    jogosExtras.forEach(({j,slot})=>{ html+=renderBarraConsenso(slot,j,palpitesUnico); });
     html+=`<div style="background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
       <div style="font-size:22px">👤</div>
       <div><div style="font-size:13px;font-weight:700;color:var(--txt)">${_uNome}</div><div style="font-size:11px;color:var(--txt3)">${_uWhats}</div></div>
@@ -1932,9 +1934,14 @@ function renderFormPalpite(){
         let _podeEditar = cfg.aceitar;
         if(j.date && j.time){
           try{
-            const [d,m]=j.date.split('/'); const t=j.time.replace('h',':00');
-            const _jdt=new Date(`2026-${m}-${d}T${t}-03:00`);
-            _podeEditar = _podeEditar && ((_jdt-new Date())/60000)>5;
+            // Horario da API vem em UTC — converter para Brasil (UTC-3)
+            const [d,m]=j.date.split('/');
+            const tRaw=j.time.replace('h','');
+            const [hh,mm]=tRaw.includes(':')? tRaw.split(':') : [tRaw,'00'];
+            // API retorna UTC, adicionar 3h para obter horario Brasil display
+            // Para calculo de bloqueio, comparar direto em UTC
+            const _jdtUTC=new Date(`2026-${m}-${d}T${hh.padStart(2,'0')}:${(mm||'00').padStart(2,'0')}:00Z`);
+            _podeEditar = _podeEditar && ((_jdtUTC-new Date())/60000)>5;
           }catch(e){}
         }
 
@@ -2064,6 +2071,46 @@ function iniciarEdicao(slot){
 function cancelarEdicao(slot){
   _placarEditando[slot] = false;
   renderFormPalpite();
+}
+
+
+function renderBarraConsenso(slot, j, palpites){
+  const slotId = slot==='jogo1'?'jogo1':'jogo2';
+  const meuWhats = localStorage.getItem('bolao_whats')?.replace(/\D/g,'')||'';
+  
+  // Filtrar palpites ativos do slot (esconder o próprio)
+  const pals = palpites.filter(p=>(p.jogo_extra_id||'jogo1')===slotId&&p.status==='ativo'&&p.whats?.replace(/\D/g,'')!==meuWhats);
+  if(pals.length < 2) return ''; // Mostrar só com 2+ palpites de outros
+
+  let vitH=0, emp=0, vitA=0;
+  pals.forEach(p=>{
+    if(p.g1>p.g2) vitH++;
+    else if(p.g1===p.g2) emp++;
+    else vitA++;
+  });
+  const total = pals.length;
+  const pctH = Math.round(vitH/total*100);
+  const pctE = Math.round(emp/total*100);
+  const pctA = Math.round(vitA/total*100);
+  const maxPct = Math.max(pctH, pctE, pctA);
+
+  const barSeg = (pct, cor, label, isMaior) => `
+    <div style="display:flex;flex-direction:column;align-items:center;flex:${Math.max(pct,5)}">
+      <div style="font-size:${isMaior?'13px':'11px'};font-weight:${isMaior?'800':'500'};color:${isMaior?'#fff':'var(--txt3)'};margin-bottom:4px">
+        ${isMaior?'🏆 ':''}<span>${pct}%</span>
+      </div>
+      <div style="height:8px;background:${cor};border-radius:4px;width:100%;opacity:${isMaior?1:0.4}"></div>
+      <div style="font-size:9px;color:${isMaior?'var(--txt)':'var(--txt3)'};margin-top:4px;text-align:center;font-weight:${isMaior?'700':'400'}">${label}</div>
+    </div>`;
+
+  return `<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 12px;margin-bottom:10px">
+    <div style="font-size:10px;color:var(--txt3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">📊 O que o grupo acha (${total} palpites)</div>
+    <div style="display:flex;gap:3px;align-items:flex-end">
+      ${barSeg(pctH,'#3D7AFF',j.t1,pctH===maxPct)}
+      ${barSeg(pctE,'#888','Empate',pctE===maxPct&&pctE>0)}
+      ${barSeg(pctA,'#FF4444',j.t2,pctA===maxPct)}
+    </div>
+  </div>`;
 }
 
 function ajustarPlacar(id, delta){
@@ -2362,7 +2409,6 @@ function renderRanking(){
         <div class="rank-pos ${pp[i]||''}">${i+1}</div>
         <div class="rank-info">
           <div class="rank-name">${p.nome} ${md[i]||''}</div>
-          <div class="rank-sub">${j?.f1||''}${p.g1}×${p.g2}${j?.f2||''}${p.bonus?' · '+p.bonus:''}</div>
           ${i>0&&ranked[i-1].pts===p.pts?'<div class="tb-chip">desempate ativo</div>':''}
         </div>
         <div class="rank-pts-col"><div class="rank-pts">${p.pts}</div><div class="rank-pts-lbl">pts</div></div>
@@ -2371,7 +2417,7 @@ function renderRanking(){
       resCard.style.display='none';premCard.style.display='none';
       container.innerHTML=ativos.sort((a,b)=>a.ts-b.ts).map((p,i)=>`<div class="rank-item">
         <div class="rank-pos">${i+1}</div>
-        <div class="rank-info"><div class="rank-name">${p.nome}</div><div class="rank-sub">${j?.f1||''}${p.g1}×${p.g2}${j?.f2||''}${p.bonus?' · '+p.bonus:''}</div></div>
+        <div class="rank-info"><div class="rank-name">${p.nome}</div></div>
         <div class="rank-pts-col"><div class="rank-pts" style="color:var(--txt3);font-size:20px">?</div><div class="rank-pts-lbl">pts</div></div>
       </div>`).join('');
     }
