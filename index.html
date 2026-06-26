@@ -2450,42 +2450,30 @@ function formatKickoff(utcDate){
 
 async function fetchAllToday(manual=false){
   const c=document.getElementById('todayGamesDisplay');
-  if(!apiKey){
-    c.innerHTML='<div class="empty"><div class="empty-text">Configure a API Key no Admin → ⚙️ Geral</div></div>';
-    return;
-  }
 
-  // Brazil is UTC-3. To catch all games played on Brazil's "today":
-  // - A game at 00h Brazil = 03h UTC same day
-  // - A game at 23h Brazil = 02h UTC next day
-  // So we need to fetch UTC today AND UTC tomorrow, then filter by Brazil date
   const now = new Date();
   const brazilNow = new Date(now.getTime() - 3*60*60*1000);
   const brazilToday = brazilNow.toISOString().split('T')[0];
 
-  // Fetch UTC today and tomorrow to cover full Brazil day
-  const utcToday = now.toISOString().split('T')[0];
-  const utcTomorrow = new Date(now.getTime() + 24*60*60*1000).toISOString().split('T')[0];
-
   try{
-    const res=await fetch(`/api/football?key=${apiKey}&path=competitions/WC/matches&dateFrom=${utcToday}&dateTo=${utcTomorrow}`);
+    // API-Football: fixtures por data e league=1 (Copa 2026) e season=2026
+    const res=await fetch(`/api/football?path=fixtures&date=${brazilToday}&league=1&season=2026`);
     if(!res.ok){
       c.innerHTML=`<div class="empty"><div class="empty-text">Erro ao buscar jogos (${res.status})</div></div>`;
       return;
     }
     const data=await res.json();
-    const allMatches = data.matches||[];
+    const allMatches = (data.response||[]).map(f=>({
+      homeTeam:{name:f.teams?.home?.name, shortName:f.teams?.home?.name},
+      awayTeam:{name:f.teams?.away?.name, shortName:f.teams?.away?.name},
+      utcDate: f.fixture?.date,
+      status: f.fixture?.status?.short==='FT'?'FINISHED':
+              f.fixture?.status?.short==='1H'||f.fixture?.status?.short==='2H'||f.fixture?.status?.short==='HT'?'IN_PLAY':
+              'SCHEDULED',
+      score:{fullTime:{home:f.goals?.home, away:f.goals?.away}}
+    }));
 
-    // Filter: only games whose Brazil date matches today
-    const todayMatches = allMatches.filter(m=>{
-      if(!m.utcDate) return false;
-      const gameUTC = new Date(m.utcDate);
-      const gameBrazil = new Date(gameUTC.getTime() - 3*60*60*1000);
-      const gameBrazilDate = gameBrazil.toISOString().split('T')[0];
-      return gameBrazilDate === brazilToday;
-    });
-
-    renderTodayGames(c, todayMatches, manual);
+    renderTodayGames(c, allMatches, manual);
   }catch(e){ c.innerHTML='<div class="empty"><div class="empty-text">Erro de conexão</div></div>'; }
 }
 
@@ -3658,27 +3646,91 @@ async function loadClassificacao(){
   document.getElementById('classContent').style.display='none';
 
   try{
-    // Fetch standings and matches in parallel
-    const [standRes, matchRes] = await Promise.all([
-      fetch(`/api/football?key=${apiKey}&path=competitions/2000/standings`),
-      fetch(`/api/football?key=${apiKey}&path=competitions/2000/matches?stage=ROUND_OF_32`),
+    // API-Football: standings e fixtures da eliminatória em paralelo
+    const [standRes, knockoutRes] = await Promise.all([
+      fetch(`/api/football?path=standings&league=1&season=2026`),
+      fetch(`/api/football?path=fixtures&league=1&season=2026&round=Round+of+32`),
     ]);
 
     if(!standRes.ok) throw new Error('Standings error: '+standRes.status);
     const standData = await standRes.json();
-    const matchData = matchRes.ok ? await matchRes.json() : {matches:[]};
+    const knockoutData = knockoutRes.ok ? await knockoutRes.json() : {response:[]};
 
     classData = standData;
-    mataData = matchData;
+    mataData = knockoutData;
 
-    renderGrupos(standData);
-    renderMata(matchData, standData);
+    renderGruposApiFootball(standData);
+    renderMataApiFootball(knockoutData);
 
     document.getElementById('classLoadingMsg').style.display='none';
     document.getElementById('classContent').style.display='block';
   } catch(e){
     document.getElementById('classLoadingMsg').innerHTML=`<div class="empty"><div class="empty-icon">❌</div><div class="empty-text">Erro ao carregar classificação.<br>${e.message}</div></div>`;
   }
+}
+
+
+function renderGruposApiFootball(data){
+  const standings = data?.response||[];
+  const c = document.getElementById('classGrupos');
+  if(!standings.length){
+    c.innerHTML='<div class="empty"><div class="empty-text">Classificação não disponível ainda.</div></div>';
+    return;
+  }
+  c.innerHTML = standings.map(grupo=>{
+    const grupoNome = grupo.league?.round || grupo.league?.name || 'Grupo';
+    const table = grupo.league?.standings?.[0]||[];
+    const rows = table.map((t,i)=>{
+      const pos = t.rank||i+1;
+      let posClass = pos<=2?'q1':'';
+      const flag = getCountryFlag(t.team?.name||'');
+      return `<tr>
+        <td><span class="class-pos ${posClass}">${pos}</span><span class="class-flag">${flag}</span>${(t.team?.name||'?').substring(0,12)}</td>
+        <td><span class="class-pts">${t.points??0}</span></td>
+        <td>${t.all?.played??0}</td>
+        <td>${t.all?.win??0}</td>
+        <td>${t.all?.draw??0}</td>
+        <td>${t.all?.lose??0}</td>
+        <td>${t.all?.goals?.for??0}</td>
+        <td>${t.goalsDiff??0}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="group-card">
+      <div class="group-title">${grupoNome}</div>
+      <table class="class-table">
+        <tr><th>Seleção</th><th>Pts</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>SG</th></tr>
+        ${rows}
+      </table>
+    </div>`;
+  }).join('');
+}
+
+function renderMataApiFootball(data){
+  const c = document.getElementById('classMata');
+  const fixtures = data?.response||[];
+  if(!fixtures.length){
+    c.innerHTML = renderMataStatic(null);
+    return;
+  }
+  c.innerHTML = fixtures.map(f=>{
+    const home = f.teams?.home?.name||'A definir';
+    const away = f.teams?.away?.name||'A definir';
+    const g1 = f.goals?.home;
+    const g2 = f.goals?.away;
+    const status = f.fixture?.status?.short;
+    const hasScore = g1!==null&&g1!==undefined&&status==='FT';
+    const f1 = getCountryFlag(home);
+    const f2 = getCountryFlag(away);
+    const date = f.fixture?.date ? new Date(f.fixture.date).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '';
+    const time = f.fixture?.date ? new Date(f.fixture.date-3*3600000).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div class="mata-match ${hasScore?'definido':''}">
+      <div class="mata-team">${f1} ${home}</div>
+      ${hasScore
+        ?`<div class="mata-score">${g1} × ${g2}</div>`
+        :`<div class="mata-score pending">${date} ${time}</div>`}
+      <div class="mata-team right">${away} ${f2}</div>
+    </div>`;
+  }).join('');
 }
 
 function renderGrupos(data){
