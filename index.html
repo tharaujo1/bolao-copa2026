@@ -2036,8 +2036,7 @@ async function enviarUnico(){
   if(whatsLimpo.length<10) return toast('WhatsApp inválido. Use DDD + número.','err');
   if(!cfgUnico.aceitar) return toast('Palpites fechados!','err');
   if(resultadoUnico) return toast('Resultado já apurado!','err');
-  if(palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo)) return toast('Este WhatsApp já está cadastrado!','err');
-  if(palpitesUnico.find(p=>p.nome.toLowerCase()===nome.toLowerCase())) return toast('Este nome já está cadastrado!','err');
+  if(palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo&&(p.jogo_extra_id||'jogo1')==='jogo1')) return toast('Você já palpitou neste jogo!','err');
   const g1 = _placarUnico['uG1']??null;
   const g2 = _placarUnico['uG2']??null;
   if(g1===null||g2===null) return toast('Ajuste o placar antes de enviar! ⚽','err');
