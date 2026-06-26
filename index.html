@@ -3437,43 +3437,139 @@ function getJogosPorDias(diasAhead){
     .sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
 }
 
-function renderSmartJogos(tipo){
+async function renderSmartJogos(tipo){
   const listId = 'admUnicoList';
   const c = document.getElementById(listId);
   if(!c) return;
 
-  let jogos = getJogosPorDias(1);
-  if(!jogos.length){
-    jogos = getJogosPorDias(3);
-  }
-  if(!jogos.length){
-    c.innerHTML='<div class="empty"><div class="empty-text">Nenhum jogo disponível nos próximos dias</div></div>';
-    return;
-  }
+  c.innerHTML='<div class="empty"><div class="empty-icon">⏳</div><div class="empty-text">Buscando jogos...</div></div>';
 
-  const porData = {};
-  jogos.forEach(j=>{ if(!porData[j.date]) porData[j.date]=[]; porData[j.date].push(j); });
+  // Buscar jogos da API para hoje e amanhã
+  try{
+    const hoje = new Date();
+    const brazilHoje = new Date(hoje.getTime()-3*3600000).toISOString().split('T')[0];
+    const amanha = new Date(hoje.getTime()+86400000-3*3600000).toISOString().split('T')[0];
 
-  c.innerHTML = Object.entries(porData).map(([data, jogosData])=>`
-    <div style="font-size:11px;color:var(--txt3);margin:10px 0 6px;text-transform:uppercase;letter-spacing:1px;font-weight:700">${data}</div>
-    ${jogosData.map(j=>{
-      const gi=GRUPOS_JOGOS.indexOf(j);
-      const isAtivo1=cfgUnico.jogoAtivo?.t1===j.t1&&cfgUnico.jogoAtivo?.t2===j.t2;
-      const isAtivo2=cfgUnico2.jogoAtivo?.t1===j.t1&&cfgUnico2.jogoAtivo?.t2===j.t2;
-      const isAtivo=isAtivo1||isAtivo2;
-      const label=isAtivo1?'✓ Extra 1':isAtivo2?'✓ Extra 2':'Ativar';
-      return `<div class="match-sel ${isAtivo?'selected':''}" onclick="ativarJogoExtra(${gi})" style="cursor:pointer">
-        <div class="match-sel-flags">${j.f1} ${j.f2}</div>
-        <div class="match-sel-info">
-          <div class="match-sel-name">${j.t1} × ${j.t2}</div>
-          <div class="match-sel-date">${j.time} · ${j.fase}</div>
-        </div>
-        <div class="match-sel-check" style="color:${isAtivo?'var(--verde)':'var(--txt3)'}">
-          ${label}
-        </div>
-      </div>`;
-    }).join('')}`
-  ).join('');
+    const [resHoje, resAmanha] = await Promise.all([
+      fetch(`/api/football?key=${apiKey}&path=competitions/WC/matches&dateFrom=${brazilHoje}&dateTo=${brazilHoje}`),
+      fetch(`/api/football?key=${apiKey}&path=competitions/WC/matches&dateFrom=${amanha}&dateTo=${amanha}`)
+    ]);
+
+    let matches = [];
+    if(resHoje.ok){ const d=await resHoje.json(); matches=[...matches,...(d.matches||[])]; }
+    if(resAmanha.ok){ const d=await resAmanha.json(); matches=[...matches,...(d.matches||[])]; }
+
+    // Filtrar só jogos não encerrados ou de hoje
+    const jogosAPI = matches
+      .filter(m=>m.status!=='FINISHED')
+      .map(m=>{
+        const dt = new Date(m.utcDate);
+        const dtBR = new Date(dt.getTime()-3*3600000);
+        const dateStr = dtBR.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+        const timeStr = dtBR.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'h';
+        const flag1 = getCountryFlag(m.homeTeam?.name||'');
+        const flag2 = getCountryFlag(m.awayTeam?.name||'');
+        return {
+          id: String(m.id),
+          t1: m.homeTeam?.shortName||m.homeTeam?.name||'?',
+          t2: m.awayTeam?.shortName||m.awayTeam?.name||'?',
+          f1: flag1, f2: flag2,
+          date: dateStr, time: timeStr,
+          fase: m.group||m.stage||'Fase de Grupos'
+        };
+      });
+
+    if(!jogosAPI.length){
+      c.innerHTML='<div class="empty"><div class="empty-text">Nenhum jogo disponível hoje ou amanhã</div></div>';
+      return;
+    }
+
+    const porData = {};
+    jogosAPI.forEach(j=>{ if(!porData[j.date]) porData[j.date]=[]; porData[j.date].push(j); });
+
+    c.innerHTML = Object.entries(porData).map(([data, jogosData])=>`
+      <div style="font-size:11px;color:var(--txt3);margin:10px 0 6px;text-transform:uppercase;letter-spacing:1px;font-weight:700">${data}</div>
+      ${jogosData.map(j=>{
+        const isAtivo1=cfgUnico.jogoAtivo?.id===j.id||
+          (cfgUnico.jogoAtivo?.t1===j.t1&&cfgUnico.jogoAtivo?.t2===j.t2);
+        const isAtivo2=cfgUnico2.jogoAtivo?.id===j.id||
+          (cfgUnico2.jogoAtivo?.t1===j.t1&&cfgUnico2.jogoAtivo?.t2===j.t2);
+        const isAtivo=isAtivo1||isAtivo2;
+        const label=isAtivo1?'✓ Extra 1':isAtivo2?'✓ Extra 2':'Ativar';
+        return `<div class="match-sel ${isAtivo?'selected':''}"
+          onclick="ativarJogoExtraAPI(${JSON.stringify(j).replace(/"/g,'&quot;')})"
+          style="cursor:pointer">
+          <div class="match-sel-flags">${j.f1} ${j.f2}</div>
+          <div class="match-sel-info">
+            <div class="match-sel-name">${j.t1} × ${j.t2}</div>
+            <div class="match-sel-date">${j.time} · ${j.date}</div>
+          </div>
+          <div class="match-sel-check" style="color:${isAtivo?'var(--verde)':'var(--txt3)'}">
+            ${label}
+          </div>
+        </div>`;
+      }).join('')}`
+    ).join('');
+
+  } catch(e){
+    // Fallback para lista estática
+    let jogos = getJogosPorDias(1);
+    if(!jogos.length) jogos = getJogosPorDias(3);
+    if(!jogos.length){
+      c.innerHTML='<div class="empty"><div class="empty-text">Nenhum jogo disponível</div></div>';
+      return;
+    }
+    const porData = {};
+    jogos.forEach(j=>{ if(!porData[j.date]) porData[j.date]=[]; porData[j.date].push(j); });
+    c.innerHTML = Object.entries(porData).map(([data,jogosData])=>`
+      <div style="font-size:11px;color:var(--txt3);margin:10px 0 6px">${data}</div>
+      ${jogosData.map(j=>{
+        const gi=GRUPOS_JOGOS.indexOf(j);
+        const isAtivo=cfgUnico.jogoAtivo?.t1===j.t1||cfgUnico2.jogoAtivo?.t1===j.t1;
+        return `<div class="match-sel ${isAtivo?'selected':''}" onclick="ativarJogoExtra(${gi})" style="cursor:pointer">
+          <div class="match-sel-flags">${j.f1} ${j.f2}</div>
+          <div class="match-sel-info"><div class="match-sel-name">${j.t1} × ${j.t2}</div>
+          <div class="match-sel-date">${j.time} · ${j.fase}</div></div>
+          <div class="match-sel-check">${isAtivo?'✓ Ativo':'Ativar'}</div>
+        </div>`;
+      }).join('')}`
+    ).join('');
+  }
+}
+
+async function ativarJogoExtraAPI(j){
+  // Determinar slot disponivel
+  const slot1Livre = !cfgUnico.jogoAtivo;
+  const slot2Livre = !cfgUnico2.jogoAtivo;
+  const isAtivo1 = cfgUnico.jogoAtivo?.id===j.id||
+    (cfgUnico.jogoAtivo?.t1===j.t1&&cfgUnico.jogoAtivo?.t2===j.t2);
+  const isAtivo2 = cfgUnico2.jogoAtivo?.id===j.id||
+    (cfgUnico2.jogoAtivo?.t1===j.t1&&cfgUnico2.jogoAtivo?.t2===j.t2);
+
+  if(isAtivo1){
+    // Desativar slot 1
+    cfgUnico.jogoAtivo=null; cfgUnico.aceitar=false;
+    await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
+    toast('Extra 1 desativado','info');
+  } else if(isAtivo2){
+    // Desativar slot 2
+    cfgUnico2.jogoAtivo=null; cfgUnico2.aceitar=false;
+    await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
+    toast('Extra 2 desativado','info');
+  } else if(slot1Livre){
+    cfgUnico.jogoAtivo={...j}; cfgUnico.aceitar=true;
+    await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
+    await addFeed('⚡',`Jogo Extra aberto: ${j.t1} × ${j.t2}`);
+    toast(`✓ Extra 1: ${j.t1} × ${j.t2} ativado!`,'ok');
+  } else if(slot2Livre){
+    cfgUnico2.jogoAtivo={...j}; cfgUnico2.aceitar=true;
+    await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
+    await addFeed('⚡',`Jogo Extra 2 aberto: ${j.t1} × ${j.t2}`);
+    toast(`✓ Extra 2: ${j.t1} × ${j.t2} ativado!`,'ok');
+  } else {
+    toast('Máximo 2 jogos ativos. Desative um primeiro.','err');
+  }
+  updateHeader(); renderSmartJogos();
 }
 
 async function ativarJogoUnicoIdx(gi){
