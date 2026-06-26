@@ -1028,6 +1028,7 @@ let selectedUnicoIdx = null;
 let participantesData = [];
 let headerExtraIdx = 0;
 let headerExtraInterval = null;
+let _placarUnico = {uG1:0, uG2:0, uG1b:0, uG2b:0};
 let liveInterval = null;
 let lastGoals = 0;
 let realtimeSubs = [];
@@ -1852,6 +1853,11 @@ function renderFormPalpite(){
       }
     });
     card.innerHTML=html;
+    // Restaurar valores salvos em _placarUnico apos re-render
+    ['uG1','uG2','uG1b','uG2b'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.textContent=_placarUnico[id]||0;
+    });
   }
 }
 
@@ -1894,11 +1900,9 @@ async function enviarMata(){
 
 
 function ajustarPlacar(id, delta){
+  _placarUnico[id] = Math.max(0, Math.min(20, (_placarUnico[id]||0) + delta));
   const el = document.getElementById(id);
-  if(!el) return;
-  const val = Math.max(0, Math.min(20, (parseInt(el.dataset.val)||0) + delta));
-  el.dataset.val = val;
-  el.textContent = val;
+  if(el) el.textContent = _placarUnico[id];
 }
 
 // Event delegation para botoes +/- do placar (iOS Safari compativel)
@@ -1923,9 +1927,9 @@ async function enviarUnico(){
   if(resultadoUnico) return toast('Resultado já apurado!','err');
   if(palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo)) return toast('Este WhatsApp já está cadastrado!','err');
   if(palpitesUnico.find(p=>p.nome.toLowerCase()===nome.toLowerCase())) return toast('Este nome já está cadastrado!','err');
-  const g1 = parseInt(document.getElementById('uG1')?.dataset?.val??'');
-  const g2 = parseInt(document.getElementById('uG2')?.dataset?.val??'');
-  if(isNaN(g1)||isNaN(g2)) return toast('Ajuste o placar antes de enviar! ⚽','err');
+  const g1 = _placarUnico['uG1']??null;
+  const g2 = _placarUnico['uG2']??null;
+  if(g1===null||g2===null) return toast('Ajuste o placar antes de enviar! ⚽','err');
   const bonus=document.getElementById('uBonus')?.value.trim()||'';
   // Verificar pagamento pelo ID do jogo especifico (nao boolean generico)
   let statusInicialU = 'pendente';
@@ -1955,9 +1959,9 @@ async function enviarUnico2(){
   if(!cfgUnico2.aceitar) return toast('Palpites fechados!','err');
   const jaExiste=palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo&&p.jogo_extra_id==='jogo2');
   if(jaExiste) return toast('Você já palpitou neste jogo!','err');
-  const g1 = parseInt(document.getElementById('uG1b')?.dataset?.val??'');
-  const g2 = parseInt(document.getElementById('uG2b')?.dataset?.val??'');
-  if(isNaN(g1)||isNaN(g2)) return toast('Ajuste o placar antes de enviar! ⚽','err');
+  const g1 = _placarUnico['uG1b']??null;
+  const g2 = _placarUnico['uG2b']??null;
+  if(g1===null||g2===null) return toast('Ajuste o placar antes de enviar! ⚽','err');
   let statusInicial='pendente';
   const jogoId2 = cfgUnico2.jogoAtivo?.id || (cfgUnico2.jogoAtivo?.t1+'x'+cfgUnico2.jogoAtivo?.t2).replace(/\s/g,'');
   try{
