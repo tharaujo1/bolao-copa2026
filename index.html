@@ -1803,12 +1803,7 @@ function renderFormPalpite(){
     <input type="hidden" id="uNome" value="${_uNome}">
     <input type="hidden" id="uWhats" value="${_uWhats}">`;
 
-    // Atualizar palpitesUnico do banco para garantir status correto
-    if(_uWhats){
-      sb.from('palpites_unico').select('*').order('ts')
-        .then(({data})=>{ if(data){ palpitesUnico=data; renderFormPalpite(); } })
-        .catch(()=>{});
-    }
+    // Valores restaurados via _placarUnico global — sem re-render automatico
     jogosExtras.forEach(({j,slot,cfg,idG1,idG2,fn})=>{
       const _palpite=_uWhats?palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')=== _uWhats&&(p.jogo_extra_id||'jogo1')===slot):null;
       if(jogosExtras.length>1){
