@@ -1426,19 +1426,24 @@ async function toggleVerPalpitesExtra(){
   el.style.display='block';
   el.innerHTML='<div style="color:var(--txt3);font-size:12px;padding:8px">Carregando...</div>';
 
-  // Buscar todos participantes ativos no mata-mata
-  const todos = participantesData.filter(p=>p.pago_mata||p.pago);
   const jogoAtivo = cfgUnico.jogoAtivo;
   const jogoAtivo2 = cfgUnico2.jogoAtivo;
 
-  // Buscar palpites
-  const {data:palpites} = await sb.from('palpites_unico').select('*').order('ts',{ascending:false});
+  // Buscar tudo do banco em paralelo
+  const [partRes, palpRes] = await Promise.all([
+    sb.from('participantes').select('nome,whats,pago,pago_mata,pago_unico_jogo_id,pago_unico2_jogo_id').order('nome'),
+    sb.from('palpites_unico').select('*').order('ts',{ascending:false})
+  ]);
 
-  // Buscar quem pagou o jogo extra
+  const todosParticipantes = partRes.data||[];
+  const todos = todosParticipantes.filter(p=>p.pago_mata||p.pago);
+  const palpites = palpRes.data||[];
+  const partsData = todosParticipantes;
+
+  if(!todos.length){ el.innerHTML='<div style="color:var(--txt3);font-size:12px;padding:8px">Nenhum participante ativo encontrado.</div>'; return; }
+
   const jogoId1 = jogoAtivo?.id || (jogoAtivo?.t1+'x'+jogoAtivo?.t2||'').replace(/\s/g,'');
   const jogoId2 = jogoAtivo2?.id || (jogoAtivo2?.t1+'x'+jogoAtivo2?.t2||'').replace(/\s/g,'');
-  const {data:partsData} = await sb.from('participantes')
-    .select('whats,pago_unico_jogo_id,pago_unico2_jogo_id').catch(()=>({data:[]}));
 
   const renderSlot = (jogo, slot) => {
     if(!jogo) return '';
