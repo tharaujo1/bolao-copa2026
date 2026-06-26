@@ -1426,6 +1426,7 @@ async function toggleVerPalpitesExtra(){
   el.style.display='block';
   el.innerHTML='<div style="color:var(--txt3);font-size:12px;padding:8px">Carregando...</div>';
 
+  try{
   const jogoAtivo = cfgUnico.jogoAtivo;
   const jogoAtivo2 = cfgUnico2.jogoAtivo;
 
@@ -1442,8 +1443,9 @@ async function toggleVerPalpitesExtra(){
 
   if(!todos.length){ el.innerHTML='<div style="color:var(--txt3);font-size:12px;padding:8px">Nenhum participante ativo encontrado.</div>'; return; }
 
-  const jogoId1 = jogoAtivo?.id || (jogoAtivo?.t1+'x'+jogoAtivo?.t2||'').replace(/\s/g,'');
-  const jogoId2 = jogoAtivo2?.id || (jogoAtivo2?.t1+'x'+jogoAtivo2?.t2||'').replace(/\s/g,'');
+  // Usar sempre o ID da API — mesmo campo gravado pelo webhook
+  const jogoId1 = jogoAtivo?.id ? String(jogoAtivo.id) : null;
+  const jogoId2 = jogoAtivo2?.id ? String(jogoAtivo2.id) : null;
 
   const renderSlot = (jogo, slot) => {
     if(!jogo) return '';
@@ -1459,8 +1461,8 @@ async function toggleVerPalpitesExtra(){
       const pal = dedup.find(p=>p.whats?.replace(/\D/g,'')=== w);
       const partPag = (partsData||[]).find(p=>p.whats===w);
       const pagou = slot==='jogo1'
-        ? partPag?.pago_unico_jogo_id === jogoId
-        : partPag?.pago_unico2_jogo_id === jogoId;
+        ? String(partPag?.pago_unico_jogo_id||'') === String(jogoId||'')
+        : String(partPag?.pago_unico2_jogo_id||'') === String(jogoId||'');
       const pagBadge = pagou
         ? '<span style="font-size:10px;background:rgba(0,200,100,0.15);border:1px solid var(--verde);color:var(--verde);border-radius:6px;padding:1px 6px;margin-left:4px">💰 Pago</span>'
         : '<span style="font-size:10px;background:rgba(255,100,0,0.1);border:1px solid #FF6B00;color:#FF6B00;border-radius:6px;padding:1px 6px;margin-left:4px">⏳ Não pagou</span>';
@@ -1493,6 +1495,7 @@ async function toggleVerPalpitesExtra(){
     ${renderSlot(jogoAtivo,'jogo1')}
     ${renderSlot(jogoAtivo2,'jogo2')}
   </div>`;
+  } catch(e){ el.innerHTML=`<div style="color:#FF4444;font-size:12px;padding:8px">Erro: ${e.message}</div>`; }
 }
 
 async function toggleVerPalpitesMata(){
@@ -1833,8 +1836,14 @@ function updateHeader(){
     if(cfgUnico.jogoAtivo) jogosAtivos2.push({j:cfgUnico.jogoAtivo, slot:'jogo1', cfg:cfgUnico, res:resultadoUnico});
     if(cfgUnico2.jogoAtivo) jogosAtivos2.push({j:cfgUnico2.jogoAtivo, slot:'jogo2', cfg:cfgUnico2, res:null});
     jogosAtivos2.forEach(({j,slot,cfg,res})=>{
-      const ativosSlot = palpitesUnico.filter(p=>p.status==='ativo'&&(p.jogo_extra_id||'jogo1')===slot);
-      const pendSlot = palpitesUnico.filter(p=>p.status==='pendente'&&(p.jogo_extra_id||'jogo1')===slot);
+      // Deduplica por whats — conta só 1 por pessoa
+      const _vistosA={}, _vistosP={};
+      const ativosSlot = palpitesUnico
+        .filter(p=>p.status==='ativo'&&(p.jogo_extra_id||'jogo1')===slot)
+        .filter(p=>{ const w=p.whats?.replace(/\D/g,''); if(_vistosA[w]) return false; _vistosA[w]=true; return true; });
+      const pendSlot = palpitesUnico
+        .filter(p=>p.status==='pendente'&&(p.jogo_extra_id||'jogo1')===slot)
+        .filter(p=>{ const w=p.whats?.replace(/\D/g,''); if(_vistosP[w]||_vistosA[w]) return false; _vistosP[w]=true; return true; });
       const encerrado = res&&res.g1!==null;
       const badgeHTML = encerrado?'<span class="badge badge-amarelo">Encerrado</span>':
                         !cfg.aceitar?'<span class="badge badge-danger">Fechado</span>':
