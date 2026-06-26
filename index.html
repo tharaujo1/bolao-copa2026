@@ -1074,8 +1074,11 @@ async function loadAll(){
       sb.from('feed').select('*').order('created_at',{ascending:false}).limit(30),
     ]);
     cfgMata = cfgs?.find(c=>c.id==='mata')?.dados||{valor:20,p1:60,p2:25,p3:15,pixChave:'',pixNome:'',pixBanco:'',pixTipo:'CPF',faseAtiva:'dezesseis',jogosAtivos:[],adminPwd:'copa2026'};
-    cfgUnico = cfgs?.find(c=>c.id==='unico')?.dados||{valor:10,p1:70,p2:20,p3:0,aceitar:true,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true,adminPwd:'copa2026'};
-    cfgUnico2 = cfgs?.find(c=>c.id==='unico2')?.dados||{valor:10,p1:70,p2:20,p3:0,aceitar:false,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true};
+    const _defUnico = {valor:10,p1:70,p2:20,p3:0,aceitar:true,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true,adminPwd:'copa2026'};
+    const _defUnico2 = {valor:10,p1:70,p2:20,p3:0,aceitar:false,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true};
+    // Mesclar com defaults para garantir que campos nao percam valores ao gravar parcialmente
+    cfgUnico = {..._defUnico, ...(cfgs?.find(c=>c.id==='unico')?.dados||{})};
+    cfgUnico2 = {..._defUnico2, ...(cfgs?.find(c=>c.id==='unico2')?.dados||{})};
     // Carregar apiKey do Supabase (disponivel para todos)
     const cfgGeral = cfgs?.find(c=>c.id==='geral')?.dados||{};
     if(cfgGeral.apiKey){ apiKey=cfgGeral.apiKey; localStorage.setItem('apiKey',apiKey); }
