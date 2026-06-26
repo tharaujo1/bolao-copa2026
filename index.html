@@ -1832,9 +1832,9 @@ function renderFormPalpite(){
             <div class="pl-flag">${j.f1}</div>
             <div class="pl-name">${j.t1}</div>
             <div style="display:flex;align-items:center;gap:10px;margin-top:10px;justify-content:center">
-              <button onclick="ajustarPlacar('${idG1}',-1)" style="width:40px;height:40px;border-radius:50%;background:var(--card);border:1.5px solid var(--border);color:var(--txt);font-size:22px;font-weight:700;cursor:pointer">−</button>
+              <button data-target="${idG1}" data-delta="-1" class="btn-placar-adj" style="width:40px;height:40px;border-radius:50%;background:var(--card);border:1.5px solid var(--border);color:var(--txt);font-size:22px;font-weight:700;cursor:pointer">−</button>
               <span id="${idG1}" data-val="0" style="font-size:40px;font-weight:900;color:#fff;min-width:44px;text-align:center;line-height:1">0</span>
-              <button onclick="ajustarPlacar('${idG1}',1)" style="width:40px;height:40px;border-radius:50%;background:var(--amarelo);border:none;color:#000;font-size:22px;font-weight:700;cursor:pointer">+</button>
+              <button data-target="${idG1}" data-delta="1" class="btn-placar-adj" style="width:40px;height:40px;border-radius:50%;background:var(--amarelo);border:none;color:#000;font-size:22px;font-weight:700;cursor:pointer">+</button>
             </div>
           </div>
           <div class="pl-vs" style="font-size:24px;padding-top:28px">×</div>
@@ -1842,9 +1842,9 @@ function renderFormPalpite(){
             <div class="pl-flag">${j.f2}</div>
             <div class="pl-name">${j.t2}</div>
             <div style="display:flex;align-items:center;gap:10px;margin-top:10px;justify-content:center">
-              <button onclick="ajustarPlacar('${idG2}',-1)" style="width:40px;height:40px;border-radius:50%;background:var(--card);border:1.5px solid var(--border);color:var(--txt);font-size:22px;font-weight:700;cursor:pointer">−</button>
+              <button data-target="${idG2}" data-delta="-1" class="btn-placar-adj" style="width:40px;height:40px;border-radius:50%;background:var(--card);border:1.5px solid var(--border);color:var(--txt);font-size:22px;font-weight:700;cursor:pointer">−</button>
               <span id="${idG2}" data-val="0" style="font-size:40px;font-weight:900;color:#fff;min-width:44px;text-align:center;line-height:1">0</span>
-              <button onclick="ajustarPlacar('${idG2}',1)" style="width:40px;height:40px;border-radius:50%;background:var(--amarelo);border:none;color:#000;font-size:22px;font-weight:700;cursor:pointer">+</button>
+              <button data-target="${idG2}" data-delta="1" class="btn-placar-adj" style="width:40px;height:40px;border-radius:50%;background:var(--amarelo);border:none;color:#000;font-size:22px;font-weight:700;cursor:pointer">+</button>
             </div>
           </div>
         </div>
@@ -1900,6 +1900,17 @@ function ajustarPlacar(id, delta){
   el.dataset.val = val;
   el.textContent = val;
 }
+
+// Event delegation para botoes +/- do placar (iOS Safari compativel)
+document.addEventListener('click', function(e){
+  const btn = e.target.closest('.btn-placar-adj');
+  if(!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const targetId = btn.dataset.target;
+  const delta = parseInt(btn.dataset.delta);
+  ajustarPlacar(targetId, delta);
+});
 
 async function enviarUnico(){
   const nome=document.getElementById('uNome')?.value.trim();
