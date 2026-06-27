@@ -1533,6 +1533,7 @@ async function renderPagamentoVencedores(slot){
   const _dbgContainer = document.getElementById('admVencedoresUnico');
   if(_dbgContainer) _dbgContainer.innerHTML='<div style="color:#FFB74D;font-size:11px;padding:8px">Carregando vencedores...</div>';
   try {
+  if(_dbgContainer) _dbgContainer.innerHTML+=`<br>slot=${slot} isSlot1=${isSlot1} cfg=${!!cfg} jogoAtivo=${!!cfg?.jogoAtivo} palpites=${palpitesUnico?.length}`;
   let j = cfg.jogoAtivo || {t1:'Uruguay', t2:'Spain', f1:'🇺🇾', f2:'🇪🇸'};
 
   // Buscar resultado sempre do banco
