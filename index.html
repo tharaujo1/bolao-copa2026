@@ -1392,10 +1392,11 @@ async function verificarVencedoresMata(){
 
   // Buscar chaves Pix
   const whatsVenc = ranked.slice(0,3).map(p=>p.whats?.replace(/\D/g,'')).filter(Boolean);
-  const {data:parts} = await sb.from('participantes')
-    .select('nome,whats,pix_chave,pix_tipo')
-    .in('whats', whatsVenc)
-    .catch(()=>({data:[]}));
+  let parts = [];
+  try {
+    const {data:_p} = await sb.from('participantes').select('nome,whats,pix_chave,pix_tipo').in('whats', whatsVenc);
+    parts = _p||[];
+  } catch(e){ parts=[]; }
 
   // Salvar vencedores no banco
   for(const {pos,pct} of premios){
@@ -1571,10 +1572,13 @@ async function renderPagamentoVencedores(slot){
   // Buscar chaves Pix dos vencedores
   const numVenc = cfg.p3>0 ? 3 : 2;
   const whatsVenc = palpites.slice(0,numVenc).map(p=>p.whats).filter(Boolean);
-  const {data:parts} = await sb.from('participantes')
-    .select('nome,whats,pix_chave,pix_tipo')
-    .in('whats', whatsVenc.map(w=>w.replace(/\D/g,'')))
-    .catch(()=>({data:[]}));
+  let parts = [];
+  try {
+    const {data:_parts} = await sb.from('participantes')
+      .select('nome,whats,pix_chave,pix_tipo')
+      .in('whats', whatsVenc.map(w=>w.replace(/\D/g,'')));
+    parts = _parts||[];
+  } catch(e){ parts=[]; }
 
   const getPix = (whats) => {
     const w = whats?.replace(/\D/g,'');
@@ -1756,8 +1760,8 @@ async function renderPagamentoVencedoresMata(){
   if(!Object.keys(resultadosMata).length){ toast('Insira pelo menos um resultado antes','err'); return; }
 
   // Verificar se ja tem vencedores salvos no banco
-  const {data:pagSalvos} = await sb.from('pagamentos_pendentes')
-    .select('*').eq('bolao','mata').catch(()=>({data:[]}));
+  let pagSalvos = [];
+  try { const {data:_ps} = await sb.from('pagamentos_pendentes').select('*').eq('bolao','mata'); pagSalvos=_ps||[]; } catch(e){}
 
   // Calcular ranking atual
   const ranked = calcularRankingMata(ativos);
@@ -1768,10 +1772,8 @@ async function renderPagamentoVencedoresMata(){
   const p3val = cfgMata.p3>0 ? Math.round(totalBolada*cfgMata.p3/100) : 0;
 
   const whatsVenc = ranked.slice(0,3).map(p=>p.whats).filter(Boolean);
-  const {data:parts} = await sb.from('participantes')
-    .select('nome,whats,pix_chave,pix_tipo')
-    .in('whats', whatsVenc.map(w=>w.replace(/\D/g,'')))
-    .catch(()=>({data:[]}));
+  let parts = [];
+  try { const {data:_pm2} = await sb.from('participantes').select('nome,whats,pix_chave,pix_tipo').in('whats', whatsVenc.map(w=>w.replace(/\D/g,''))); parts=_pm2||[]; } catch(e){}
 
   const getPix = (whats) => {
     const w = whats?.replace(/\D/g,'');
@@ -1836,8 +1838,8 @@ async function salvarVencedoresExtra(slot, jogo, g1, g2){
   const jogoKey = slot+'_'+(jogo.id||(jogo.t1+jogo.t2).replace(/\s/g,''));
 
   const whats = palpites.slice(0,3).map(p=>p.whats?.replace(/\D/g,'')).filter(Boolean);
-  const {data:parts} = await sb.from('participantes')
-    .select('nome,whats,pix_chave,pix_tipo').in('whats',whats).catch(()=>({data:[]}));
+  let parts = [];
+  try { const {data:_sv} = await sb.from('participantes').select('nome,whats,pix_chave,pix_tipo').in('whats',whats); parts=_sv||[]; } catch(e){}
 
   const premios = [{pos:1,pct:cfg.p1||70},{pos:2,pct:cfg.p2||20}];
   if(cfg.p3>0) premios.push({pos:3,pct:cfg.p3});
