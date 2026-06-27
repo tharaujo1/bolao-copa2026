@@ -2385,8 +2385,33 @@ document.addEventListener('click', async function(e){
     btnPago.textContent='✅ Pago';
     btnPago.style.background='rgba(46,125,50,0.5)';
     btnPago.disabled=false;
-    btnPago.closest('div[style]').style.background='rgba(46,125,50,0.15)';
+    try{ btnPago.closest('div[style]').style.background='rgba(46,125,50,0.15)'; }catch(e){}
     toast(`✅ ${n} marcado como pago!`,'ok');
+
+    // Verificar se todos os vencedores foram pagos
+    const container = document.getElementById('admVencedoresUnico');
+    if(container){
+      const btns = container.querySelectorAll('.btn-marcar-pago');
+      const todosPagos = Array.from(btns).every(b=>b.textContent.includes('✅'));
+      if(todosPagos && btns.length > 0){
+        setTimeout(async ()=>{
+          // Desativar jogo automaticamente
+          const slot = j;
+          if(slot==='unico'){
+            cfgUnico.jogoAtivo=null; cfgUnico.aceitar=false;
+            await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
+          } else {
+            cfgUnico2.jogoAtivo=null; cfgUnico2.aceitar=false;
+            await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
+          }
+          await addFeed('🏆',`Jogo extra encerrado — vencedores pagos!`);
+          updateHeader();
+          renderFormPalpite();
+          toast('🏆 Jogo encerrado e vencedores pagos!','ok');
+          if(container) container.innerHTML='<div style="color:var(--verde);font-size:13px;font-weight:700;padding:10px;text-align:center">✅ Todos pagos — jogo encerrado!</div>';
+        }, 1500);
+      }
+    }
     return;
   }
 });
