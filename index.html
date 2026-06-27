@@ -1531,24 +1531,15 @@ async function renderPagamentoVencedores(slot){
   // Debug visível
   const _dbgContainer = document.getElementById('admVencedoresUnico');
   if(_dbgContainer) _dbgContainer.innerHTML='<div style="color:#FFB74D;font-size:11px;padding:8px">Carregando vencedores...</div>';
-  // Usar jogoAtivo ou reconstruir do banco se jogo foi desativado
-  let j = cfg.jogoAtivo;
-  if(!j){
-    // Tentar pegar info do último resultado gravado
-    const {data:pal} = await sb.from('palpites_unico')
-      .select('jogo_extra_id').eq('jogo_extra_id', isSlot1?'jogo1':'jogo2')
-      .limit(1).catch(()=>({data:null}));
-    if(!pal?.length){ toast('Nenhum palpite encontrado para este jogo','err'); return; }
-    // Continuar sem info do jogo — só precisamos do resultado e palpites
-    j = {t1:'Time A', t2:'Time B', f1:'⚽', f2:'⚽'};
-  }
+  let j = cfg.jogoAtivo || {t1:'Uruguay', t2:'Spain', f1:'🇺🇾', f2:'🇪🇸'};
 
-  // Buscar resultado sempre do banco (não depender de memória)
+  // Buscar resultado sempre do banco
   const idBanco = isSlot1 ? 1 : 2;
-  const {data:resDB} = await sb.from('resultado_unico').select('*').eq('id',idBanco).single().catch(()=>({data:null}));
+  if(_dbgContainer) _dbgContainer.innerHTML='<div style="color:#FFB74D;font-size:11px;padding:8px">Buscando resultado (id=${idBanco})...</div>';
+  const {data:resDB, error:resErr} = await sb.from('resultado_unico').select('*').eq('id',idBanco).single().catch(e=>({data:null,error:e}));
+  if(_dbgContainer) _dbgContainer.innerHTML=`<div style="color:#FFB74D;font-size:11px;padding:8px">Resultado: ${JSON.stringify(resDB)} | Erro: ${resErr?.message||'none'}</div>`;
   const res = resDB;
   if(!res||res.g1===null){ toast('Resultado ainda não apurado','err'); return; }
-  // Atualizar memória
   if(isSlot1) resultadoUnico = res;
 
   const g1=res.g1, g2=res.g2;
