@@ -1529,34 +1529,19 @@ async function verificarResultadosExtra(){
 async function renderPagamentoVencedores(slot){
   const isSlot1 = slot==='unico';
   const cfg = isSlot1 ? cfgUnico : cfgUnico2;
-  // Debug visível
-  const _dbgContainer = document.getElementById('admVencedoresUnico');
-  if(_dbgContainer) _dbgContainer.innerHTML='<div style="color:#FFB74D;font-size:11px;padding:8px">Carregando vencedores...</div>';
-  try {
-  if(_dbgContainer) _dbgContainer.innerHTML+=`<br>slot=${slot} isSlot1=${isSlot1} cfg=${!!cfg} jogoAtivo=${!!cfg?.jogoAtivo} palpites=${palpitesUnico?.length}`;
-  let j = cfg.jogoAtivo || {t1:'Uruguay', t2:'Spain', f1:'🇺🇾', f2:'🇪🇸'};
+  const container = document.getElementById('admVencedoresUnico');
+  if(container) container.innerHTML='<div style="color:var(--txt3);font-size:12px;padding:8px">Calculando vencedores...</div>';
 
-  // Buscar resultado sempre do banco
-  const idBanco = isSlot1 ? 1 : 2;
-  // Usar resultado já em memória ou hardcode para debug
+  const j = cfg.jogoAtivo || {t1:'Uruguay', t2:'Spain', f1:'🇺🇾', f2:'🇪🇸'};
+
+  // Buscar resultado do banco
   let res = isSlot1 ? resultadoUnico : null;
-  if(!res){
-    // Tentar buscar do banco de forma simples
-    try {
-      const r = await sb.from('resultado_unico').select('*').limit(5);
-      const rows = r.data||[];
-      res = rows.find(x=>x.id===idBanco) || rows[0];
-      if(_dbgContainer) _dbgContainer.innerHTML=`<div style="color:#FFB74D;font-size:11px;padding:8px">Rows: ${rows.length} | res: ${JSON.stringify(res)}</div>`;
-    } catch(e){
-      if(_dbgContainer) _dbgContainer.innerHTML=`<div style="color:red;font-size:11px;padding:8px">Erro: ${e.message}</div>`;
-      return;
-    }
+  if(!res || res.g1===null){
+    const {data:rows} = await sb.from('resultado_unico').select('id,g1,g2,bonus_ans').eq('id', isSlot1?1:2);
+    res = rows?.[0] || null;
+    if(isSlot1 && res) resultadoUnico = res;
   }
-  if(!res||res.g1===null){ 
-    if(_dbgContainer) _dbgContainer.innerHTML=`<div style="color:red;font-size:11px;padding:8px">Sem resultado no banco</div>`;
-    return; 
-  }
-  if(isSlot1) resultadoUnico = res;
+  if(!res || res.g1===null){ toast('Resultado ainda não apurado','err'); return; }
 
   const g1=res.g1, g2=res.g2;
   const palpites = palpitesUnico
@@ -1591,9 +1576,7 @@ async function renderPagamentoVencedores(slot){
     return (parts||[]).find(x=>x.whats===w)?.pix_chave||'';
   };
 
-  const container = document.getElementById('admVencedoresUnico');
   if(!container) return;
-  } catch(e){ if(_dbgContainer) _dbgContainer.innerHTML=`<div style="color:red;font-size:11px;padding:8px">ERRO JS: ${e.message} | ${e.stack?.split('\n')[0]}</div>`; return; }
 
   const premios = [
     {p:palpites[0], val:p1val, pos:'🥇', pct:cfg.p1||70},
