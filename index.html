@@ -1529,16 +1529,15 @@ async function renderPagamentoVencedores(slot){
   const isSlot1 = slot==='unico';
   const cfg = isSlot1 ? cfgUnico : cfgUnico2;
   const j = cfg.jogoAtivo;
-  const resData = isSlot1 ? resultadoUnico : null;
-  if(!j) return;
+  if(!j){ toast('Nenhum jogo ativo configurado','err'); return; }
 
-  // Buscar resultado do banco se slot2
-  let res = resData;
-  if(!isSlot1){
-    const {data} = await sb.from('resultado_unico').select('*').eq('id',2).single().catch(()=>({data:null}));
-    res = data;
-  }
-  if(!res||res.g1===null) return;
+  // Buscar resultado sempre do banco (não depender de memória)
+  const idBanco = isSlot1 ? 1 : 2;
+  const {data:resDB} = await sb.from('resultado_unico').select('*').eq('id',idBanco).single().catch(()=>({data:null}));
+  const res = resDB;
+  if(!res||res.g1===null){ toast('Resultado ainda não apurado','err'); return; }
+  // Atualizar memória
+  if(isSlot1) resultadoUnico = res;
 
   const g1=res.g1, g2=res.g2;
   const palpites = palpitesUnico
