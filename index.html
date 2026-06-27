@@ -1528,8 +1528,20 @@ async function verificarResultadosExtra(){
 async function renderPagamentoVencedores(slot){
   const isSlot1 = slot==='unico';
   const cfg = isSlot1 ? cfgUnico : cfgUnico2;
-  const j = cfg.jogoAtivo;
-  if(!j){ toast('Nenhum jogo ativo configurado','err'); return; }
+  // Debug visível
+  const _dbgContainer = document.getElementById('admVencedoresUnico');
+  if(_dbgContainer) _dbgContainer.innerHTML='<div style="color:#FFB74D;font-size:11px;padding:8px">Carregando vencedores...</div>';
+  // Usar jogoAtivo ou reconstruir do banco se jogo foi desativado
+  let j = cfg.jogoAtivo;
+  if(!j){
+    // Tentar pegar info do último resultado gravado
+    const {data:pal} = await sb.from('palpites_unico')
+      .select('jogo_extra_id').eq('jogo_extra_id', isSlot1?'jogo1':'jogo2')
+      .limit(1).catch(()=>({data:null}));
+    if(!pal?.length){ toast('Nenhum palpite encontrado para este jogo','err'); return; }
+    // Continuar sem info do jogo — só precisamos do resultado e palpites
+    j = {t1:'Time A', t2:'Time B', f1:'⚽', f2:'⚽'};
+  }
 
   // Buscar resultado sempre do banco (não depender de memória)
   const idBanco = isSlot1 ? 1 : 2;
