@@ -1535,9 +1535,9 @@ async function renderPagamentoVencedores(slot){
 
   // Buscar resultado sempre do banco
   const idBanco = isSlot1 ? 1 : 2;
-  if(_dbgContainer) _dbgContainer.innerHTML='<div style="color:#FFB74D;font-size:11px;padding:8px">Buscando resultado (id=${idBanco})...</div>';
+  if(_dbgContainer) _dbgContainer.innerHTML=`<div style="color:#FFB74D;font-size:11px;padding:8px">Buscando resultado (id=${idBanco})...</div>`;
   const {data:resDB, error:resErr} = await sb.from('resultado_unico').select('*').eq('id',idBanco).single().catch(e=>({data:null,error:e}));
-  if(_dbgContainer) _dbgContainer.innerHTML=`<div style="color:#FFB74D;font-size:11px;padding:8px">Resultado: ${JSON.stringify(resDB)} | Erro: ${resErr?.message||'none'}</div>`;
+  if(_dbgContainer) _dbgContainer.innerHTML=`<div style="color:#FFB74D;font-size:11px;padding:8px">Resultado: ${JSON.stringify(resDB)} Erro: ${resErr?.message||'none'}</div>`;
   const res = resDB;
   if(!res||res.g1===null){ toast('Resultado ainda não apurado','err'); return; }
   if(isSlot1) resultadoUnico = res;
