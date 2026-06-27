@@ -1535,12 +1535,24 @@ async function renderPagamentoVencedores(slot){
 
   // Buscar resultado sempre do banco
   const idBanco = isSlot1 ? 1 : 2;
-  if(_dbgContainer) _dbgContainer.innerHTML=`<div style="color:#FFB74D;font-size:11px;padding:8px">Buscando resultado (id=${idBanco})...</div>`;
-  const {data:resDBArr, error:resErr} = await sb.from('resultado_unico').select('id,g1,g2,bonus_ans').eq('id',idBanco).catch(e=>({data:null,error:e}));
-  const resDB = Array.isArray(resDBArr) ? resDBArr[0] : resDBArr;
-  if(_dbgContainer) _dbgContainer.innerHTML=`<div style="color:#FFB74D;font-size:11px;padding:8px">Resultado: ${JSON.stringify(resDB)} Erro: ${resErr?.message||'none'}</div>`;
-  const res = resDB;
-  if(!res||res.g1===null){ toast('Resultado ainda não apurado','err'); return; }
+  // Usar resultado já em memória ou hardcode para debug
+  let res = isSlot1 ? resultadoUnico : null;
+  if(!res){
+    // Tentar buscar do banco de forma simples
+    try {
+      const r = await sb.from('resultado_unico').select('*').limit(5);
+      const rows = r.data||[];
+      res = rows.find(x=>x.id===idBanco) || rows[0];
+      if(_dbgContainer) _dbgContainer.innerHTML=`<div style="color:#FFB74D;font-size:11px;padding:8px">Rows: ${rows.length} | res: ${JSON.stringify(res)}</div>`;
+    } catch(e){
+      if(_dbgContainer) _dbgContainer.innerHTML=`<div style="color:red;font-size:11px;padding:8px">Erro: ${e.message}</div>`;
+      return;
+    }
+  }
+  if(!res||res.g1===null){ 
+    if(_dbgContainer) _dbgContainer.innerHTML=`<div style="color:red;font-size:11px;padding:8px">Sem resultado no banco</div>`;
+    return; 
+  }
   if(isSlot1) resultadoUnico = res;
 
   const g1=res.g1, g2=res.g2;
