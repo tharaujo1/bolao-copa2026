@@ -1610,17 +1610,8 @@ async function renderPagamentoVencedores(slot){
   html += '</div>';
   container.innerHTML = html;
 
-  // Event listener para marcar como pago
-  container.querySelectorAll('.btn-marcar-pago').forEach(btn=>{
-    btn.addEventListener('click', async function(){
-      const w=this.dataset.whats, n=this.dataset.nome;
-      await sb.from('pagamentos_pendentes').update({pago:true,pago_em:new Date().toISOString()}).eq('whats',w).eq('bolao',this.dataset.jogo);
-      this.textContent='✅ Pago';
-      this.style.background='rgba(46,125,50,0.5)';
-      this.parentElement.parentElement.style.background='rgba(46,125,50,0.15)';
-      toast(`✅ ${n} marcado como pago!`,'ok');
-    });
-  });
+  // Event delegation global para marcar como pago
+  // (evita problema de timing com querySelectorAll)
 }
 
 
@@ -2379,6 +2370,26 @@ function ajustarPlacar(id, delta){
   const el = document.getElementById(id);
   if(el) el.textContent = _placarUnico[id];
 }
+
+// Event delegation global
+document.addEventListener('click', async function(e){
+  // Botão marcar como pago
+  const btnPago = e.target.closest('.btn-marcar-pago');
+  if(btnPago){
+    e.preventDefault();
+    const w=btnPago.dataset.whats, n=btnPago.dataset.nome, j=btnPago.dataset.jogo;
+    btnPago.textContent='Salvando...'; btnPago.disabled=true;
+    try{
+      await sb.from('pagamentos_pendentes').update({pago:true,pago_em:new Date().toISOString()}).eq('whats',w).eq('bolao',j);
+    }catch(err){}
+    btnPago.textContent='✅ Pago';
+    btnPago.style.background='rgba(46,125,50,0.5)';
+    btnPago.disabled=false;
+    btnPago.closest('div[style]').style.background='rgba(46,125,50,0.15)';
+    toast(`✅ ${n} marcado como pago!`,'ok');
+    return;
+  }
+});
 
 // Event delegation para botoes +/- do placar (iOS Safari compativel)
 document.addEventListener('click', function(e){
