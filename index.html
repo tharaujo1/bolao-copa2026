@@ -1486,8 +1486,15 @@ async function verificarResultadosExtra(){
       if(match && (match.status==='IN_PLAY'||match.status==='PAUSED'||match.status==='FINISHED')){
         const sv = match.score?.fullTime||match.score?.halfTime||{};
         if(!window._placarVivo) window._placarVivo={};
+        const _pvAnterior = window._placarVivo[jogo.t1+jogo.t2];
         window._placarVivo[jogo.t1+jogo.t2] = {g1:sv.home??0, g2:sv.away??0, status:match.status};
-        if(modo!=='mata') updateHeader(); // atualizar header se estiver no modo extra
+        // Atualizar header e ranking se placar mudou
+        const _placarMudou = !_pvAnterior || _pvAnterior.g1!==sv.home || _pvAnterior.g2!==sv.away;
+        if(modo!=='mata') updateHeader();
+        if(_placarMudou){
+          const _rankScreen = document.getElementById('screen-ranking');
+          if(_rankScreen?.classList.contains('active') && modo==='unico') renderRanking();
+        }
       }
       if(match?.status==='FINISHED'){
         const s = match.score?.fullTime||{};
@@ -2660,11 +2667,51 @@ function renderRanking(){
       </div>`).join('');
     } else {
       resCard.style.display='none';premCard.style.display='none';
-      container.innerHTML=ativos.sort((a,b)=>a.ts-b.ts).map((p,i)=>`<div class="rank-item">
-        <div class="rank-pos">${i+1}</div>
-        <div class="rank-info"><div class="rank-name">${p.nome}</div></div>
-        <div class="rank-pts-col"><div class="rank-pts" style="color:var(--txt3);font-size:20px">?</div><div class="rank-pts-lbl">pts</div></div>
-      </div>`).join('');
+      const jogoEmAndamento = cfgUnico.jogoAtivo && jogoJaComecou(cfgUnico.jogoAtivo);
+      const pc2=['p1','p2','p3'],pp2=['g','s','b'],md2=['🥇','🥈','🥉'];
+      if(jogoEmAndamento){
+        // Usar placar ao vivo se disponível para calcular ranking parcial
+        const j = cfgUnico.jogoAtivo;
+        const pvivo = window._placarVivo?.[j.t1+j.t2];
+        const r1vivo = pvivo?.g1??null;
+        const r2vivo = pvivo?.g2??null;
+        const temPlacarVivo = r1vivo!==null && r2vivo!==null;
+
+        let rankParcial = ativos;
+        if(temPlacarVivo){
+          rankParcial = ativos
+            .map(p=>({...p, pts:calcUnico(p.g1,p.g2,r1vivo,r2vivo)}))
+            .sort((a,b)=>b.pts-a.pts||a.ts-b.ts);
+        }
+
+        const placarLabel = temPlacarVivo
+          ? `🔴 Ao Vivo: ${j.t1} ${r1vivo} × ${r2vivo} ${j.t2}`
+          : '⚽ Jogo em andamento — palpites revelados';
+
+        container.innerHTML=`
+          <div style="font-size:11px;color:${temPlacarVivo?'#FF4444':'var(--amarelo)'};font-weight:700;letter-spacing:1px;text-align:center;margin-bottom:10px;text-transform:uppercase">${placarLabel}</div>
+          ${rankParcial.map((p,i)=>{
+            const corPts = temPlacarVivo ? (p.pts>=6?'var(--verde)':p.pts>=3?'var(--amarelo)':'var(--txt3)') : 'var(--txt3)';
+            return `<div class="rank-item ${temPlacarVivo&&i<3?pc2[i]:''}">
+              <div class="rank-pos ${temPlacarVivo&&i<3?pp2[i]:''}">${i+1}</div>
+              <div class="rank-info">
+                <div class="rank-name">${p.nome} ${temPlacarVivo&&i<3?md2[i]:''}</div>
+                <div class="rank-sub" style="color:var(--txt3)">${p.g1} × ${p.g2}</div>
+              </div>
+              <div class="rank-pts-col">
+                <div class="rank-pts" style="color:${corPts};font-size:${temPlacarVivo?'28px':'18px'}">${temPlacarVivo?p.pts:'⏳'}</div>
+                ${temPlacarVivo?'<div class="rank-pts-lbl">pts</div>':''}
+              </div>
+            </div>`;
+          }).join('')}`;
+      } else {
+        // Jogo não começou — esconder palpites
+        container.innerHTML=ativos.sort((a,b)=>a.ts-b.ts).map((p,i)=>`<div class="rank-item">
+          <div class="rank-pos">${i+1}</div>
+          <div class="rank-info"><div class="rank-name">${p.nome}</div></div>
+          <div class="rank-pts-col"><div class="rank-pts" style="color:var(--txt3);font-size:20px">?</div><div class="rank-pts-lbl">pts</div></div>
+        </div>`).join('');
+      }
     }
   }
 }
