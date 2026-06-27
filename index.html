@@ -1586,35 +1586,41 @@ async function renderPagamentoVencedores(slot){
 
   const jogoKey = slot+'_'+(j.id||(j.t1+j.t2).replace(/\s/g,''));
 
-  const vencCard = `
-    <div style="background:rgba(255,215,0,0.08);border:1.5px solid var(--amarelo);border-radius:12px;padding:14px;margin-bottom:12px">
-      <div class="card-title" style="margin-bottom:4px">💰 Pagar Vencedores</div>
-      <div style="font-size:13px;color:var(--txt2);margin-bottom:12px">${j.t1} ${g1}×${g2} ${j.t2} · Total: <strong style="color:var(--amarelo)">R$ ${total}</strong></div>
-      ${premios.map(({p,val,pos,pct})=>{
-        const jaFoiPago = localStorage.getItem('pago_'+jogoKey+'_'+p.whats?.replace(/\D/g,''));
-        const pixChave = getPixChave(p.whats);
-        return `<div style="background:${jaFoiPago?'rgba(46,125,50,0.15)':'var(--bg)'};border:1px solid ${jaFoiPago?'var(--verde)':'var(--border)'};border-radius:10px;padding:12px;margin-bottom:8px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <div style="font-size:15px;font-weight:700">${pos} ${p.nome}</div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:${jaFoiPago?'var(--verde)':'var(--amarelo)'}">R$ ${val}</div>
-          </div>
-          <div style="font-size:11px;color:var(--txt2)">Palpite: ${p.g1}×${p.g2} · ${pct}% · ${p.pts} pts</div>
-          <div style="font-size:11px;color:var(--amarelo);margin-top:4px;font-family:monospace">💳 ${getPix(p.whats)}</div>
-          <div style="display:flex;gap:8px;margin-top:8px">
-            ${pixChave?`<button onclick="copiarPix('${pixChave}','${p.nome}')"
-              style="flex:1;background:var(--amarelo-pale);border:1px solid var(--border2);color:var(--amarelo);border-radius:8px;padding:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">
-              📋 Copiar Pix
-            </button>`:''}
-            <button onclick="marcarPago('${jogoKey}','${p.whats?.replace(/\D/g,'')}','${p.nome}',this)"
-              style="flex:1;background:${jaFoiPago?'var(--success-pale)':'var(--verde)'};border:1px solid ${jaFoiPago?'var(--verde)':'transparent'};color:#fff;border-radius:8px;padding:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">
-              ${jaFoiPago?'✅ Pago':'✓ Marcar como pago'}
-            </button>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>`;
+  let html = `<div style="background:rgba(255,215,0,0.08);border:1.5px solid var(--amarelo);border-radius:12px;padding:14px;margin-bottom:12px">
+    <div class="card-title" style="margin-bottom:4px">💰 Pagar Vencedores</div>
+    <div style="font-size:13px;color:var(--txt2);margin-bottom:12px">${j.t1} ${g1}×${g2} ${j.t2} · Total: <strong style="color:var(--amarelo)">R$ ${total}</strong></div>`;
 
-  container.innerHTML = vencCard;
+  for(const {p,val,pos,pct} of premios){
+    if(!p) continue;
+    const pixChave = getPixChave(p.whats);
+    const wClean = (p.whats||'').replace(/\D/g,'');
+    html += `<div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-size:15px;font-weight:700">${pos} ${p.nome}</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--amarelo)">R$ ${val}</div>
+      </div>
+      <div style="font-size:11px;color:var(--txt2)">Palpite: ${p.g1}×${p.g2} · ${pct}% · ${p.pts} pts</div>
+      <div style="font-size:11px;color:var(--amarelo);margin-top:4px;font-family:monospace">💳 ${getPix(p.whats)}</div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        ${pixChave?`<button onclick="copiarPix('${pixChave}','${p.nome.replace(/'/g,'')}') " style="flex:1;background:var(--amarelo-pale);border:1px solid var(--border2);color:var(--amarelo);border-radius:8px;padding:8px;font-size:11px;font-weight:700;cursor:pointer">📋 Copiar Pix</button>`:''}
+        <button data-whats="${wClean}" data-nome="${p.nome.replace(/"/g,'')}" data-jogo="${slot}" class="btn-marcar-pago" style="flex:1;background:var(--verde);border:none;color:#fff;border-radius:8px;padding:8px;font-size:11px;font-weight:700;cursor:pointer">✓ Marcar como pago</button>
+      </div>
+    </div>`;
+  }
+  html += '</div>';
+  container.innerHTML = html;
+
+  // Event listener para marcar como pago
+  container.querySelectorAll('.btn-marcar-pago').forEach(btn=>{
+    btn.addEventListener('click', async function(){
+      const w=this.dataset.whats, n=this.dataset.nome;
+      await sb.from('pagamentos_pendentes').update({pago:true,pago_em:new Date().toISOString()}).eq('whats',w).eq('bolao',this.dataset.jogo);
+      this.textContent='✅ Pago';
+      this.style.background='rgba(46,125,50,0.5)';
+      this.parentElement.parentElement.style.background='rgba(46,125,50,0.15)';
+      toast(`✅ ${n} marcado como pago!`,'ok');
+    });
+  });
 }
 
 
