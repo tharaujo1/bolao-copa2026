@@ -2346,6 +2346,18 @@ function renderBarraConsenso(slot, j, palpites){
   </div>`;
 }
 
+
+function jogoJaComecou(jogo){
+  if(!jogo?.date || !jogo?.time) return false;
+  try{
+    const [d,m] = jogo.date.split('/');
+    const tRaw = jogo.time.replace('h','');
+    const [hh,mm] = tRaw.includes(':') ? tRaw.split(':') : [tRaw,'00'];
+    const dtUTC = new Date(`2026-${m}-${d}T${hh.padStart(2,'0')}:${(mm||'00').padStart(2,'0')}:00Z`);
+    return new Date() >= dtUTC; // bloqueio exato no início do jogo
+  } catch(e){ return false; }
+}
+
 function ajustarPlacar(id, delta){
   _placarUnico[id] = Math.max(0, Math.min(20, (_placarUnico[id]||0) + delta));
   const el = document.getElementById(id);
@@ -2708,7 +2720,8 @@ async function renderPagOpcoes(){
     opcoes.push({
       id:'unico', label:`⚡ Extra — ${j1.t1} × ${j1.t2}`, sub:`${j1.date} · ${j1.time}`,
       valor:cfgUnico.valor||10, jaAtivo:!!jaU1, pendente:!!pendU1,
-      disponivel:cfgUnico.aceitar&&!jaU1,
+      jogoComecou:jogoJaComecou(j1),
+      disponivel:cfgUnico.aceitar&&!jaU1&&!jogoJaComecou(j1),
     });
   }
 
@@ -2718,7 +2731,8 @@ async function renderPagOpcoes(){
     opcoes.push({
       id:'unico2', label:`⚡ Extra 2 — ${j2.t1} × ${j2.t2}`, sub:`${j2.date} · ${j2.time}`,
       valor:cfgUnico2.valor||10, jaAtivo:!!jaU2,
-      disponivel:cfgUnico2.aceitar&&!jaU2,
+      jogoComecou:jogoJaComecou(j2),
+      disponivel:cfgUnico2.aceitar&&!jaU2&&!jogoJaComecou(j2),
     });
   }
 
@@ -2731,7 +2745,7 @@ async function renderPagOpcoes(){
         <div style="font-size:11px;color:var(--txt3);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px">${o.sub}</div>
         ${o.jaAtivo?'<div style="font-size:12px;color:var(--verde);margin-top:4px;font-weight:600">✅ Você já está ativo neste bolão</div>':''}
         ${o.pendente?'<div style="font-size:12px;color:#FFB74D;margin-top:4px;font-weight:600">⚠️ Palpite enviado — pague o Pix para ativar</div>':''}
-        ${!o.disponivel&&!o.jaAtivo&&!o.pendente?'<div style="font-size:11px;color:var(--txt3);margin-top:2px">Inscrições fechadas</div>':''}
+        ${!o.disponivel&&!o.jaAtivo&&!o.pendente?`<div style="font-size:11px;color:${o.jogoComecou?'#FF6B6B':'var(--txt3)'};margin-top:2px">${o.jogoComecou?'⏱ Jogo já começou — pagamentos encerrados':'Inscrições fechadas'}</div>`:''}
       </div>
       <div style="text-align:right;flex-shrink:0">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--amarelo)">R$ ${o.valor}</div>
