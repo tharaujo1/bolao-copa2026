@@ -1531,6 +1531,7 @@ async function renderPagamentoVencedores(slot){
   // Debug visível
   const _dbgContainer = document.getElementById('admVencedoresUnico');
   if(_dbgContainer) _dbgContainer.innerHTML='<div style="color:#FFB74D;font-size:11px;padding:8px">Carregando vencedores...</div>';
+  try {
   let j = cfg.jogoAtivo || {t1:'Uruguay', t2:'Spain', f1:'🇺🇾', f2:'🇪🇸'};
 
   // Buscar resultado sempre do banco
@@ -1587,6 +1588,7 @@ async function renderPagamentoVencedores(slot){
 
   const container = document.getElementById('admVencedoresUnico');
   if(!container) return;
+  } catch(e){ if(_dbgContainer) _dbgContainer.innerHTML=`<div style="color:red;font-size:11px;padding:8px">ERRO JS: ${e.message} | ${e.stack?.split('\n')[0]}</div>`; return; }
 
   const premios = [
     {p:palpites[0], val:p1val, pos:'🥇', pct:cfg.p1||70},
