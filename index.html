@@ -1531,12 +1531,15 @@ async function verificarResultadosExtra(){
     const matches = data.matches||[];
 
     for(const {jogo, slot, cfg} of jogos){
+      // Usar apiId para encontrar o jogo exato — evita pegar jogo da fase de grupos
       const match = matches.find(m=>{
-        const h=(m.homeTeam?.name||m.homeTeam?.shortName||'').toLowerCase();
-        const a=(m.awayTeam?.name||m.awayTeam?.shortName||'').toLowerCase();
+        if(jogo.apiId) return m.id===jogo.apiId;
+        // Fallback por nome se não tiver apiId
+        const h=(m.homeTeam?.name||'').toLowerCase();
+        const a=(m.awayTeam?.name||'').toLowerCase();
         const t1=jogo.t1.toLowerCase().split(' ')[0];
         const t2=jogo.t2.toLowerCase().split(' ')[0];
-        return h.includes(t1)||t1.includes(h.split(' ')[0])||a.includes(t2)||t2.includes(a.split(' ')[0]);
+        return (h.includes(t1)||a.includes(t2)) && m.stage==='LAST_32';
       });
 
       // Salvar placar ao vivo para o header
@@ -2040,9 +2043,9 @@ function updateHeader(){
         document.getElementById('hScoreLbl').textContent='Resultado Final';
         document.getElementById('hDate').textContent='Encerrado 🏁';
       } else {
-        // Tentar mostrar placar ao vivo se disponivel
+        // Mostrar placar ao vivo só se o jogo já começou
         const placarvivo = window._placarVivo?.[j.t1+j.t2];
-        if(placarvivo){
+        if(placarvivo && jogoJaComecou(j)){
           document.getElementById('hScore').textContent=`${placarvivo.g1}×${placarvivo.g2}`;
           document.getElementById('hScoreLbl').textContent='🔴 Ao Vivo';
         } else {
