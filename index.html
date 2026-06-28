@@ -1437,7 +1437,9 @@ async function verificarVencedoresMata(){
   if(!ranked.length) return;
 
   // Contar pagantes direto — participantesData pode estar vazio no momento da render
-  const _pagantes = _totalPagantesMata || participantesData.filter(p=>p.pago_mata||p.pago).length || ativos.length;
+  // Debug temporário
+  console.log('_totalPagantesMata:', _totalPagantesMata, 'participantesData:', participantesData.length, 'ativos:', ativos.length);
+  const _pagantes = _totalPagantesMata>0 ? _totalPagantesMata : (participantesData.filter(p=>p.pago_mata||p.pago).length || ativos.length);
   const totalBolada = _pagantes*(cfgMata.valor||50);
   const premios = [
     {pos:1, pct:cfgMata.p1||60},
@@ -1815,7 +1817,9 @@ async function renderPagamentoVencedoresMata(){
   const ranked = calcularRankingMata(ativos);
 
   // Contar pagantes direto — participantesData pode estar vazio no momento da render
-  const _pagantes = _totalPagantesMata || participantesData.filter(p=>p.pago_mata||p.pago).length || ativos.length;
+  // Debug temporário
+  console.log('_totalPagantesMata:', _totalPagantesMata, 'participantesData:', participantesData.length, 'ativos:', ativos.length);
+  const _pagantes = _totalPagantesMata>0 ? _totalPagantesMata : (participantesData.filter(p=>p.pago_mata||p.pago).length || ativos.length);
   const totalBolada = _pagantes*(cfgMata.valor||50);
   const p1val = Math.round(totalBolada*(cfgMata.p1||60)/100);
   const p2val = Math.round(totalBolada*(cfgMata.p2||25)/100);
