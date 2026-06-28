@@ -4663,8 +4663,8 @@ function renderMataStatic(standData){
   FASES_MATA.forEach(fase=>{
     html2+=`<div class="mata-phase-label">${fase.label}${fase.mult>1?' (×'+fase.mult+')':''}</div>`;
     html2+=fase.jogos.map(j=>{
-      // Só mostrar resultado se o jogo já começou de verdade
-      const res = jogoJaComecou(j) ? resultadosMata[j.id] : null;
+      // Mostrar resultado se jogo começou OU se tem resultado no banco
+      const res = (jogoJaComecou(j) || resultadosMata[j.id]) ? resultadosMata[j.id] : null;
       return `<div class="mata-match ${res?'definido':''}">
         <div class="mata-team">${j.f1} ${j.t1}</div>
         ${res
