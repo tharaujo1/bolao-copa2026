@@ -906,22 +906,22 @@ const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 // ═══════════════════════════════════════
 const FASES_MATA = [
   {id:'dezesseis',label:'16-avos',mult:1,jogos:[
-    {id:'D1',t1:'África do Sul',f1:'🇿🇦',t2:'Canadá',f2:'🇨🇦',date:'28/06',time:'16h'},
-    {id:'D2',t1:'Brasil',f1:'🇧🇷',t2:'Japão',f2:'🇯🇵',date:'29/06',time:'14h'},
-    {id:'D3',t1:'Alemanha',f1:'🇩🇪',t2:'Paraguai',f2:'🇵🇾',date:'29/06',time:'17h30'},
-    {id:'D4',t1:'Holanda',f1:'🇳🇱',t2:'Marrocos',f2:'🇲🇦',date:'29/06',time:'22h'},
-    {id:'D5',t1:'Costa do Marfim',f1:'🇨🇮',t2:'Noruega',f2:'🇳🇴',date:'30/06',time:'14h'},
-    {id:'D6',t1:'França',f1:'🇫🇷',t2:'Suécia',f2:'🇸🇪',date:'30/06',time:'18h'},
-    {id:'D7',t1:'México',f1:'🇲🇽',t2:'Equador',f2:'🇪🇨',date:'30/06',time:'22h'},
-    {id:'D8',t1:'Inglaterra',f1:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',t2:'RD Congo',f2:'🇨🇩',date:'01/07',time:'13h'},
-    {id:'D9',t1:'Bélgica',f1:'🇧🇪',t2:'Senegal',f2:'🇸🇳',date:'01/07',time:'17h'},
-    {id:'D10',t1:'Estados Unidos',f1:'🇺🇸',t2:'Bósnia',f2:'🇧🇦',date:'01/07',time:'21h'},
-    {id:'D11',t1:'Espanha',f1:'🇪🇸',t2:'Áustria',f2:'🇦🇹',date:'02/07',time:'16h'},
-    {id:'D12',t1:'Portugal',f1:'🇵🇹',t2:'Croácia',f2:'🇭🇷',date:'02/07',time:'20h'},
-    {id:'D13',t1:'Suíça',f1:'🇨🇭',t2:'Argélia',f2:'🇩🇿',date:'03/07',time:'0h'},
-    {id:'D14',t1:'Austrália',f1:'🇦🇺',t2:'Egito',f2:'🇪🇬',date:'03/07',time:'15h'},
-    {id:'D15',t1:'Argentina',f1:'🇦🇷',t2:'Cabo Verde',f2:'🇨🇻',date:'03/07',time:'19h'},
-    {id:'D16',t1:'Colômbia',f1:'🇨🇴',t2:'Gana',f2:'🇬🇭',date:'03/07',time:'22h30'},
+    {id:'D1',apiId:537417,t1:'África do Sul',f1:'🇿🇦',t2:'Canadá',f2:'🇨🇦',date:'28/06',time:'16h'},
+    {id:'D2',apiId:537423,t1:'Brasil',f1:'🇧🇷',t2:'Japão',f2:'🇯🇵',date:'29/06',time:'14h'},
+    {id:'D3',apiId:537415,t1:'Alemanha',f1:'🇩🇪',t2:'Paraguai',f2:'🇵🇾',date:'29/06',time:'17h30'},
+    {id:'D4',apiId:537418,t1:'Holanda',f1:'🇳🇱',t2:'Marrocos',f2:'🇲🇦',date:'29/06',time:'22h'},
+    {id:'D5',apiId:537424,t1:'Costa do Marfim',f1:'🇨🇮',t2:'Noruega',f2:'🇳🇴',date:'30/06',time:'14h'},
+    {id:'D6',apiId:537416,t1:'França',f1:'🇫🇷',t2:'Suécia',f2:'🇸🇪',date:'30/06',time:'18h'},
+    {id:'D7',apiId:537425,t1:'México',f1:'🇲🇽',t2:'Equador',f2:'🇪🇨',date:'30/06',time:'22h'},
+    {id:'D8',apiId:537426,t1:'Inglaterra',f1:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',t2:'RD Congo',f2:'🇨🇩',date:'01/07',time:'13h'},
+    {id:'D9',apiId:537422,t1:'Bélgica',f1:'🇧🇪',t2:'Senegal',f2:'🇸🇳',date:'01/07',time:'17h'},
+    {id:'D10',apiId:537421,t1:'Estados Unidos',f1:'🇺🇸',t2:'Bósnia',f2:'🇧🇦',date:'01/07',time:'21h'},
+    {id:'D11',apiId:537420,t1:'Espanha',f1:'🇪🇸',t2:'Áustria',f2:'🇦🇹',date:'02/07',time:'16h'},
+    {id:'D12',apiId:537419,t1:'Portugal',f1:'🇵🇹',t2:'Croácia',f2:'🇭🇷',date:'02/07',time:'20h'},
+    {id:'D13',apiId:537429,t1:'Suíça',f1:'🇨🇭',t2:'Argélia',f2:'🇩🇿',date:'03/07',time:'0h'},
+    {id:'D14',apiId:537428,t1:'Austrália',f1:'🇦🇺',t2:'Egito',f2:'🇪🇬',date:'03/07',time:'15h'},
+    {id:'D15',apiId:537427,t1:'Argentina',f1:'🇦🇷',t2:'Cabo Verde',f2:'🇨🇻',date:'03/07',time:'19h'},
+    {id:'D16',apiId:537430,t1:'Colômbia',f1:'🇨🇴',t2:'Gana',f2:'🇬🇭',date:'03/07',time:'22h30'},
   ]},
   {id:'oitavas',label:'Oitavas',mult:1.5,jogos:[
     {id:'O1',t1:'Vencedor D1',f1:'⚔️',t2:'Vencedor D2',f2:'⚔️',date:'08/07',time:'16h'},
@@ -1365,35 +1365,16 @@ async function verificarResultadosMata(){
       const matches = data2.matches||[];
 
       for(const jogo of jogosAtivos){
-        // Mapa de nomes PT→EN para comparação com a API
-        const _nomeEN = {
-          'brasil':'brazil','alemanha':'germany','holanda':'netherlands',
-          'suíça':'switzerland','suécia':'sweden','áustria':'austria',
-          'argélia':'algeria','croácia':'croatia','colômbia':'colombia',
-          'bósnia':'bosnia','egito':'egypt','espanha':'spain',
-          'bélgica':'belgium','gana':'ghana','japão':'japan',
-          'marrocos':'morocco','noruega':'norway','paraguai':'paraguay',
-          'equador':'ecuador','suecia':'sweden','austria':'austria',
-          'africa do sul':'south africa','canada':'canada','eua':'united states',
-          'cabo verde':'cape verde','costa do marfim':'ivory coast',
-          'franca':'france','frença':'france','portugal':'portugal',
-          'argentina':'argentina','australia':'australia','mexico':'mexico',
-          'colombia':'colombia','croacia':'croatia','bosnia':'bosnia',
-          'egito':'egypt','belgica':'belgium','senegal':'senegal',
-          'inglaterra':'england','congo':'dr congo','ghana':'ghana'
-        };
-        const normT1 = (s)=>{
-          const l=s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,'').trim();
-          return _nomeEN[l]||l;
-        };
+        // Buscar por apiId primeiro (100% confiável), fallback por nome
         const match = matches.find(m=>{
           if(m.status!=='FINISHED') return false;
-          const h=(m.homeTeam?.name||m.homeTeam?.shortName||'').toLowerCase();
-          const a=(m.awayTeam?.name||m.awayTeam?.shortName||'').toLowerCase();
-          const t1n=normT1(jogo.t1);
-          const t2n=normT1(jogo.t2);
-          return (h.includes(t1n.split(' ')[0])||t1n.includes(h.split(' ')[0])||
-                  a.includes(t2n.split(' ')[0])||t2n.includes(a.split(' ')[0]));
+          if(jogo.apiId && m.id===jogo.apiId) return true;
+          // Fallback por nome se não tiver apiId
+          const h=(m.homeTeam?.name||'').toLowerCase();
+          const a=(m.awayTeam?.name||'').toLowerCase();
+          const t1=jogo.t1.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,'').trim();
+          const t2=jogo.t2.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,'').trim();
+          return h.includes(t1.split(' ')[0])||a.includes(t2.split(' ')[0]);
         });
 
         if(match){
