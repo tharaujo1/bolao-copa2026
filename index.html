@@ -1060,6 +1060,7 @@ let headerExtraIdx = 0;
 let headerExtraInterval = null;
 let _placarUnico = {uG1:0, uG2:0, uG1b:0, uG2b:0};
 let _mataModal = {jogoId:null, g1:0, g2:0, aberto:false, bonusTipo:null, bonusVenc:null};
+let _totalPagantesMata = 0; // carregado do banco
 window._placarVivo = {}; // sempre limpo ao iniciar
 let liveInterval = null;
 let lastGoals = 0;
@@ -1106,6 +1107,8 @@ async function loadAll(){
       sb.from('feed').select('*').order('created_at',{ascending:false}).limit(30),
     ]);
     cfgMata = cfgs?.find(c=>c.id==='mata')?.dados||{valor:20,p1:60,p2:25,p3:15,pixChave:'',pixNome:'',pixBanco:'',pixTipo:'CPF',faseAtiva:'dezesseis',jogosAtivos:[],adminPwd:'copa2026'};
+  // Carregar total de pagantes do banco
+  sb.from('participantes').select('whats',{count:'exact'}).eq('pago_mata',true).then(({count})=>{ if(count) _totalPagantesMata=count; });
     const _defUnico = {valor:10,p1:70,p2:20,p3:0,aceitar:true,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true,adminPwd:'copa2026'};
     const _defUnico2 = {valor:10,p1:70,p2:20,p3:0,aceitar:false,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true};
     // Mesclar com defaults para garantir que campos nao percam valores ao gravar parcialmente
@@ -1433,10 +1436,8 @@ async function verificarVencedoresMata(){
   if(!ranked.length) return;
 
   // Contar pagantes direto — participantesData pode estar vazio no momento da render
-  const _pagantes = participantesData.length>0 
-    ? participantesData.filter(p=>p.pago_mata||p.pago).length 
-    : palpitesMata.filter(p=>p.status==='ativo').length;
-  const totalBolada = Math.max(_pagantes, ativos.length)*(cfgMata.valor||50);
+  const _pagantes = _totalPagantesMata || participantesData.filter(p=>p.pago_mata||p.pago).length || ativos.length;
+  const totalBolada = _pagantes*(cfgMata.valor||50);
   const premios = [
     {pos:1, pct:cfgMata.p1||60},
     {pos:2, pct:cfgMata.p2||25},
@@ -1813,10 +1814,8 @@ async function renderPagamentoVencedoresMata(){
   const ranked = calcularRankingMata(ativos);
 
   // Contar pagantes direto — participantesData pode estar vazio no momento da render
-  const _pagantes = participantesData.length>0 
-    ? participantesData.filter(p=>p.pago_mata||p.pago).length 
-    : palpitesMata.filter(p=>p.status==='ativo').length;
-  const totalBolada = Math.max(_pagantes, ativos.length)*(cfgMata.valor||50);
+  const _pagantes = _totalPagantesMata || participantesData.filter(p=>p.pago_mata||p.pago).length || ativos.length;
+  const totalBolada = _pagantes*(cfgMata.valor||50);
   const p1val = Math.round(totalBolada*(cfgMata.p1||60)/100);
   const p2val = Math.round(totalBolada*(cfgMata.p2||25)/100);
   const p3val = cfgMata.p3>0 ? Math.round(totalBolada*cfgMata.p3/100) : 0;
