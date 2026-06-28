@@ -2892,7 +2892,8 @@ function renderRanking(){
           ${i>0&&ranked[i-1].pts===p.pts?'<div class="tb-chip">desempate ativo</div>':''}
         </div>
         <div class="rank-pts-col"><div class="rank-pts">${p.pts}</div><div class="rank-pts-lbl">pts</div></div>
-      </div>`).join('');
+      </div>`;
+      }).join('');
     } else {
       resCard.style.display='none';premCard.style.display='none';
       const jogoEmAndamento = cfgUnico.jogoAtivo && jogoJaComecou(cfgUnico.jogoAtivo);
