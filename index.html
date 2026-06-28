@@ -2756,6 +2756,19 @@ function renderRanking(){
         <div class="rank-info">
           <div class="rank-name">${p.nome} ${md[i]||''}${isPend?' <span style="font-size:10px;color:var(--warning)">⏳ pendente</span>':''}</div>
           <div class="rank-sub">${temResultados?`🎯 ${p.exatos} exatos · ✅ ${p.venc} venc · ${p.total} pts`:'Aguardando jogos...'}</div>
+          ${(()=>{
+            // Mostrar palpites dos jogos em andamento
+            const fase = FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
+            const jogosEmAndamento = (cfgMata.jogosAtivos||[])
+              .map(id=>fase?.jogos.find(j=>j.id===id))
+              .filter(j=>j&&jogoJaComecou(j)&&!resultadosMata[j.id]);
+            if(!jogosEmAndamento.length) return '';
+            return jogosEmAndamento.map(j=>{
+              const pal = p.palpites?.[j.id];
+              if(!pal) return '';
+              return `<div style="font-size:10px;color:var(--amarelo);margin-top:2px">⚽ ${j.t1} ${pal.g1}×${pal.g2} ${j.t2}</div>`;
+            }).join('');
+          })()}
           ${i>0&&ranked[i-1].total===p.total&&p.total>0?'<div class="tb-chip">desempate ativo</div>':''}
         </div>
         <div class="rank-pts-col">
