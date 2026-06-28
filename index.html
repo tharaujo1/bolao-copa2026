@@ -2093,7 +2093,7 @@ function updateHeader(){
   if(el('stTotalMata')) el('stTotalMata').textContent = _parts.length||'—';
   if(el('stAtivosMata')) el('stAtivosMata').textContent = partAtivos.length||'—';
   if(el('stPendMata')) el('stPendMata').textContent = partPend.length||'—';
-  if(el('stBoladaMata')) el('stBoladaMata').textContent = _parts.length?'R$'+(partAtivos.length*(cfgMata.valor||50)):'—';
+  if(el('stBoladaMata')) el('stBoladaMata').textContent = _parts.length?'R$'+(_totalPagantesMata||_parts.length)*(cfgMata.valor||50):'—';
 
   // Cards Jogo Extra — um por jogo ativo
   const extraContainer = document.getElementById('statsExtraContainer');
