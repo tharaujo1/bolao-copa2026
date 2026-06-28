@@ -2591,16 +2591,24 @@ async function enviarUnico2(){
 function calcMata(g1p,g2p,g1r,g2r,mult,bonus=null,bonusRes=null){
   let base=0;
   const acertouPlacar = g1p===g1r&&g2p===g2r;
-  if(acertouPlacar) base=10;
-  else{
-    const rp=g1p>g2p?1:g1p<g2p?-1:0,rr=g1r>g2r?1:g1r<g2r?-1:0;
-    if(rp===rr) base=(g1p-g2p)===(g1r-g2r)?6:3;
-    else if(rp===0&&rr===0) base=1;
+  const rp=g1p>g2p?1:g1p<g2p?-1:0; // resultado palpite: 1=vitH, -1=vitA, 0=emp
+  const rr=g1r>g2r?1:g1r<g2r?-1:0; // resultado real
+  const acertouResultado = rp===rr; // acertou se foi vitória ou empate
+
+  if(acertouPlacar){
+    base=10;
+  } else if(acertouResultado){
+    // Acertou o resultado (vencedor OU empate) — verificar saldo
+    const saldoP = g1p-g2p, saldoR = g1r-g2r;
+    if(saldoP===saldoR) base=6; // acertou saldo (vale igual pra vitória e empate)
+    else base=3; // acertou só o resultado
   }
+
   let pts = Math.round(base*mult);
-  // Bônus empate: acertou prorrogação/pênaltis + quem avançou
+
+  // Bônus empate nas eliminatórias: acertou prorrogação/pênaltis + quem avançou
   const foiEmpate = g1r===g2r;
-  if(foiEmpate && acertouPlacar && bonus?.venc && bonusRes?.venc){
+  if(foiEmpate && acertouResultado && bonus?.venc && bonusRes?.venc){
     const acertouVenc = bonus.venc === bonusRes.venc;
     const acertouTipo = bonus.tipo === bonusRes.tipo;
     if(acertouVenc && acertouTipo) pts += 3;
