@@ -1491,11 +1491,15 @@ function calcularRankingMata(ativos){
     if(b.exatos!==a.exatos) return b.exatos-a.exatos;   // 2. Mais placares exatos
     if(b.venc!==a.venc) return b.venc-a.venc;           // 3. Mais vencedores acertados
     if(a.diff!==b.diff) return a.diff-b.diff;           // 4. Menor diferença de gols
-    // 5. Quem palpitou em mais jogos
+    // 5. Acertou o campeão final
+    const campA = resultadosMata['F1'] ? (a.palpites?.['F1'] && calcMata(a.palpites['F1'].g1,a.palpites['F1'].g2,resultadosMata['F1'].g1,resultadosMata['F1'].g2,1)>0 ? 1:0) : 0;
+    const campB = resultadosMata['F1'] ? (b.palpites?.['F1'] && calcMata(b.palpites['F1'].g1,b.palpites['F1'].g2,resultadosMata['F1'].g1,resultadosMata['F1'].g2,1)>0 ? 1:0) : 0;
+    if(campB!==campA) return campB-campA;
+    // 6. Quem palpitou em mais jogos
     const jogosA = Object.keys(a.palpites||{}).length;
     const jogosB = Object.keys(b.palpites||{}).length;
     if(jogosB!==jogosA) return jogosB-jogosA;
-    // 6. Quem entrou primeiro no bolão (ts mais antigo)
+    // 7. Quem entrou primeiro no bolão
     return a.ts-b.ts;
   });
 }
