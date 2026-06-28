@@ -2733,7 +2733,7 @@ function renderPtsBody(){
 function renderTbBody(){
   const b=document.getElementById('tbBody');
   const items=modo==='mata'
-    ?['🎯 Maior nº de placares exatos','✅ Maior nº de vencedores acertados','📏 Menor diferença acumulada de gols','🏆 Acertou o campeão (final)','⏱️ Quem se cadastrou primeiro']
+    ?['🎯 Maior nº de placares exatos','✅ Maior nº de vencedores acertados','📏 Menor diferença acumulada de gols','🏆 Acertou o campeão (final)','📋 Quem palpitou em mais jogos','⏱️ Quem se cadastrou primeiro no bolão']
     :[cfgUnico.tbGV&&'⚽ Gols do vencedor',cfgUnico.tbTG&&'📊 Total de gols',cfgUnico.tbGP&&'🥅 Gols do perdedor',cfgUnico.tbBonus&&cfgUnico.bonusQ&&'🎯 '+cfgUnico.bonusQ,cfgUnico.tbOrdem&&'⏱️ Quem enviou primeiro'].filter(Boolean);
   b.innerHTML=items.map((t,i)=>`<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px"><span style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--amarelo);width:20px">${i+1}</span>${t}</div>`).join('');
 }
