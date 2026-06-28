@@ -1098,17 +1098,18 @@ function toast(msg,type=''){
 // ═══════════════════════════════════════
 async function loadAll(){
   try{
-    const [{data:cfgs},{data:pm},{data:pu},{data:rm},{data:ru},{data:feed}] = await Promise.all([
+    const [{data:cfgs},{data:pm},{data:pu},{data:rm},{data:ru},{data:feed},{count:_countPagantes}] = await Promise.all([
       sb.from('config').select('*'),
       sb.from('palpites_mata').select('*').order('ts'),
       sb.from('palpites_unico').select('*').order('ts'),
       sb.from('resultados_mata').select('*'),
       sb.from('resultado_unico').select('*').eq('id',1).single(),
       sb.from('feed').select('*').order('created_at',{ascending:false}).limit(30),
+      sb.from('participantes').select('*',{count:'exact',head:true}).eq('pago_mata',true),
     ]);
+    if(_countPagantes) _totalPagantesMata = _countPagantes;
     cfgMata = cfgs?.find(c=>c.id==='mata')?.dados||{valor:20,p1:60,p2:25,p3:15,pixChave:'',pixNome:'',pixBanco:'',pixTipo:'CPF',faseAtiva:'dezesseis',jogosAtivos:[],adminPwd:'copa2026'};
   // Carregar total de pagantes do banco
-  sb.from('participantes').select('*',{count:'exact',head:true}).eq('pago_mata',true).then(({count})=>{ if(count) _totalPagantesMata=count; renderRanking(); });
     const _defUnico = {valor:10,p1:70,p2:20,p3:0,aceitar:true,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true,adminPwd:'copa2026'};
     const _defUnico2 = {valor:10,p1:70,p2:20,p3:0,aceitar:false,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true};
     // Mesclar com defaults para garantir que campos nao percam valores ao gravar parcialmente
