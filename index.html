@@ -1133,13 +1133,16 @@ async function loadAll(){
   }catch(e){
     console.error('loadAll erro geral:',e);
   }
-  // Carregar participantes isolado
-  // Buscar total de pagantes mata separadamente
-  sb.from('participantes').select('*',{count:'exact',head:true}).eq('pago_mata',true).then(r=>{
-    if(r.count) { _totalPagantesMata=r.count; }
-  });
+  // Carregar participantes — fonte única de verdade para bolada
   sb.from('participantes').select('pago,pago_mata,pago_unico,pago_unico2,nome,whats')
-    .then(({data})=>{ if(data){ participantesData=data; _totalPagantesMata=data.filter(p=>p.pago_mata||p.pago).length; try{updateHeader();}catch(e){} } })
+    .then(({data})=>{ 
+      if(data){ 
+        participantesData=data; 
+        // Contar TODOS com pago_mata=true independente de ter palpitado
+        _totalPagantesMata=data.filter(p=>p.pago_mata===true).length;
+        try{updateHeader();}catch(e){}
+      } 
+    })
     .catch(e=>console.warn('participantes:',e));
 }
 
@@ -2093,7 +2096,7 @@ function updateHeader(){
   if(el('stTotalMata')) el('stTotalMata').textContent = _parts.length||'—';
   if(el('stAtivosMata')) el('stAtivosMata').textContent = partAtivos.length||'—';
   if(el('stPendMata')) el('stPendMata').textContent = partPend.length||'—';
-  if(el('stBoladaMata')) el('stBoladaMata').textContent = _parts.length?'R$'+(_totalPagantesMata||_parts.length)*(cfgMata.valor||50):'—';
+  if(el('stBoladaMata')) el('stBoladaMata').textContent = _totalPagantesMata>0?'R$'+_totalPagantesMata*(cfgMata.valor||50):(_parts.length?'R$'+_parts.filter(p=>p.pago_mata===true).length*(cfgMata.valor||50):'—');
 
   // Cards Jogo Extra — um por jogo ativo
   const extraContainer = document.getElementById('statsExtraContainer');
