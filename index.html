@@ -1399,11 +1399,18 @@ async function verificarResultadosMata(){
         if(match){
           const s = match.score?.fullTime||{};
           const g1=s.home??0, g2=s.away??0;
+          // Capturar prorrogação/pênaltis da API
+          const duration = match.score?.duration||'REGULAR';
+          const winner = match.score?.winner||null;
+          const bonusRes = (g1===g2 && winner && winner!=='DRAW') ? {
+            tipo: duration==='PENALTY_SHOOTOUT' ? 'penaltis' : 'prorrogacao',
+            venc: winner==='HOME_TEAM' ? 'home' : 'away'
+          } : null;
           await sb.from('resultados_mata').upsert({
-            jogo_id:jogo.id, g1, g2,
+            jogo_id:jogo.id, g1, g2, bonus_res:bonusRes,
             updated_at:new Date().toISOString()
           });
-          resultadosMata[jogo.id]={g1,g2};
+          resultadosMata[jogo.id]={g1,g2,bonusRes};
           await addFeed('⚽',`Resultado automático ${jogo.t1} ${g1}×${g2} ${jogo.t2}`);
           toast(`⚽ ${jogo.t1} ${g1}×${g2} ${jogo.t2}`,'ok');
 
@@ -2665,7 +2672,7 @@ function renderPtsBody(){
       <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--verde)">10</div><div style="font-size:11px;color:var(--txt2);margin-top:2px">Placar exato</div></div>
       <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--verde)">6</div><div style="font-size:11px;color:var(--txt2);margin-top:2px">Vencedor + saldo</div></div>
       <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--verde)">3</div><div style="font-size:11px;color:var(--txt2);margin-top:2px">Vencedor certo</div></div>
-      <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center"><div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--verde)">1</div><div style="font-size:11px;color:var(--txt2);margin-top:2px">Empate previsto</div></div>
+      <div style="background:rgba(254,223,0,0.08);border:1px solid rgba(254,223,0,0.3);border-radius:10px;padding:12px;text-align:center"><div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--amarelo)">+3</div><div style="font-size:11px;color:var(--txt2);margin-top:2px">Bônus empate</div></div>
     </div>`;
     if(extra) extra.innerHTML=`
       <div class="divider"></div>
@@ -2685,11 +2692,19 @@ function renderPtsBody(){
         </div>
         <div style="display:flex;gap:10px;font-size:12px;color:var(--txt2);align-items:flex-start">
           <span style="font-size:16px;flex-shrink:0">🤝</span>
-          <span>Você chutou <strong style="color:var(--txt)">1×1</strong> e jogo empatou em qualquer placar → <strong style="color:var(--amarelo)">1 pt</strong></span>
+          <span>Você chutou <strong style="color:var(--txt)">1×1</strong> e jogo terminou <strong style="color:var(--txt)">1×1</strong> (placar exato) → <strong style="color:var(--amarelo)">10 pts</strong></span>
         </div>
         <div style="display:flex;gap:10px;font-size:12px;color:var(--txt2);align-items:flex-start">
           <span style="font-size:16px;flex-shrink:0">✖️</span>
-          <span>Errou o vencedor ou previu empate mas não empatou → <strong style="color:var(--amarelo)">0 pts</strong></span>
+          <span>Errou o vencedor → <strong style="color:var(--amarelo)">0 pts</strong></span>
+        </div>
+        <div style="display:flex;gap:10px;font-size:12px;color:var(--txt2);align-items:flex-start">
+          <span style="font-size:16px;flex-shrink:0">🤝</span>
+          <span>Você chutou <strong style="color:var(--txt)">1×1</strong> e jogo terminou <strong style="color:var(--txt)">2×2</strong> (empatou mas placar diferente) → <strong style="color:var(--amarelo)">6 pts</strong></span>
+        </div>
+        <div style="display:flex;gap:10px;font-size:12px;color:var(--txt2);align-items:flex-start">
+          <span style="font-size:16px;flex-shrink:0">⏱</span>
+          <span>Chutou empate + pênaltis + Brasil → e foi assim → <strong style="color:var(--amarelo)">+3 pts bônus</strong></span>
         </div>
       </div>`;
   }
@@ -2727,7 +2742,7 @@ function renderRanking(){
         const pal=p.palpites?.[jid];if(!pal) continue;
         const fase=FASES_MATA.find(f=>f.jogos.some(j=>j.id===jid));
         const mult=fase?.mult||1;
-        const pts=calcMata(pal.g1,pal.g2,res.g1,res.g2,mult);
+        const pts=calcMata(pal.g1,pal.g2,res.g1,res.g2,mult,pal.bonus||null,res.bonusRes||null);
         total+=pts;
         if(pal.g1===res.g1&&pal.g2===res.g2) exatos++;
         const rp=pal.g1>pal.g2?1:pal.g1<pal.g2?-1:0,rr=res.g1>res.g2?1:res.g1<res.g2?-1:0;
