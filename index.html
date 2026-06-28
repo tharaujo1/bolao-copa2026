@@ -1351,8 +1351,8 @@ let pollingMataInterval = null;
 function iniciarPollingMata(){
   if(pollingMataInterval) clearInterval(pollingMataInterval);
   if(!apiKey || !cfgMata.jogosAtivos?.length) return;
-  pollingMataInterval = setInterval(verificarResultadosMata, 90000);
-  verificarResultadosMata();
+  pollingMataInterval = setInterval(verificarResultadosMata, 120000); // 2 min
+  setTimeout(verificarResultadosMata, 60000); // primeira chamada após 60s
 }
 
 async function verificarResultadosMata(){
@@ -1504,7 +1504,7 @@ function iniciarPollingExtra(){
   if(pollingInterval) clearInterval(pollingInterval);
   const temJogoAtivo = cfgUnico.jogoAtivo || cfgUnico2.jogoAtivo;
   if(!temJogoAtivo || !apiKey) return;
-  setTimeout(()=>{ pollingInterval = setInterval(verificarResultadosExtra, 90000); }, 30000);
+  setTimeout(()=>{ pollingInterval = setInterval(verificarResultadosExtra, 120000); }, 90000); // começa após 90s
   verificarResultadosExtra(); // rodar imediatamente
 }
 
@@ -3342,7 +3342,7 @@ async function fetchLive(manual=false){
 
       if(status==='IN_PLAY'){
         document.getElementById('hLive').innerHTML='<span class="live-chip">Ao Vivo</span>';
-        if(!liveInterval) liveInterval=setInterval(()=>fetchLive(),60000);
+        if(!liveInterval) liveInterval=setInterval(()=>fetchLive(),90000); // 90s
         const tg=(typeof g1==='number'?g1:0)+(typeof g2==='number'?g2:0);
         if(tg>lastGoals&&lastGoals>=0){
           const msg=`⚽ GOL! Placar: ${g1} × ${g2}`;
@@ -3912,7 +3912,7 @@ function goTab(screen,tabEl){
   if(screen==='ranking') renderRanking();
   if(screen==='classificacao') loadClassificacao();
   if(screen==='pagar'){renderPagList();renderPagOpcoes();}
-  if(screen==='aovivo'){renderFeed();fetchAllToday();if(apiKey) fetchLive();}
+  if(screen==='aovivo'){renderFeed();fetchAllToday();if(apiKey) setTimeout(fetchLive,5000);} // delay 5s
   if(screen==='admin'&&adminUnlocked) adminMode(adminModo);
 }
 
