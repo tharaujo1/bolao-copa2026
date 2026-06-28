@@ -1383,17 +1383,9 @@ async function verificarResultadosMata(){
       const matches = data2.matches||[];
 
       for(const jogo of jogosAtivos){
-        // Buscar por apiId primeiro (100% confiável), fallback por nome
-        const match = matches.find(m=>{
-          if(m.status!=='FINISHED') return false;
-          if(jogo.apiId && m.id===jogo.apiId) return true;
-          // Fallback por nome se não tiver apiId
-          const h=(m.homeTeam?.name||'').toLowerCase();
-          const a=(m.awayTeam?.name||'').toLowerCase();
-          const t1=jogo.t1.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,'').trim();
-          const t2=jogo.t2.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,'').trim();
-          return h.includes(t1.split(' ')[0])||a.includes(t2.split(' ')[0]);
-        });
+        // Só busca por apiId — sem fallback por nome para evitar pegar jogos errados
+        if(!jogo.apiId) continue;
+        const match = matches.find(m=>m.status==='FINISHED' && m.id===jogo.apiId);
 
         if(match){
           const s = match.score?.fullTime||{};
