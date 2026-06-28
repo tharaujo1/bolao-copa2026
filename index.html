@@ -1146,6 +1146,21 @@ function abrirModalMata(jogoId){
   const j = jogosAtivos.find(x=>x.id===jogoId);
   if(!j) return;
 
+  // Verificar se jogo já começou (bloqueio 5 min antes)
+  if(j.date && j.time){
+    try{
+      const [d,m]=j.date.split('/');
+      const tRaw=j.time.replace('h','');
+      const [hh,mm]=tRaw.includes(':')? tRaw.split(':') : [tRaw,'00'];
+      const dtUTC=new Date(`2026-${m}-${d}T${hh.padStart(2,'0')}:${(mm||'00').padStart(2,'0')}:00Z`);
+      const minutos = (dtUTC-new Date())/60000;
+      if(minutos <= 5){
+        toast(minutos<=0?'⏱ Jogo já começou — palpites encerrados':'⏱ Menos de 5 minutos para o jogo — palpites encerrados','err');
+        return;
+      }
+    }catch(e){}
+  }
+
   const myWhatsM = (localStorage.getItem('bolao_whats')||'').replace(/\D/g,'');
   const meuPalpite = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===myWhatsM);
   const palAtual = meuPalpite?.palpites?.[jogoId];
@@ -2154,18 +2169,31 @@ function renderFormPalpite(){
       ${jogosAtivos.map((j,idx)=>{
         const pal = palJogos[j.id];
         const temPalpite = pal!==undefined && pal!==null;
-        return `<div onclick="abrirModalMata('${j.id}')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:10px;margin-bottom:8px;cursor:pointer;border:1.5px solid ${temPalpite?'rgba(0,155,58,0.3)':'var(--border)'}">
+        // Verificar se jogo está bloqueado
+        let _bloqueado = false;
+        if(j.date && j.time){
+          try{
+            const [_d,_m]=j.date.split('/');
+            const _tRaw=j.time.replace('h','');
+            const [_hh,_mm]=_tRaw.includes(':')? _tRaw.split(':') : [_tRaw,'00'];
+            const _dtUTC=new Date(`2026-${_m}-${_d}T${_hh.padStart(2,'0')}:${(_mm||'00').padStart(2,'0')}:00Z`);
+            _bloqueado = ((_dtUTC-new Date())/60000) <= 5;
+          }catch(e){}
+        }
+        const _onclick = _bloqueado ? '' : `onclick="abrirModalMata('${j.id}')"`;
+        const _border = _bloqueado?'rgba(255,60,60,0.3)':temPalpite?'rgba(0,155,58,0.3)':'var(--border)';
+        return `<div ${_onclick} style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:10px;margin-bottom:8px;cursor:${_bloqueado?'default':'pointer'};border:1.5px solid ${_border};opacity:${_bloqueado&&!temPalpite?0.6:1}">
           <div style="flex:1;display:flex;align-items:center;gap:8px">
             <span style="font-size:20px">${j.f1}</span>
             <div>
               <div style="font-size:12px;font-weight:700">${j.t1} × ${j.t2}</div>
-              <div style="font-size:10px;color:var(--txt3)">${j.date} · ${j.time}</div>
+              <div style="font-size:10px;color:${_bloqueado?'#FF6B6B':'var(--txt3)'}">${j.date} · ${j.time}${_bloqueado?' · 🔒 Encerrado':''}</div>
             </div>
             <span style="font-size:20px">${j.f2}</span>
           </div>
           ${temPalpite
-            ?`<div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--amarelo);min-width:52px;text-align:right">${pal.g1} × ${pal.g2}</div>`
-            :`<div style="font-size:11px;color:var(--amarelo);font-weight:700;min-width:52px;text-align:right">📝 Palpitar</div>`
+            ?`<div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:${_bloqueado?'var(--txt3)':'var(--amarelo)'};min-width:52px;text-align:right">${pal.g1} × ${pal.g2}</div>`
+            :`<div style="font-size:11px;color:${_bloqueado?'#FF6B6B':'var(--amarelo)'};font-weight:700;min-width:52px;text-align:right">${_bloqueado?'🔒':'📝 Palpitar'}</div>`
           }
         </div>`;
       }).join('')}
