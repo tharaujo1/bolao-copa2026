@@ -2815,7 +2815,7 @@ function renderRanking(){
       return a.ts-b.ts;
     });
     if(Object.keys(resultadosMata).length>0){
-      const total=ativos.length*(cfgMata.valor||20);
+      const total=(_totalPagantesMata||ativos.length)*(cfgMata.valor||50);
       const medals=['🥇','🥈','🥉'];
       let prows='';
       [[cfgMata.p1,0],[cfgMata.p2,1],[cfgMata.p3,2]].forEach(([pct,i])=>{
