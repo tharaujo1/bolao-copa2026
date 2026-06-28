@@ -1487,10 +1487,15 @@ function calcularRankingMata(ativos){
     }
     return{...p,total,exatos,venc,diff};
   }).sort((a,b)=>{
-    if(b.total!==a.total) return b.total-a.total;
-    if(b.exatos!==a.exatos) return b.exatos-a.exatos;
-    if(b.venc!==a.venc) return b.venc-a.venc;
-    if(a.diff!==b.diff) return a.diff-b.diff;
+    if(b.total!==a.total) return b.total-a.total;       // 1. Maior pontuação
+    if(b.exatos!==a.exatos) return b.exatos-a.exatos;   // 2. Mais placares exatos
+    if(b.venc!==a.venc) return b.venc-a.venc;           // 3. Mais vencedores acertados
+    if(a.diff!==b.diff) return a.diff-b.diff;           // 4. Menor diferença de gols
+    // 5. Quem palpitou em mais jogos
+    const jogosA = Object.keys(a.palpites||{}).length;
+    const jogosB = Object.keys(b.palpites||{}).length;
+    if(jogosB!==jogosA) return jogosB-jogosA;
+    // 6. Quem entrou primeiro no bolão (ts mais antigo)
     return a.ts-b.ts;
   });
 }
