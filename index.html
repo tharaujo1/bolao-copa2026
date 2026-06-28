@@ -1098,16 +1098,16 @@ function toast(msg,type=''){
 // ═══════════════════════════════════════
 async function loadAll(){
   try{
-    const [{data:cfgs},{data:pm},{data:pu},{data:rm},{data:ru},{data:feed},{count:_countPagantes}] = await Promise.all([
+    const [{data:cfgs},{data:pm},{data:pu},{data:rm},{data:ru},{data:feed},{data:partsData}] = await Promise.all([
       sb.from('config').select('*'),
       sb.from('palpites_mata').select('*').order('ts'),
       sb.from('palpites_unico').select('*').order('ts'),
       sb.from('resultados_mata').select('*'),
       sb.from('resultado_unico').select('*').eq('id',1).single(),
       sb.from('feed').select('*').order('created_at',{ascending:false}).limit(30),
-      sb.from('participantes').select('*',{count:'exact',head:true}).eq('pago_mata',true),
+      sb.from('participantes').select('pago,pago_mata,pago_unico,pago_unico2,nome,whats'),
     ]);
-    if(_countPagantes) _totalPagantesMata = _countPagantes;
+    if(partsData) { participantesData=partsData; _totalPagantesMata=partsData.filter(p=>p.pago_mata||p.pago).length; }
     cfgMata = cfgs?.find(c=>c.id==='mata')?.dados||{valor:20,p1:60,p2:25,p3:15,pixChave:'',pixNome:'',pixBanco:'',pixTipo:'CPF',faseAtiva:'dezesseis',jogosAtivos:[],adminPwd:'copa2026'};
   // Carregar total de pagantes do banco
     const _defUnico = {valor:10,p1:70,p2:20,p3:0,aceitar:true,jogoAtivo:null,tbGV:true,tbTG:true,tbGP:false,tbBonus:false,bonusQ:'',tbOrdem:true,adminPwd:'copa2026'};
@@ -1134,6 +1134,10 @@ async function loadAll(){
     console.error('loadAll erro geral:',e);
   }
   // Carregar participantes isolado
+  // Buscar total de pagantes mata separadamente
+  sb.from('participantes').select('*',{count:'exact',head:true}).eq('pago_mata',true).then(r=>{
+    if(r.count) { _totalPagantesMata=r.count; }
+  });
   sb.from('participantes').select('pago,pago_mata,pago_unico,pago_unico2,nome,whats')
     .then(({data})=>{ if(data){ participantesData=data; try{updateHeader();}catch(e){} } })
     .catch(e=>console.warn('participantes:',e));
@@ -1437,8 +1441,6 @@ async function verificarVencedoresMata(){
   if(!ranked.length) return;
 
   // Contar pagantes direto — participantesData pode estar vazio no momento da render
-  // Debug temporário
-  console.log('_totalPagantesMata:', _totalPagantesMata, 'participantesData:', participantesData.length, 'ativos:', ativos.length);
   const _pagantes = _totalPagantesMata>0 ? _totalPagantesMata : (participantesData.filter(p=>p.pago_mata||p.pago).length || ativos.length);
   const totalBolada = _pagantes*(cfgMata.valor||50);
   const premios = [
@@ -1817,8 +1819,6 @@ async function renderPagamentoVencedoresMata(){
   const ranked = calcularRankingMata(ativos);
 
   // Contar pagantes direto — participantesData pode estar vazio no momento da render
-  // Debug temporário
-  console.log('_totalPagantesMata:', _totalPagantesMata, 'participantesData:', participantesData.length, 'ativos:', ativos.length);
   const _pagantes = _totalPagantesMata>0 ? _totalPagantesMata : (participantesData.filter(p=>p.pago_mata||p.pago).length || ativos.length);
   const totalBolada = _pagantes*(cfgMata.valor||50);
   const p1val = Math.round(totalBolada*(cfgMata.p1||60)/100);
