@@ -2748,7 +2748,11 @@ function renderRanking(){
       let total=0,exatos=0,venc=0,diff=0;
       for(const [jid,res] of Object.entries(resultadosMata)){
         const pal=p.palpites?.[jid];if(!pal) continue;
+        // Só calcular pontos de jogos que já terminaram (têm resultado real no banco)
+        // Verificar se o jogo já começou baseado no horário
         const fase=FASES_MATA.find(f=>f.jogos.some(j=>j.id===jid));
+        const jogoInfo = fase?.jogos.find(j=>j.id===jid);
+        if(jogoInfo && !jogoJaComecou(jogoInfo)) continue; // pula jogos que não começaram
         const mult=fase?.mult||1;
         const pts=calcMata(pal.g1,pal.g2,res.g1,res.g2,mult,pal.bonus||null,res.bonusRes||null);
         total+=pts;
