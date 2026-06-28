@@ -1321,9 +1321,9 @@ async function enviarPalpiteMataModal(){
     }catch(e){}
     const _bonus2 = {tipo:_mataModal.bonusTipo, venc:_mataModal.bonusVenc};
     const novosPalpites = {[jogoId]:{g1,g2,...((_bonus2.tipo||_bonus2.venc)?{bonus:_bonus2}:{})}};
-    const {error}=await sb.from('palpites_mata').insert({nome,whats,palpites:novosPalpites,status:statusInicial,ts:Date.now()});
-    if(error){ toast('Erro ao salvar','err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
-    palpitesMata.push({nome,whats,palpites:novosPalpites,status:statusInicial,ts:Date.now()});
+    const {data:insData, error}=await sb.from('palpites_mata').insert({nome,whats:whatsLimpo,palpites:novosPalpites,status:statusInicial,ts:Date.now()}).select();
+    if(error){ toast(`Erro: ${error.message}`,'err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
+    palpitesMata.push({nome,whats:whatsLimpo,palpites:novosPalpites,status:statusInicial,ts:Date.now()});
   }
 
   toast(`✅ ${g1}×${g2} salvo!`,'ok');
