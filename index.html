@@ -2335,7 +2335,7 @@ async function enviarMata(){
   if(!nome) return toast('Digite seu nome!','err');
   if(!whats) return toast('Digite seu WhatsApp — é obrigatório!','err');
   const whatsLimpo=whats.replace(/\D/g,'');
-  if(whatsLimpo.length<10) return toast('WhatsApp inválido. Use DDD + número.','err');
+  if(whatsLimpo.length<11) return toast('WhatsApp inválido. Use DDD + 9 dígitos (11 no total).','err');
   if(cfgMata.inscricoesAbertas===false) return toast('Inscrições encerradas! O grupo do mata-mata já está fechado.','err');
   if(palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo)) return toast('Este WhatsApp já está cadastrado!','err');
   if(palpitesMata.find(p=>p.nome.toLowerCase()===nome.toLowerCase())) return toast('Este nome já está cadastrado!','err');
@@ -2524,7 +2524,7 @@ async function enviarUnico(editando=false){
   if(!nome) return toast('Digite seu nome!','err');
   if(!whats) return toast('Digite seu WhatsApp — é obrigatório!','err');
   const whatsLimpo=whats.replace(/\D/g,'');
-  if(whatsLimpo.length<10) return toast('WhatsApp inválido. Use DDD + número.','err');
+  if(whatsLimpo.length<11) return toast('WhatsApp inválido. Use DDD + 9 dígitos (11 no total).','err');
   if(!cfgUnico.aceitar) return toast('Palpites fechados!','err');
   if(resultadoUnico) return toast('Resultado já apurado!','err');
   const _palExist=palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo&&(p.jogo_extra_id||'jogo1')==='jogo1');
@@ -4751,7 +4751,7 @@ function detectarTipoPix(valor){
   if(nums.length === 11 && parseInt(nums[0]) > 0 && !v.includes('-')){
     el.textContent='✅ CPF detectado'; el.style.color='var(--verde)'; return 'CPF';
   }
-  if(nums.length === 10 || nums.length === 11){
+  if(nums.length === 11){
     el.textContent='✅ Celular detectado'; el.style.color='var(--verde)'; return 'Celular';
   }
   if(v.length >= 32){
@@ -4769,7 +4769,7 @@ function voltarLogin(){
 async function verificarLogin(){
   const whats = document.getElementById('loginWhats')?.value.trim();
   const whatsLimpo = whats ? whats.replace(/\D/g,'') : '';
-  if(!whats || whatsLimpo.length < 10){
+  if(!whats || whatsLimpo.length < 11){
     toast('Digite seu WhatsApp com DDD!','err');
     return;
   }
