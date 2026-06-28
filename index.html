@@ -1432,7 +1432,8 @@ async function verificarVencedoresMata(){
   const ranked = calcularRankingMata(ativos);
   if(!ranked.length) return;
 
-  const totalBolada = ativos.length*(cfgMata.valor||50);
+  const _pagantes = participantesData.filter(p=>p.pago_mata||p.pago).length || ativos.length;
+  const totalBolada = _pagantes*(cfgMata.valor||50);
   const premios = [
     {pos:1, pct:cfgMata.p1||60},
     {pos:2, pct:cfgMata.p2||25},
@@ -1808,7 +1809,8 @@ async function renderPagamentoVencedoresMata(){
   // Calcular ranking atual
   const ranked = calcularRankingMata(ativos);
 
-  const totalBolada = ativos.length*(cfgMata.valor||50);
+  const _pagantes = participantesData.filter(p=>p.pago_mata||p.pago).length || ativos.length;
+  const totalBolada = _pagantes*(cfgMata.valor||50);
   const p1val = Math.round(totalBolada*(cfgMata.p1||60)/100);
   const p2val = Math.round(totalBolada*(cfgMata.p2||25)/100);
   const p3val = cfgMata.p3>0 ? Math.round(totalBolada*cfgMata.p3/100) : 0;
