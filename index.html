@@ -1350,7 +1350,7 @@ let pollingMataInterval = null;
 function iniciarPollingMata(){
   if(pollingMataInterval) clearInterval(pollingMataInterval);
   if(!apiKey || !cfgMata.jogosAtivos?.length) return;
-  pollingMataInterval = setInterval(verificarResultadosMata, 60000);
+  pollingMataInterval = setInterval(verificarResultadosMata, 90000);
   verificarResultadosMata();
 }
 
@@ -1511,7 +1511,7 @@ function iniciarPollingExtra(){
   if(pollingInterval) clearInterval(pollingInterval);
   const temJogoAtivo = cfgUnico.jogoAtivo || cfgUnico2.jogoAtivo;
   if(!temJogoAtivo || !apiKey) return;
-  pollingInterval = setInterval(verificarResultadosExtra, 60000);
+  setTimeout(()=>{ pollingInterval = setInterval(verificarResultadosExtra, 90000); }, 30000);
   verificarResultadosExtra(); // rodar imediatamente
 }
 
@@ -3342,7 +3342,7 @@ async function fetchLive(manual=false){
 
       if(status==='IN_PLAY'){
         document.getElementById('hLive').innerHTML='<span class="live-chip">Ao Vivo</span>';
-        if(!liveInterval) liveInterval=setInterval(()=>fetchLive(),30000);
+        if(!liveInterval) liveInterval=setInterval(()=>fetchLive(),60000);
         const tg=(typeof g1==='number'?g1:0)+(typeof g2==='number'?g2:0);
         if(tg>lastGoals&&lastGoals>=0){
           const msg=`⚽ GOL! Placar: ${g1} × ${g2}`;
