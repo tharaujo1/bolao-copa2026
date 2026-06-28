@@ -1432,8 +1432,11 @@ async function verificarVencedoresMata(){
   const ranked = calcularRankingMata(ativos);
   if(!ranked.length) return;
 
-  const _pagantes = participantesData.filter(p=>p.pago_mata||p.pago).length || ativos.length;
-  const totalBolada = _pagantes*(cfgMata.valor||50);
+  // Contar pagantes direto — participantesData pode estar vazio no momento da render
+  const _pagantes = participantesData.length>0 
+    ? participantesData.filter(p=>p.pago_mata||p.pago).length 
+    : palpitesMata.filter(p=>p.status==='ativo').length;
+  const totalBolada = Math.max(_pagantes, ativos.length)*(cfgMata.valor||50);
   const premios = [
     {pos:1, pct:cfgMata.p1||60},
     {pos:2, pct:cfgMata.p2||25},
@@ -1809,8 +1812,11 @@ async function renderPagamentoVencedoresMata(){
   // Calcular ranking atual
   const ranked = calcularRankingMata(ativos);
 
-  const _pagantes = participantesData.filter(p=>p.pago_mata||p.pago).length || ativos.length;
-  const totalBolada = _pagantes*(cfgMata.valor||50);
+  // Contar pagantes direto — participantesData pode estar vazio no momento da render
+  const _pagantes = participantesData.length>0 
+    ? participantesData.filter(p=>p.pago_mata||p.pago).length 
+    : palpitesMata.filter(p=>p.status==='ativo').length;
+  const totalBolada = Math.max(_pagantes, ativos.length)*(cfgMata.valor||50);
   const p1val = Math.round(totalBolada*(cfgMata.p1||60)/100);
   const p2val = Math.round(totalBolada*(cfgMata.p2||25)/100);
   const p3val = cfgMata.p3>0 ? Math.round(totalBolada*cfgMata.p3/100) : 0;
@@ -2815,7 +2821,9 @@ function renderRanking(){
     const pc=['p1','p2','p3'],pp=['g','s','b'],md=['🥇','🥈','🥉'];
     container.innerHTML=ranked.map((p,i)=>{
       const isPend = p.status!=='ativo';
-      return `<div class="rank-item ${pc[i]||''}" style="${isPend?'opacity:0.5':''}">
+      const _myW1 = localStorage.getItem('bolao_whats')?.replace(/\D/g,'')||'';
+      const _isMine1 = p.whats?.replace(/\D/g,'')===_myW1;
+      return `<div class="rank-item ${pc[i]||''}" style="${isPend?'opacity:0.5':''}${_isMine1?';border:2px solid var(--amarelo);background:rgba(254,223,0,0.06)':''}">
         <div class="rank-pos ${pp[i]||''}">${i+1}</div>
         <div class="rank-info">
           <div class="rank-name">${p.nome} ${md[i]||''}${isPend?' <span style="font-size:10px;color:var(--warning)">⏳ pendente</span>':''}</div>
@@ -2874,7 +2882,10 @@ function renderRanking(){
       document.getElementById('rankTotal').textContent='R$ '+total.toLocaleString('pt-BR',{minimumFractionDigits:2});
       premCard.style.display='block';
       const pc=['p1','p2','p3'],pp=['g','s','b'],md=['🥇','🥈','🥉'];
-      container.innerHTML=ranked.map((p,i)=>`<div class="rank-item ${pc[i]||''}">
+      container.innerHTML=ranked.map((p,i)=>{
+        const _myW2 = localStorage.getItem('bolao_whats')?.replace(/\D/g,'')||'';
+        const _isMine2 = p.whats?.replace(/\D/g,'')===_myW2;
+        return `<div class="rank-item ${pc[i]||''}" style="${_isMine2?'border:2px solid var(--amarelo);background:rgba(254,223,0,0.06)':''}">
         <div class="rank-pos ${pp[i]||''}">${i+1}</div>
         <div class="rank-info">
           <div class="rank-name">${p.nome} ${md[i]||''}</div>
