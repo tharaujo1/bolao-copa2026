@@ -1059,7 +1059,7 @@ let participantesData = [];
 let headerExtraIdx = 0;
 let headerExtraInterval = null;
 let _placarUnico = {uG1:0, uG2:0, uG1b:0, uG2b:0};
-let _mataModal = {jogoId:null, g1:0, g2:0, aberto:false, bonusTipo:null, bonusVenc:null};
+let _mataModal = {jogoId:null, g1:0, g2:0, aberto:false};
 let liveInterval = null;
 let lastGoals = 0;
 let realtimeSubs = [];
@@ -1207,17 +1207,6 @@ function abrirModalMata(jogoId){
           </div>
         </div>
       </div>
-      <div id="bonusEmpateDiv" style="display:none;background:rgba(254,223,0,0.06);border:1px solid rgba(254,223,0,0.3);border-radius:10px;padding:12px;margin-bottom:12px">
-        <div style="font-size:11px;color:var(--amarelo);font-weight:700;letter-spacing:1px;margin-bottom:10px">⏱ EMPATE — Quem avança?</div>
-        <div style="display:flex;gap:6px;margin-bottom:8px">
-          <button onclick="setBonusTipo('prorrogacao',this)" id="btnProrr" class="btn-bonus-tipo" style="flex:1;background:var(--card);border:1.5px solid var(--border);color:var(--txt);border-radius:8px;padding:8px;font-size:11px;font-weight:700;cursor:pointer">⏱ Prorrogação</button>
-          <button onclick="setBonusTipo('penaltis',this)" id="btnPen" class="btn-bonus-tipo" style="flex:1;background:var(--card);border:1.5px solid var(--border);color:var(--txt);border-radius:8px;padding:8px;font-size:11px;font-weight:700;cursor:pointer">🥅 Pênaltis</button>
-        </div>
-        <div style="display:flex;gap:6px">
-          <button onclick="setBonusVenc('home',this)" id="btnVencHome" class="btn-bonus-venc" style="flex:1;background:var(--card);border:1.5px solid var(--border);color:var(--txt);border-radius:8px;padding:8px;font-size:13px;cursor:pointer">${j.f1} ${j.t1}</button>
-          <button onclick="setBonusVenc('away',this)" id="btnVencAway" class="btn-bonus-venc" style="flex:1;background:var(--card);border:1.5px solid var(--border);color:var(--txt);border-radius:8px;padding:8px;font-size:13px;cursor:pointer">${j.f2} ${j.t2}</button>
-        </div>
-      </div>
       <button id="btnEnviarModal" onclick="enviarPalpiteMataModal()" class="btn btn-verde" style="margin-bottom:8px">
         ${palAtual?'✅ Atualizar palpite':'⚽ Enviar palpite'}
       </button>
@@ -1239,7 +1228,6 @@ function abrirModalMata(jogoId){
     const key = target==='mg1'?'g1':'g2';
     _mataModal[key] = Math.max(0, Math.min(20, (_mataModal[key]||0)+delta));
     el.textContent = _mataModal[key];
-    atualizarBonusEmpate();
   });
 }
 
@@ -1271,8 +1259,7 @@ async function enviarPalpiteMataModal(){
 
   if(palExist){
     // Atualizar jogo específico no JSON existente
-    const _bonus = {tipo:_mataModal.bonusTipo, venc:_mataModal.bonusVenc};
-    const novosPalpites = {...(palExist.palpites||{}), [jogoId]:{g1,g2,...((_bonus.tipo||_bonus.venc)?{bonus:_bonus}:{})}};
+    const novosPalpites = {...(palExist.palpites||{}), [jogoId]:{g1,g2}};
     const {error} = await sb.from('palpites_mata')
       .update({palpites:novosPalpites, ts:Date.now()})
       .eq('whats', whatsLimpo);
@@ -1286,8 +1273,7 @@ async function enviarPalpiteMataModal(){
       const {data:part}=await sb.from('participantes').select('pago_mata,pago').eq('whats',whatsLimpo).single();
       if(part?.pago_mata||part?.pago) statusInicial='ativo';
     }catch(e){}
-    const _bonus2 = {tipo:_mataModal.bonusTipo, venc:_mataModal.bonusVenc};
-    const novosPalpites = {[jogoId]:{g1,g2,...((_bonus2.tipo||_bonus2.venc)?{bonus:_bonus2}:{})}};
+    const novosPalpites = {[jogoId]:{g1,g2}};
     const {error}=await sb.from('palpites_mata').insert({nome,whats,palpites:novosPalpites,status:statusInicial,ts:Date.now()});
     if(error){ toast('Erro ao salvar','err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
     palpitesMata.push({nome,whats,palpites:novosPalpites,status:statusInicial,ts:Date.now()});
@@ -2401,31 +2387,6 @@ function jogoJaComecou(jogo){
   } catch(e){ return false; }
 }
 
-
-function setBonusTipo(tipo, btn){
-  _mataModal.bonusTipo = tipo;
-  document.querySelectorAll('.btn-bonus-tipo').forEach(b=>{
-    b.style.background='var(--card)'; b.style.borderColor='var(--border)'; b.style.color='var(--txt)';
-  });
-  btn.style.background='rgba(254,223,0,0.2)'; btn.style.borderColor='var(--amarelo)'; btn.style.color='var(--amarelo)';
-}
-
-function setBonusVenc(venc, btn){
-  _mataModal.bonusVenc = venc;
-  document.querySelectorAll('.btn-bonus-venc').forEach(b=>{
-    b.style.background='var(--card)'; b.style.borderColor='var(--border)';
-  });
-  btn.style.background='rgba(61,122,255,0.2)'; btn.style.borderColor='#3D7AFF';
-}
-
-function atualizarBonusEmpate(){
-  const div = document.getElementById('bonusEmpateDiv');
-  if(!div) return;
-  const isEmpate = _mataModal.g1 === _mataModal.g2;
-  div.style.display = isEmpate ? 'block' : 'none';
-  if(!isEmpate){ _mataModal.bonusTipo=null; _mataModal.bonusVenc=null; }
-}
-
 function ajustarPlacar(id, delta){
   _placarUnico[id] = Math.max(0, Math.min(20, (_placarUnico[id]||0) + delta));
   const el = document.getElementById(id);
@@ -2560,25 +2521,15 @@ async function enviarUnico2(){
 // ═══════════════════════════════════════
 // PONTUAÇÃO
 // ═══════════════════════════════════════
-function calcMata(g1p,g2p,g1r,g2r,mult,bonus=null,bonusRes=null){
+function calcMata(g1p,g2p,g1r,g2r,mult){
   let base=0;
-  const acertouPlacar = g1p===g1r&&g2p===g2r;
-  if(acertouPlacar) base=10;
+  if(g1p===g1r&&g2p===g2r) base=10;
   else{
     const rp=g1p>g2p?1:g1p<g2p?-1:0,rr=g1r>g2r?1:g1r<g2r?-1:0;
     if(rp===rr) base=(g1p-g2p)===(g1r-g2r)?6:3;
     else if(rp===0&&rr===0) base=1;
   }
-  let pts = Math.round(base*mult);
-  // Bônus empate: acertou prorrogação/pênaltis + quem avançou
-  const foiEmpate = g1r===g2r;
-  if(foiEmpate && acertouPlacar && bonus?.venc && bonusRes?.venc){
-    const acertouVenc = bonus.venc === bonusRes.venc;
-    const acertouTipo = bonus.tipo === bonusRes.tipo;
-    if(acertouVenc && acertouTipo) pts += 3;
-    else if(acertouVenc) pts += 2;
-  }
-  return pts;
+  return Math.round(base*mult);
 }
 function calcUnico(g1p,g2p,g1r,g2r){
   if(g1p===g1r&&g2p===g2r) return 10;
@@ -4133,9 +4084,9 @@ async function renderSmartJogos(tipo){
     if(resHoje.ok){ const d=await resHoje.json(); matches=[...matches,...(d.matches||[])]; }
     if(resAmanha.ok){ const d=await resAmanha.json(); matches=[...matches,...(d.matches||[])]; }
 
-    // Filtrar jogos — todas as fases incluindo LAST_32
+    // Filtrar só jogos não encerrados ou de hoje
     const jogosAPI = matches
-      .filter(m=>true) // mostrar todos os jogos do dia
+      .filter(m=>m.status!=='FINISHED')
       .map(m=>{
         const dt = new Date(m.utcDate);
         const dtBR = new Date(dt.getTime()-3*3600000);
