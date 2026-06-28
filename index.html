@@ -1225,7 +1225,7 @@ function abrirModalMata(jogoId){
           </div>
         </div>
       </div>
-      <div id="bonusEmpateDiv" style="background:rgba(254,223,0,0.06);border:1px solid rgba(254,223,0,0.3);border-radius:10px;padding:12px;margin-bottom:12px">
+      <div id="bonusEmpateDiv" style="display:none;background:rgba(254,223,0,0.06);border:1px solid rgba(254,223,0,0.3);border-radius:10px;padding:12px;margin-bottom:12px">
         <div style="font-size:11px;color:var(--amarelo);font-weight:700;letter-spacing:1px;margin-bottom:10px">⏱ EMPATE — Quem avança?</div>
         <div style="display:flex;gap:6px;margin-bottom:8px">
           <button onclick="setBonusTipo('prorrogacao',this)" id="btnProrr" class="btn-bonus-tipo" style="flex:1;background:var(--card);border:1.5px solid var(--border);color:var(--txt);border-radius:8px;padding:8px;font-size:11px;font-weight:700;cursor:pointer">⏱ Prorrogação</button>
@@ -2453,7 +2453,11 @@ function setBonusVenc(venc, btn){
 }
 
 function atualizarBonusEmpate(){
-  // Campo sempre visível nas eliminatórias — não faz nada
+  const div = document.getElementById('bonusEmpateDiv');
+  if(!div) return;
+  const isEmpate = _mataModal.g1 === _mataModal.g2;
+  div.style.display = isEmpate ? 'block' : 'none';
+  if(!isEmpate){ _mataModal.bonusTipo=null; _mataModal.bonusVenc=null; }
 }
 
 function ajustarPlacar(id, delta){
@@ -2608,9 +2612,9 @@ function calcMata(g1p,g2p,g1r,g2r,mult,bonus=null,bonusRes=null){
 
   let pts = Math.round(base*mult);
 
-  // Bônus eliminatórias: qualquer pessoa que acertar o vencedor final ganha bônus
-  // Vale para quem palpitou empate OU vitória — basta acertar quem avançou
-  if(bonusRes?.venc && bonus?.venc){
+  // Bônus empate nas eliminatórias — só para quem palpitou empate
+  const foiEmpate = g1r===g2r;
+  if(foiEmpate && acertouResultado && bonusRes?.venc && bonus?.venc){
     const acertouVenc = bonus.venc === bonusRes.venc;
     const acertouTipo = bonus.tipo === bonusRes.tipo;
     if(acertouVenc && acertouTipo) pts += 3;
