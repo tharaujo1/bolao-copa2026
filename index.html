@@ -1152,7 +1152,8 @@ function abrirModalMata(jogoId){
       const [d,m]=j.date.split('/');
       const tRaw=j.time.replace('h','');
       const [hh,mm]=tRaw.includes(':')? tRaw.split(':') : [tRaw,'00'];
-      const dtUTC=new Date(`2026-${m}-${d}T${hh.padStart(2,'0')}:${(mm||'00').padStart(2,'0')}:00Z`);
+      // Horário no código é BRT (UTC-3)
+      const dtUTC=new Date(`2026-${m}-${d}T${hh.padStart(2,'0')}:${(mm||'00').padStart(2,'0')}:00-03:00`);
       const minutos = (dtUTC-new Date())/60000;
       if(minutos <= 5){
         toast(minutos<=0?'⏱ Jogo já começou — palpites encerrados':'⏱ Menos de 5 minutos para o jogo — palpites encerrados','err');
@@ -2180,8 +2181,9 @@ function renderFormPalpite(){
             const [_d,_m]=j.date.split('/');
             const _tRaw=j.time.replace('h','');
             const [_hh,_mm]=_tRaw.includes(':')? _tRaw.split(':') : [_tRaw,'00'];
-            const _dtUTC=new Date(`2026-${_m}-${_d}T${_hh.padStart(2,'0')}:${(_mm||'00').padStart(2,'0')}:00Z`);
-            _bloqueado = ((_dtUTC-new Date())/60000) <= 5;
+            // Horário no código é BRT (UTC-3) — converter para UTC adicionando 3h
+            const _dtBRT=new Date(`2026-${_m}-${_d}T${_hh.padStart(2,'0')}:${(_mm||'00').padStart(2,'0')}:00-03:00`);
+            _bloqueado = ((_dtBRT-new Date())/60000) <= 5;
           }catch(e){}
         }
         const _onclick = _bloqueado ? '' : `onclick="abrirModalMata('${j.id}')"`;
@@ -2246,9 +2248,8 @@ function renderFormPalpite(){
             const [d,m]=j.date.split('/');
             const tRaw=j.time.replace('h','');
             const [hh,mm]=tRaw.includes(':')? tRaw.split(':') : [tRaw,'00'];
-            // API retorna UTC, adicionar 3h para obter horario Brasil display
-            // Para calculo de bloqueio, comparar direto em UTC
-            const _jdtUTC=new Date(`2026-${m}-${d}T${hh.padStart(2,'0')}:${(mm||'00').padStart(2,'0')}:00Z`);
+            // Horário no código é BRT (UTC-3)
+            const _jdtUTC=new Date(`2026-${m}-${d}T${hh.padStart(2,'0')}:${(mm||'00').padStart(2,'0')}:00-03:00`);
             _podeEditar = _podeEditar && ((_jdtUTC-new Date())/60000)>5;
           }catch(e){}
         }
@@ -2428,8 +2429,9 @@ function jogoJaComecou(jogo){
     const [d,m] = jogo.date.split('/');
     const tRaw = jogo.time.replace('h','');
     const [hh,mm] = tRaw.includes(':') ? tRaw.split(':') : [tRaw,'00'];
-    const dtUTC = new Date(`2026-${m}-${d}T${hh.padStart(2,'0')}:${(mm||'00').padStart(2,'0')}:00Z`);
-    return new Date() >= dtUTC; // bloqueio exato no início do jogo
+    // Horário no código é BRT (UTC-3)
+    const dtUTC = new Date(`2026-${m}-${d}T${hh.padStart(2,'0')}:${(mm||'00').padStart(2,'0')}:00-03:00`);
+    return new Date() >= dtUTC;
   } catch(e){ return false; }
 }
 
