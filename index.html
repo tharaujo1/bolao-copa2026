@@ -1188,7 +1188,9 @@ function abrirModalMata(jogoId){
 
   const g1init = palAtual?.g1??0;
   const g2init = palAtual?.g2??0;
-  _mataModal = {jogoId, g1:g1init, g2:g2init, aberto:true};
+  const bonusTipoInit = palAtual?.bonus?.tipo||null;
+  const bonusVencInit = palAtual?.bonus?.venc||null;
+  _mataModal = {jogoId, g1:g1init, g2:g2init, aberto:true, bonusTipo:bonusTipoInit, bonusVenc:bonusVencInit};
 
   const proxJ = jogosAtivos[idx+1];
 
@@ -1241,6 +1243,20 @@ function abrirModalMata(jogoId){
     </div>`;
 
   document.body.appendChild(overlay);
+
+  // Pré-selecionar bônus se já existia
+  if(bonusTipoInit){
+    setTimeout(()=>{
+      const btn = document.getElementById(bonusTipoInit==='prorrogacao'?'btnProrr':'btnPen');
+      if(btn) setBonusTipo(bonusTipoInit, btn);
+    }, 50);
+  }
+  if(bonusVencInit){
+    setTimeout(()=>{
+      const btn = document.getElementById(bonusVencInit==='home'?'btnVencHome':'btnVencAway');
+      if(btn) setBonusVenc(bonusVencInit, btn);
+    }, 50);
+  }
 
   // Event delegation para botões do modal
   overlay.addEventListener('click', e=>{
