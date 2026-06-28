@@ -1060,6 +1060,7 @@ let headerExtraIdx = 0;
 let headerExtraInterval = null;
 let _placarUnico = {uG1:0, uG2:0, uG1b:0, uG2b:0};
 let _mataModal = {jogoId:null, g1:0, g2:0, aberto:false, bonusTipo:null, bonusVenc:null};
+window._placarVivo = {}; // sempre limpo ao iniciar
 let liveInterval = null;
 let lastGoals = 0;
 let realtimeSubs = [];
@@ -4663,7 +4664,8 @@ function renderMataStatic(standData){
   FASES_MATA.forEach(fase=>{
     html2+=`<div class="mata-phase-label">${fase.label}${fase.mult>1?' (×'+fase.mult+')':''}</div>`;
     html2+=fase.jogos.map(j=>{
-      const res = resultadosMata[j.id];
+      // Só mostrar resultado se o jogo já começou de verdade
+      const res = jogoJaComecou(j) ? resultadosMata[j.id] : null;
       return `<div class="mata-match ${res?'definido':''}">
         <div class="mata-team">${j.f1} ${j.t1}</div>
         ${res
