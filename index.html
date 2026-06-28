@@ -1139,7 +1139,7 @@ async function loadAll(){
     if(r.count) { _totalPagantesMata=r.count; }
   });
   sb.from('participantes').select('pago,pago_mata,pago_unico,pago_unico2,nome,whats')
-    .then(({data})=>{ if(data){ participantesData=data; try{updateHeader();}catch(e){} } })
+    .then(({data})=>{ if(data){ participantesData=data; _totalPagantesMata=data.filter(p=>p.pago_mata||p.pago).length; try{updateHeader();}catch(e){} } })
     .catch(e=>console.warn('participantes:',e));
 }
 
