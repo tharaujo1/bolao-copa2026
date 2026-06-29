@@ -654,6 +654,7 @@ select option{background:var(--bg);}
           <button class="toggle on" id="tbMataInscricoes" onclick="this.classList.toggle('on')"></button>
         </div>
         <button class="btn btn-amarelo mt8" onclick="salvarCfgMata()">Salvar Configurações</button>
+        <button class="btn mt8" style="background:var(--card);border:1px solid var(--border)" onclick="gerarMsgFaltam()">📋 Gerar mensagem — faltam palpitar</button>
         <button class="btn btn-danger" onclick="limparMata()">⚠️ Limpar palpites</button>
         <div class="divider"></div>
         <div id="admVencedoresMata"></div>
@@ -3652,6 +3653,67 @@ async function salvarCfgMata(){
   };
   await sb.from('config').upsert({id:'mata',dados:cfgMata,updated_at:new Date().toISOString()});
   updateHeader();updatePixDisplay();renderFormPalpite();toast('Configurações salvas!','ok');
+}
+
+async function gerarMsgFaltam(){
+  const fase = FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
+  if(!fase){ toast('Nenhuma fase ativa','err'); return; }
+
+  // Jogos ativos de hoje (BRT)
+  const agora = new Date();
+  const jogosHoje = (cfgMata.jogosAtivos||[])
+    .map(id=>fase.jogos.find(j=>j.id===id))
+    .filter(Boolean)
+    .filter(j=>{
+      const [d,m]=j.date.split('/');
+      const dt=new Date(`2026-${m}-${d}T00:00:00-03:00`);
+      const dtFim=new Date(`2026-${m}-${d}T23:59:59-03:00`);
+      return agora>=dt && agora<=dtFim;
+    });
+
+  if(!jogosHoje.length){ toast('Nenhum jogo hoje','err'); return; }
+
+  // Buscar participantes e palpites do banco
+  const [{data:parts},{data:pals}] = await Promise.all([
+    sb.from('participantes').select('nome,whats').eq('pago_mata',true),
+    sb.from('palpites_mata').select('whats,palpites'),
+  ]);
+
+  // Para cada jogo de hoje, ver quem não palpitou
+  let linhas = [];
+  for(const j of jogosHoje){
+    const faltam = parts.filter(p=>{
+      const pal = pals.find(pm=>pm.whats===p.whats);
+      return !pal?.palpites?.[j.id];
+    }).map(p=>p.nome).sort();
+
+    if(faltam.length){
+      linhas.push(`${j.f1||''} *${j.t1} × ${j.t2}* ${j.f2||''} — ${j.time}\n${faltam.join(', ')}`);
+    }
+  }
+
+  if(!linhas.length){
+    toast('Todos palpitaram nos jogos de hoje! 🎉','ok');
+    return;
+  }
+
+  const msg = `⚠️ *Faltam palpitar hoje!*\n\n${linhas.join('\n\n')}\n\n👉 bolao-copa2026-sigma.vercel.app`;
+
+  // Copiar para clipboard
+  try{
+    await navigator.clipboard.writeText(msg);
+    toast('✅ Mensagem copiada! Cole no WhatsApp.','ok');
+  } catch(e){
+    // Fallback — mostrar em textarea
+    const ta = document.createElement('textarea');
+    ta.value = msg;
+    ta.style = 'position:fixed;top:10px;left:10px;right:10px;height:200px;z-index:9999;font-size:12px;padding:8px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    setTimeout(()=>ta.remove(), 3000);
+    toast('✅ Copiado! Cole no WhatsApp.','ok');
+  }
 }
 
 async function limparMata(){
