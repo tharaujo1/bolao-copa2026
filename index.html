@@ -1319,14 +1319,25 @@ async function enviarPalpiteMataModal(){
   const btn = document.getElementById('btnEnviarModal');
   if(btn){ btn.textContent='Salvando...'; btn.disabled=true; }
 
-  // Verificar se jogo ainda está aberto no momento do envio
-  const faseEnvio = FASES_MATA.find(f=>f.jogos.some(j=>j.id===jogoId));
-  const jogoInfo = faseEnvio?.jogos.find(j=>j.id===jogoId);
-  if(jogoInfo && jogoJaComecou(jogoInfo)){
-    toast('⏱ Jogo já começou — palpites encerrados','err');
-    if(btn){btn.textContent='⚽ Enviar palpite';btn.disabled=false;}
-    return;
-  }
+  // Verificar bloqueio usando hora do SERVIDOR (não do cliente)
+  // Evita que cache antigo permita palpites após início do jogo
+  try{
+    const faseEnvio = FASES_MATA.find(f=>f.jogos.some(j=>j.id===jogoId));
+    const jogoInfo = faseEnvio?.jogos.find(j=>j.id===jogoId);
+    if(jogoInfo){
+      const srvTime = await fetch('/api/time').then(r=>r.json()).catch(()=>({now:Date.now()}));
+      const agora = new Date(srvTime.now);
+      const [d,m] = jogoInfo.date.split('/');
+      const tRaw = jogoInfo.time.replace('h',':');
+      const [hh,mm2] = tRaw.includes(':') ? tRaw.split(':') : [tRaw,'00'];
+      const dtJogo = new Date(`2026-${m}-${d}T${hh.padStart(2,'0')}:${(mm2||'00').padStart(2,'0')}:00-03:00`);
+      if(agora >= dtJogo){
+        toast('⏱ Jogo já começou — palpites encerrados','err');
+        if(btn){btn.textContent='⚽ Enviar palpite';btn.disabled=false;}
+        return;
+      }
+    }
+  }catch(e){}
 
   // Buscar palpite existente
   const palExist = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
