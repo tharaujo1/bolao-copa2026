@@ -1335,6 +1335,15 @@ async function enviarPalpiteMataModal(){
     // Atualizar jogo específico no JSON existente
     const _bonus = {tipo:_mataModal.bonusTipo, venc:_mataModal.bonusVenc};
     const novosPalpites = {...(palExist.palpites||{}), [jogoId]:{g1,g2,...((_bonus.tipo||_bonus.venc)?{bonus:_bonus}:{})}};
+    // Log: registrar alteração se havia palpite anterior
+    const palAnterior = palExist.palpites?.[jogoId];
+    if(palAnterior && (palAnterior.g1!==g1 || palAnterior.g2!==g2)){
+      sb.from('palpites_log').insert({
+        whats:whatsLimpo, nome, jogo_id:jogoId,
+        antes:{g1:palAnterior.g1,g2:palAnterior.g2},
+        depois:{g1,g2}, ts:Date.now()
+      }).catch(()=>{});
+    }
     const {error} = await sb.from('palpites_mata')
       .update({palpites:novosPalpites, ts:Date.now()})
       .eq('whats', whatsLimpo);
