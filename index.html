@@ -1317,8 +1317,8 @@ async function enviarPalpiteMataModal(){
   const g2 = _mataModal.g2;
 
   // Verificar se jogo ainda está aberto no momento do envio
-  const fase = FASES_MATA.find(f=>f.jogos.some(j=>j.id===jogoId));
-  const jogoInfo = fase?.jogos.find(j=>j.id===jogoId);
+  const faseEnvio = FASES_MATA.find(f=>f.jogos.some(j=>j.id===jogoId));
+  const jogoInfo = faseEnvio?.jogos.find(j=>j.id===jogoId);
   if(jogoInfo && jogoJaComecou(jogoInfo)){
     toast('⏱ Jogo já começou — palpites encerrados','err');
     if(btn){btn.textContent='⚽ Enviar palpite';btn.disabled=false;}
