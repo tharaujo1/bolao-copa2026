@@ -1063,6 +1063,8 @@ let _placarUnico = {uG1:0, uG2:0, uG1b:0, uG2b:0};
 let _mataModal = {jogoId:null, g1:0, g2:0, aberto:false, bonusTipo:null, bonusVenc:null};
 let _totalPagantesMata = 0; // carregado do banco
 window._placarVivo = {}; // sempre limpo ao iniciar
+// Re-renderizar lista de jogos a cada minuto para atualizar bloqueios
+setInterval(()=>{ try{ renderFormPalpite(); }catch(e){} }, 60000);
 let liveInterval = null;
 let lastGoals = 0;
 let realtimeSubs = [];
