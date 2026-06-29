@@ -1316,6 +1316,9 @@ async function enviarPalpiteMataModal(){
   const g1 = _mataModal.g1;
   const g2 = _mataModal.g2;
 
+  const btn = document.getElementById('btnEnviarModal');
+  if(btn){ btn.textContent='Salvando...'; btn.disabled=true; }
+
   // Verificar se jogo ainda está aberto no momento do envio
   const faseEnvio = FASES_MATA.find(f=>f.jogos.some(j=>j.id===jogoId));
   const jogoInfo = faseEnvio?.jogos.find(j=>j.id===jogoId);
@@ -1327,9 +1330,6 @@ async function enviarPalpiteMataModal(){
 
   // Buscar palpite existente
   const palExist = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
-
-  const btn = document.getElementById('btnEnviarModal');
-  if(btn){ btn.textContent='Salvando...'; btn.disabled=true; }
 
   if(palExist){
     // Atualizar jogo específico no JSON existente
