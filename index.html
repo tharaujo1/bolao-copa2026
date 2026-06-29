@@ -1165,7 +1165,7 @@ function abrirModalMata(jogoId){
   if(j.date && j.time){
     try{
       const [d,m]=j.date.split('/');
-      const tRaw=j.time.replace('h','');
+      const tRaw=j.time.replace('h',':');
       const [hh,mm]=tRaw.includes(':')? tRaw.split(':') : [tRaw,'00'];
       // Horário no código é BRT (UTC-3)
       const dtUTC=new Date(`2026-${m}-${d}T${hh.padStart(2,'0')}:${(mm||'00').padStart(2,'0')}:00-03:00`);
@@ -2217,7 +2217,7 @@ function renderFormPalpite(){
         if(j.date && j.time){
           try{
             const [_d,_m]=j.date.split('/');
-            const _tRaw=j.time.replace('h','');
+            const _tRaw=j.time.replace('h',':');
             const [_hh,_mm]=_tRaw.includes(':')? _tRaw.split(':') : [_tRaw,'00'];
             // Horário no código é BRT (UTC-3) — converter para UTC adicionando 3h
             const _dtBRT=new Date(`2026-${_m}-${_d}T${_hh.padStart(2,'0')}:${(_mm||'00').padStart(2,'0')}:00-03:00`);
@@ -2465,7 +2465,7 @@ function jogoJaComecou(jogo){
   if(!jogo?.date || !jogo?.time) return false;
   try{
     const [d,m] = jogo.date.split('/');
-    const tRaw = jogo.time.replace('h','');
+    const tRaw = jogo.time.replace('h',':');
     const [hh,mm] = tRaw.includes(':') ? tRaw.split(':') : [tRaw,'00'];
     // Horário no código é BRT (UTC-3)
     const dtUTC = new Date(`2026-${m}-${d}T${hh.padStart(2,'0')}:${(mm||'00').padStart(2,'0')}:00-03:00`);
