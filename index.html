@@ -1205,7 +1205,8 @@ function abrirModalMata(jogoId){
   const bonusVencInit = palAtual?.bonus?.venc||null;
   _mataModal = {jogoId, g1:g1init, g2:g2init, aberto:true, bonusTipo:bonusTipoInit, bonusVenc:bonusVencInit};
 
-  const proxJ = jogosAtivos[idx+1];
+  // Pular jogos já bloqueados (já começaram)
+  const proxJ = jogosAtivos.slice(idx+1).find(j=>!jogoJaComecou(j))||null;
 
   const overlay = document.createElement('div');
   overlay.className='mata-modal-overlay';
