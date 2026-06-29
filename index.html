@@ -1350,7 +1350,7 @@ async function enviarPalpiteMataModal(){
   const jogosAtivos = (cfgMata.jogosAtivos||[]).map(id=>fase?.jogos.find(j=>j.id===id)).filter(Boolean);
   const palAtual = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
   const palJogosAtual = palAtual?.palpites||{};
-  const proxSemPalpite = jogosAtivos.find(j=>!palJogosAtual[j.id]&&j.id!==jogoId);
+  const proxSemPalpite = jogosAtivos.find(j=>!palJogosAtual[j.id]&&j.id!==jogoId&&!jogoJaComecou(j));
 
   fecharModalMata();
   renderFormPalpite(); // Atualizar lista
