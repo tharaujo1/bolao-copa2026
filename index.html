@@ -1168,7 +1168,11 @@ function abrirModalMata(jogoId){
       const dtUTC=new Date(`2026-${m}-${d}T${hh.padStart(2,'0')}:${(mm||'00').padStart(2,'0')}:00-03:00`);
       const minutos = (dtUTC-new Date())/60000;
       if(minutos <= 5){
-        toast(minutos<=0?'⏱ Jogo já começou — palpites encerrados':'⏱ Menos de 5 minutos para o jogo — palpites encerrados','err');
+        // Se foi chamado automaticamente (avanço entre jogos), silenciar
+        // Só mostrar mensagem se o usuário clicou diretamente no jogo
+        if(!_mataModal._autoAvanco){
+          toast(minutos<=0?'⏱ Jogo já começou — palpites encerrados':'⏱ Menos de 5 minutos para o jogo — palpites encerrados','err');
+        }
         return;
       }
     }catch(e){}
@@ -1296,7 +1300,8 @@ function fecharModalMata(){
 
 function proximoJogoModal(jogoId){
   fecharModalMata();
-  setTimeout(()=>abrirModalMata(jogoId), 150);
+  _mataModal._autoAvanco = true;
+  setTimeout(()=>{ abrirModalMata(jogoId); _mataModal._autoAvanco=false; }, 150);
 }
 
 async function enviarPalpiteMataModal(){
