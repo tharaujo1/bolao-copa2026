@@ -1441,11 +1441,21 @@ async function verificarResultadosMata(){
         const match = matches.find(m=>m.status==='FINISHED' && m.id===jogo.apiId);
 
         if(match){
-          const s = match.score?.fullTime||{};
+          // Usar regularTime se disponível (tempo normal), fallback fullTime
+          const sReg = match.score?.regularTime;
+          const sFull = match.score?.fullTime||{};
+          const s = (sReg?.home!=null) ? sReg : sFull;
           const g1=s.home??0, g2=s.away??0;
           // Capturar prorrogação/pênaltis da API
           const duration = match.score?.duration||'REGULAR';
-          const winner = match.score?.winner||null;
+          // winner pode ser null na API para PENALTY_SHOOTOUT — inferir pelo placar de pênaltis
+          let winner = match.score?.winner||null;
+          if(!winner && duration==='PENALTY_SHOOTOUT'){
+            const pen = match.score?.penalties||{};
+            if(pen.home!=null && pen.away!=null){
+              winner = pen.home>pen.away ? 'HOME_TEAM' : pen.away>pen.home ? 'AWAY_TEAM' : null;
+            }
+          }
           const bonusRes = (g1===g2 && winner && winner!=='DRAW') ? {
             tipo: duration==='PENALTY_SHOOTOUT' ? 'penaltis' : 'prorrogacao',
             venc: winner==='HOME_TEAM' ? 'home' : 'away'
