@@ -1344,10 +1344,14 @@ async function enviarPalpiteMataModal(){
         depois:{g1,g2}, ts:Date.now()
       }).catch(()=>{});
     }
-    const {error} = await sb.from('palpites_mata')
+    const updatePromise = sb.from('palpites_mata')
       .update({palpites:novosPalpites, ts:Date.now()})
       .eq('whats', whatsLimpo);
-    if(error){ toast('Erro ao salvar','err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
+    const timeoutPromise = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000));
+    let error;
+    try{ const r = await Promise.race([updatePromise, timeoutPromise]); error=r.error; }
+    catch(e){ error=e; }
+    if(error){ toast('Erro ao salvar. Tente novamente.','err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
     // Atualizar local
     palExist.palpites = novosPalpites;
   } else {
