@@ -1370,13 +1370,23 @@ async function enviarPalpiteMataModal(){
     // Primeiro palpite — criar registro
     let statusInicial='pendente';
     try{
-      const {data:part}=await sb.from('participantes').select('pago_mata,pago').eq('whats',whatsLimpo).single();
-      if(part?.pago_mata||part?.pago) statusInicial='ativo';
+      const partRes = await Promise.race([
+        sb.from('participantes').select('pago_mata,pago').eq('whats',whatsLimpo).maybeSingle(),
+        new Promise(r=>setTimeout(()=>r({data:null}),3000))
+      ]);
+      if(partRes?.data?.pago_mata||partRes?.data?.pago) statusInicial='ativo';
     }catch(e){}
     const _bonus2 = {tipo:_mataModal.bonusTipo, venc:_mataModal.bonusVenc};
     const novosPalpites = {[jogoId]:{g1,g2,...((_bonus2.tipo||_bonus2.venc)?{bonus:_bonus2}:{})}};
-    const {error}=await sb.from('palpites_mata').insert({nome,whats:whatsLimpo,palpites:novosPalpites,status:statusInicial,ts:Date.now()});
-    if(error){ toast('Erro ao salvar. Tente novamente.','err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
+    let errIns;
+    try{
+      const insRes = await Promise.race([
+        sb.from('palpites_mata').insert({nome,whats:whatsLimpo,palpites:novosPalpites,status:statusInicial,ts:Date.now()}),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000))
+      ]);
+      errIns = insRes?.error;
+    }catch(e){ errIns=e; }
+    if(errIns){ toast('Erro ao salvar. Tente novamente.','err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
     palpitesMata.push({nome,whats:whatsLimpo,palpites:novosPalpites,status:statusInicial,ts:Date.now()});
   }
 
