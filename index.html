@@ -1365,13 +1365,9 @@ async function enviarPalpiteMataModal(){
   } else {
     // Primeiro palpite — criar registro
     let statusInicial='pendente';
-    try{
-      const partRes = await Promise.race([
-        sb.from('participantes').select('pago_mata,pago').eq('whats',whatsLimpo).maybeSingle(),
-        new Promise(r=>setTimeout(()=>r({data:null}),3000))
-      ]);
-      if(partRes?.data?.pago_mata||partRes?.data?.pago) statusInicial='ativo';
-    }catch(e){}
+    // Usar participantesData já em memória — sem await extra
+    const partLocal = participantesData.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
+    if(partLocal?.pago_mata||partLocal?.pago) statusInicial='ativo';
     const _bonus2 = {tipo:_mataModal.bonusTipo, venc:_mataModal.bonusVenc};
     const novosPalpites = {[jogoId]:{g1,g2,...((_bonus2.tipo||_bonus2.venc)?{bonus:_bonus2}:{})}};
     const {error:errIns}=await sb.from('palpites_mata').insert({nome,whats:whatsLimpo,palpites:novosPalpites,status:statusInicial,ts:Date.now()});
