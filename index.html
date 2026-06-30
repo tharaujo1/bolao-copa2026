@@ -1357,12 +1357,10 @@ async function enviarPalpiteMataModal(){
   }
 
   if(palExist){
-    const {data:upData, error} = await sb.from('palpites_mata')
+    const {error} = await sb.from('palpites_mata')
       .update({palpites:novosPalpites, ts:Date.now()})
-      .eq('whats', whatsLimpo)
-      .select();
-    if(error){ toast('Erro: '+error.message,'err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
-    if(!upData||upData.length===0){ toast('Erro: registro não encontrado','err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
+      .eq('whats', whatsLimpo);
+    if(error){ toast('Erro ao salvar. Tente novamente.','err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
     palExist.palpites = novosPalpites;
   } else {
     let statusInicial='pendente';
