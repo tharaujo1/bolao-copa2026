@@ -919,22 +919,22 @@ const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 // ═══════════════════════════════════════
 const FASES_MATA = [
   {id:'dezesseis',label:'16-avos',mult:1,jogos:[
-    {id:'D1',apiId:537417,t1:'África do Sul',f1:'🇿🇦',t2:'Canadá',f2:'🇨🇦',date:'28/06',time:'16h'},
-    {id:'D2',apiId:537423,t1:'Brasil',f1:'🇧🇷',t2:'Japão',f2:'🇯🇵',date:'29/06',time:'14h'},
-    {id:'D3',apiId:537415,t1:'Alemanha',f1:'🇩🇪',t2:'Paraguai',f2:'🇵🇾',date:'29/06',time:'17h30'},
-    {id:'D4',apiId:537418,t1:'Holanda',f1:'🇳🇱',t2:'Marrocos',f2:'🇲🇦',date:'29/06',time:'22h15'},
-    {id:'D5',apiId:537424,t1:'Costa do Marfim',f1:'🇨🇮',t2:'Noruega',f2:'🇳🇴',date:'30/06',time:'14h'},
-    {id:'D6',apiId:537416,t1:'França',f1:'🇫🇷',t2:'Suécia',f2:'🇸🇪',date:'30/06',time:'18h'},
-    {id:'D7',apiId:537425,t1:'México',f1:'🇲🇽',t2:'Equador',f2:'🇪🇨',date:'30/06',time:'22h'},
-    {id:'D8',apiId:537426,t1:'Inglaterra',f1:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',t2:'RD Congo',f2:'🇨🇩',date:'01/07',time:'13h'},
-    {id:'D9',apiId:537422,t1:'Bélgica',f1:'🇧🇪',t2:'Senegal',f2:'🇸🇳',date:'01/07',time:'17h'},
-    {id:'D10',apiId:537421,t1:'Estados Unidos',f1:'🇺🇸',t2:'Bósnia',f2:'🇧🇦',date:'01/07',time:'21h'},
-    {id:'D11',apiId:537420,t1:'Espanha',f1:'🇪🇸',t2:'Áustria',f2:'🇦🇹',date:'02/07',time:'16h'},
-    {id:'D12',apiId:537419,t1:'Portugal',f1:'🇵🇹',t2:'Croácia',f2:'🇭🇷',date:'02/07',time:'20h'},
-    {id:'D13',apiId:537429,t1:'Suíça',f1:'🇨🇭',t2:'Argélia',f2:'🇩🇿',date:'03/07',time:'0h'},
-    {id:'D14',apiId:537428,t1:'Austrália',f1:'🇦🇺',t2:'Egito',f2:'🇪🇬',date:'03/07',time:'15h'},
-    {id:'D15',apiId:537427,t1:'Argentina',f1:'🇦🇷',t2:'Cabo Verde',f2:'🇨🇻',date:'03/07',time:'19h'},
-    {id:'D16',apiId:537430,t1:'Colômbia',f1:'🇨🇴',t2:'Gana',f2:'🇬🇭',date:'03/07',time:'22h30'},
+    {id:'D1',apiId:537417,t1:'África do Sul',f1:'🇿🇦',t2:'Canadá',f2:'🇨🇦',date:'28/06',time:'16h',utcDate:'2026-06-28T19:00:00Z'},
+    {id:'D2',apiId:537423,t1:'Brasil',f1:'🇧🇷',t2:'Japão',f2:'🇯🇵',date:'29/06',time:'14h',utcDate:'2026-06-29T17:00:00Z'},
+    {id:'D3',apiId:537415,t1:'Alemanha',f1:'🇩🇪',t2:'Paraguai',f2:'🇵🇾',date:'29/06',time:'17h30',utcDate:'2026-06-29T20:30:00Z'},
+    {id:'D4',apiId:537418,t1:'Holanda',f1:'🇳🇱',t2:'Marrocos',f2:'🇲🇦',date:'29/06',time:'22h',utcDate:'2026-06-30T01:00:00Z'},
+    {id:'D5',apiId:537424,t1:'Costa do Marfim',f1:'🇨🇮',t2:'Noruega',f2:'🇳🇴',date:'30/06',time:'14h',utcDate:'2026-06-30T17:00:00Z'},
+    {id:'D6',apiId:537416,t1:'França',f1:'🇫🇷',t2:'Suécia',f2:'🇸🇪',date:'30/06',time:'18h',utcDate:'2026-06-30T21:00:00Z'},
+    {id:'D7',apiId:537425,t1:'México',f1:'🇲🇽',t2:'Equador',f2:'🇪🇨',date:'30/06',time:'22h',utcDate:'2026-07-01T01:00:00Z'},
+    {id:'D8',apiId:537426,t1:'Inglaterra',f1:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',t2:'RD Congo',f2:'🇨🇩',date:'01/07',time:'13h',utcDate:'2026-07-01T16:00:00Z'},
+    {id:'D9',apiId:537422,t1:'Bélgica',f1:'🇧🇪',t2:'Senegal',f2:'🇸🇳',date:'01/07',time:'17h',utcDate:'2026-07-01T20:00:00Z'},
+    {id:'D10',apiId:537421,t1:'Estados Unidos',f1:'🇺🇸',t2:'Bósnia',f2:'🇧🇦',date:'01/07',time:'21h',utcDate:'2026-07-02T00:00:00Z'},
+    {id:'D11',apiId:537420,t1:'Espanha',f1:'🇪🇸',t2:'Áustria',f2:'🇦🇹',date:'02/07',time:'16h',utcDate:'2026-07-02T19:00:00Z'},
+    {id:'D12',apiId:537419,t1:'Portugal',f1:'🇵🇹',t2:'Croácia',f2:'🇭🇷',date:'02/07',time:'20h',utcDate:'2026-07-02T23:00:00Z'},
+    {id:'D13',apiId:537429,t1:'Suíça',f1:'🇨🇭',t2:'Argélia',f2:'🇩🇿',date:'03/07',time:'0h',utcDate:'2026-07-03T03:00:00Z'},
+    {id:'D14',apiId:537428,t1:'Austrália',f1:'🇦🇺',t2:'Egito',f2:'🇪🇬',date:'03/07',time:'15h',utcDate:'2026-07-03T18:00:00Z'},
+    {id:'D15',apiId:537427,t1:'Argentina',f1:'🇦🇷',t2:'Cabo Verde',f2:'🇨🇻',date:'03/07',time:'19h',utcDate:'2026-07-03T22:00:00Z'},
+    {id:'D16',apiId:537430,t1:'Colômbia',f1:'🇨🇴',t2:'Gana',f2:'🇬🇭',date:'03/07',time:'22h30',utcDate:'2026-07-04T01:30:00Z'},
   ]},
   {id:'oitavas',label:'Oitavas',mult:1.5,jogos:[
     {id:'O1',t1:'Vencedor D1',f1:'⚔️',t2:'Vencedor D2',f2:'⚔️',date:'08/07',time:'16h'},
@@ -1331,78 +1331,80 @@ function proximoJogoModal(jogoId){
   setTimeout(()=>{ abrirModalMata(jogoId); _mataModal._autoAvanco=false; }, 150);
 }
 
-async function enviarPalpiteMataModal(){
-  // Usar SEMPRE localStorage como fonte primária — mais confiável que elementos DOM
-  const nome = localStorage.getItem('bolao_nome') || document.getElementById('mNome')?.value.trim();
-  const whats = localStorage.getItem('bolao_whats') || document.getElementById('mWhats')?.value.trim();
-  if(!nome||!whats){ toast('❌ DEBUG: sem nome/whats — Faça login primeiro','err'); return; }
-  const whatsLimpo = whats.replace(/\D/g,'');
+function enviarPalpiteMataModal(){
+  // Reescrita do zero — sincrona, sem await, sem race conditions.
+
+  const whatsLS = (localStorage.getItem('bolao_whats')||'').replace(/\D/g,'');
+  const nomeLS = localStorage.getItem('bolao_nome')||'';
+  if(!whatsLS || !nomeLS){
+    toast('Faca login primeiro','err');
+    return;
+  }
+
   const jogoId = _mataModal.jogoId;
   const g1 = _mataModal.g1;
   const g2 = _mataModal.g2;
+  if(!jogoId){ toast('Erro: jogo nao identificado','err'); return; }
 
-  const btn = document.getElementById('btnEnviarModal');
-  if(btn){ btn.textContent='Salvando...'; btn.disabled=true; }
-
-  // Verificar bloqueio pelo horário local (já corrigido com replace('h',':'))
-  const faseEnvio = FASES_MATA.find(f=>f.jogos.some(j=>j.id===jogoId));
-  const jogoInfo = faseEnvio?.jogos.find(j=>j.id===jogoId);
-  console.log('[ENVIO] jogoInfo:', jogoInfo, 'jaComecou:', jogoInfo?jogoJaComecou(jogoInfo):'N/A');
+  let jogoInfo = null;
+  for(const fase of FASES_MATA){
+    const achou = fase.jogos.find(j=>j.id===jogoId);
+    if(achou){ jogoInfo = achou; break; }
+  }
   if(jogoInfo && jogoJaComecou(jogoInfo)){
-    toast('⏱ Jogo já começou — palpites encerrados','err');
-    if(btn){btn.textContent='⚽ Enviar palpite';btn.disabled=false;}
+    toast('Jogo ja comecou - palpites encerrados','err');
     return;
   }
-  console.log('[ENVIO] Passou bloqueio, prosseguindo');
 
-  // Buscar palpite existente em memória
-  const palExist = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
-  const _bonus = {tipo:_mataModal.bonusTipo, venc:_mataModal.bonusVenc};
-  const palpitesAtuais = palExist?.palpites||{};
-  const novosPalpites = {...palpitesAtuais, [jogoId]:{g1,g2,...((_bonus.tipo||_bonus.venc)?{bonus:_bonus}:{})}};
+  const palExist = palpitesMata.find(p=>(p.whats||'').replace(/\D/g,'')===whatsLS);
+  const bonusAtual = (_mataModal.bonusTipo||_mataModal.bonusVenc)
+    ? {tipo:_mataModal.bonusTipo, venc:_mataModal.bonusVenc}
+    : null;
+  const palpitesAntigos = (palExist && palExist.palpites) ? palExist.palpites : {};
+  const palpiteAnteriorDesseJogo = palpitesAntigos[jogoId];
+  const novoPalpiteDesseJogo = bonusAtual ? {g1,g2,bonus:bonusAtual} : {g1,g2};
+  const novosPalpites = Object.assign({}, palpitesAntigos, {[jogoId]: novoPalpiteDesseJogo});
 
-  // Log se alterou palpite existente
-  const palAnterior = palpitesAtuais[jogoId];
-  if(palAnterior && (palAnterior.g1!==g1 || palAnterior.g2!==g2)){
-    sb.from('palpites_log').insert({
-      whats:whatsLimpo, nome, jogo_id:jogoId,
-      antes:{g1:palAnterior.g1,g2:palAnterior.g2},
-      depois:{g1,g2}, ts:Date.now()
-    }).catch(()=>{});
-  }
+  toast('Salvo: ' + g1 + 'x' + g2, 'ok');
+  fecharModalMata();
 
-  // Feedback imediato — antes de qualquer operação
-  toast(`✅ ${g1}×${g2} salvo!`,'ok');
-  if(btn){btn.textContent='⚽ Enviar palpite';btn.disabled=false;}
-
-  // Atualizar memória local
   if(palExist){
     palExist.palpites = novosPalpites;
   } else {
-    let statusInicial='pendente';
-    const partLocal = participantesData.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
-    if(partLocal?.pago_mata||partLocal?.pago) statusInicial='ativo';
-    palpitesMata.push({nome,whats:whatsLimpo,palpites:novosPalpites,status:statusInicial,ts:Date.now()});
+    let statusInicial = 'pendente';
+    const partLocal = participantesData.find(p=>(p.whats||'').replace(/\D/g,'')===whatsLS);
+    if(partLocal && (partLocal.pago_mata || partLocal.pago)) statusInicial = 'ativo';
+    palpitesMata.push({nome:nomeLS, whats:whatsLS, palpites:novosPalpites, status:statusInicial, ts:Date.now()});
+  }
+  renderFormPalpite();
+
+  sb.from('palpites_mata')
+    .upsert({nome:nomeLS, whats:whatsLS, palpites:novosPalpites, ts:Date.now()}, {onConflict:'whats'})
+    .then(function(res){ if(res && res.error) console.error('Falha ao persistir palpite:', res.error); });
+
+  if(palpiteAnteriorDesseJogo && (palpiteAnteriorDesseJogo.g1!==g1 || palpiteAnteriorDesseJogo.g2!==g2)){
+    sb.from('palpites_log').insert({
+      whats: whatsLS, nome: nomeLS, jogo_id: jogoId,
+      antes: {g1:palpiteAnteriorDesseJogo.g1, g2:palpiteAnteriorDesseJogo.g2},
+      depois: {g1,g2}, ts: Date.now()
+    }).then(function(){}).catch(function(){});
   }
 
-  // Gravar no banco em background
-  sb.from('palpites_mata')
-    .upsert({nome, whats:whatsLimpo, palpites:novosPalpites, ts:Date.now()},
-            {onConflict:'whats'})
-    .then(({error})=>{ if(error) console.error('Erro upsert:', error); });
-
-  // Verificar próximo jogo sem palpite
-  const fase = FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
-  const jogosAtivos = (cfgMata.jogosAtivos||[]).map(id=>fase?.jogos.find(j=>j.id===id)).filter(Boolean);
-  const palAtual = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
-  const palJogosAtual = palAtual?.palpites||{};
-  const proxSemPalpite = jogosAtivos.find(j=>!palJogosAtual[j.id]&&j.id!==jogoId&&!jogoJaComecou(j));
-
-  fecharModalMata();
-  renderFormPalpite(); // Atualizar lista
-
-  if(proxSemPalpite){
-    setTimeout(()=>abrirModalMata(proxSemPalpite.id), 300);
+  let proximoJogo = null;
+  const faseAtiva = FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
+  const jogosDaFase = faseAtiva ? faseAtiva.jogos : [];
+  const idsAtivos = cfgMata.jogosAtivos || [];
+  for(const id of idsAtivos){
+    if(id===jogoId) continue;
+    if(novosPalpites[id]) continue;
+    const info = jogosDaFase.find(j=>j.id===id);
+    if(!info) continue;
+    if(jogoJaComecou(info)) continue;
+    proximoJogo = info;
+    break;
+  }
+  if(proximoJogo){
+    setTimeout(function(){ abrirModalMata(proximoJogo.id); }, 300);
   }
 }
 
@@ -2523,15 +2525,9 @@ function renderBarraConsenso(slot, j, palpites){
 
 
 function jogoJaComecou(jogo){
-  if(!jogo?.date || !jogo?.time) return false;
-  try{
-    const [d,m] = jogo.date.split('/');
-    const tRaw = jogo.time.replace('h',':');
-    const [hh,mm] = tRaw.includes(':') ? tRaw.split(':') : [tRaw,'00'];
-    // Horário no código é BRT (UTC-3)
-    const dtUTC = new Date(`2026-${m}-${d}T${hh.padStart(2,'0')}:${(mm||'00').padStart(2,'0')}:00-03:00`);
-    return new Date() >= dtUTC;
-  } catch(e){ return false; }
+  // SIMPLES E À PROVA DE ERRO: usa timestamp UTC fixo pré-calculado, sem parsing de string
+  if(!jogo?.utcDate) return false;
+  return Date.now() >= new Date(jogo.utcDate).getTime();
 }
 
 
