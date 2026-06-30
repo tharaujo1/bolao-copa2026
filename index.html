@@ -1285,18 +1285,16 @@ function abrirModalMata(jogoId){
 
   document.body.appendChild(overlay);
 
-  // Pré-selecionar bônus se já existia
+  // Pré-selecionar bônus se já existia — aplica IMEDIATO, sem depender de timing.
+  // _mataModal.bonusTipo/bonusVenc já vêm preenchidos desde a linha de cima,
+  // aqui só sincronizamos o destaque visual dos botões com isso.
   if(bonusTipoInit){
-    setTimeout(()=>{
-      const btn = document.getElementById(bonusTipoInit==='prorrogacao'?'btnProrr':'btnPen');
-      if(btn) setBonusTipo(bonusTipoInit, btn);
-    }, 50);
+    const btnT = document.getElementById(bonusTipoInit==='prorrogacao'?'btnProrr':'btnPen');
+    if(btnT) setBonusTipo(bonusTipoInit, btnT);
   }
   if(bonusVencInit){
-    setTimeout(()=>{
-      const btn = document.getElementById(bonusVencInit==='home'?'btnVencHome':'btnVencAway');
-      if(btn) setBonusVenc(bonusVencInit, btn);
-    }, 50);
+    const btnV = document.getElementById(bonusVencInit==='home'?'btnVencHome':'btnVencAway');
+    if(btnV) setBonusVenc(bonusVencInit, btnV);
   }
 
   // Event delegation para botões do modal
