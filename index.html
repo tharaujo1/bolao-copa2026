@@ -1356,13 +1356,9 @@ async function enviarPalpiteMataModal(){
         depois:{g1,g2}, ts:Date.now()
       }).catch(()=>{});
     }
-    const updatePromise = sb.from('palpites_mata')
+    const {error} = await sb.from('palpites_mata')
       .update({palpites:novosPalpites, ts:Date.now()})
       .eq('whats', whatsLimpo);
-    const timeoutPromise = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000));
-    let error;
-    try{ const r = await Promise.race([updatePromise, timeoutPromise]); error=r.error; }
-    catch(e){ error=e; }
     if(error){ toast('Erro ao salvar. Tente novamente.','err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
     // Atualizar local
     palExist.palpites = novosPalpites;
@@ -1378,14 +1374,7 @@ async function enviarPalpiteMataModal(){
     }catch(e){}
     const _bonus2 = {tipo:_mataModal.bonusTipo, venc:_mataModal.bonusVenc};
     const novosPalpites = {[jogoId]:{g1,g2,...((_bonus2.tipo||_bonus2.venc)?{bonus:_bonus2}:{})}};
-    let errIns;
-    try{
-      const insRes = await Promise.race([
-        sb.from('palpites_mata').insert({nome,whats:whatsLimpo,palpites:novosPalpites,status:statusInicial,ts:Date.now()}),
-        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000))
-      ]);
-      errIns = insRes?.error;
-    }catch(e){ errIns=e; }
+    const {error:errIns}=await sb.from('palpites_mata').insert({nome,whats:whatsLimpo,palpites:novosPalpites,status:statusInicial,ts:Date.now()});
     if(errIns){ toast('Erro ao salvar. Tente novamente.','err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
     palpitesMata.push({nome,whats:whatsLimpo,palpites:novosPalpites,status:statusInicial,ts:Date.now()});
   }
