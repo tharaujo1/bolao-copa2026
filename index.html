@@ -1340,40 +1340,37 @@ async function enviarPalpiteMataModal(){
     return;
   }
 
-  // Buscar palpite existente
+  // Buscar palpite existente em memória
   const palExist = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
+  const _bonus = {tipo:_mataModal.bonusTipo, venc:_mataModal.bonusVenc};
+  const palpitesAtuais = palExist?.palpites||{};
+  const novosPalpites = {...palpitesAtuais, [jogoId]:{g1,g2,...((_bonus.tipo||_bonus.venc)?{bonus:_bonus}:{})}};
 
-  if(palExist){
-    // Atualizar jogo específico no JSON existente
-    const _bonus = {tipo:_mataModal.bonusTipo, venc:_mataModal.bonusVenc};
-    const novosPalpites = {...(palExist.palpites||{}), [jogoId]:{g1,g2,...((_bonus.tipo||_bonus.venc)?{bonus:_bonus}:{})}};
-    // Log: registrar alteração se havia palpite anterior
-    const palAnterior = palExist.palpites?.[jogoId];
-    if(palAnterior && (palAnterior.g1!==g1 || palAnterior.g2!==g2)){
-      sb.from('palpites_log').insert({
-        whats:whatsLimpo, nome, jogo_id:jogoId,
-        antes:{g1:palAnterior.g1,g2:palAnterior.g2},
-        depois:{g1,g2}, ts:Date.now()
-      }).catch(()=>{});
-    }
-    const {error} = await sb.from('palpites_mata')
-      .update({palpites:novosPalpites, ts:Date.now()})
-      .eq('whats', whatsLimpo);
-    if(error){ toast('Erro ao salvar. Tente novamente.','err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
-    // Atualizar local
-    palExist.palpites = novosPalpites;
-  } else {
-    // Primeiro palpite — criar registro
-    let statusInicial='pendente';
-    // Usar participantesData já em memória — sem await extra
+  // Log se alterou palpite existente
+  const palAnterior = palpitesAtuais[jogoId];
+  if(palAnterior && (palAnterior.g1!==g1 || palAnterior.g2!==g2)){
+    sb.from('palpites_log').insert({
+      whats:whatsLimpo, nome, jogo_id:jogoId,
+      antes:{g1:palAnterior.g1,g2:palAnterior.g2},
+      depois:{g1,g2}, ts:Date.now()
+    }).catch(()=>{});
+  }
+
+  // Upsert — funciona para novo registro E atualização
+  let statusInicial = palExist?.status || 'pendente';
+  if(!palExist){
     const partLocal = participantesData.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
     if(partLocal?.pago_mata||partLocal?.pago) statusInicial='ativo';
-    const _bonus2 = {tipo:_mataModal.bonusTipo, venc:_mataModal.bonusVenc};
-    const novosPalpites = {[jogoId]:{g1,g2,...((_bonus2.tipo||_bonus2.venc)?{bonus:_bonus2}:{})}};
-    const {error:errIns}=await sb.from('palpites_mata').insert({nome,whats:whatsLimpo,palpites:novosPalpites,status:statusInicial,ts:Date.now()});
-    if(errIns){ toast('Erro ao salvar. Tente novamente.','err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
-    palpitesMata.push({nome,whats:whatsLimpo,palpites:novosPalpites,status:statusInicial,ts:Date.now()});
   }
+
+  const {error} = await sb.from('palpites_mata')
+    .upsert({nome, whats:whatsLimpo, palpites:novosPalpites, status:statusInicial, ts:Date.now()},
+            {onConflict:'whats', ignoreDuplicates:false});
+  if(error){ toast('Erro ao salvar. Tente novamente.','err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
+
+  // Atualizar memória local
+  if(palExist){ palExist.palpites=novosPalpites; }
+  else { palpitesMata.push({nome,whats:whatsLimpo,palpites:novosPalpites,status:statusInicial,ts:Date.now()}); }
 
   toast(`✅ ${g1}×${g2} salvo!`,'ok');
 
