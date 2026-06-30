@@ -1498,10 +1498,14 @@ async function verificarResultadosMata(){
             continue;
           }
 
-          await sb.from('resultados_mata').upsert({
+          // INSERT com ignoreDuplicates — nunca sobrescreve resultado ja existente no banco
+          // Para corrigir um resultado, use o Admin ou SQL direto
+          const {error:insErr} = await sb.from('resultados_mata').insert({
             jogo_id:jogo.id, g1, g2, bonus_res:bonusRes,
             updated_at:new Date().toISOString()
           });
+          if(insErr && insErr.code!=='23505') console.error('Erro ao inserir resultado:', insErr);
+          if(insErr) continue; // ja existe, nao sobrescreve
           resultadosMata[jogo.id]={g1,g2,bonusRes};
           await addFeed('⚽',`Resultado automático ${jogo.t1} ${g1}×${g2} ${jogo.t2}`);
           toast(`⚽ ${jogo.t1} ${g1}×${g2} ${jogo.t2}`,'ok');
