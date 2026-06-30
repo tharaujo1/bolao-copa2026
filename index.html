@@ -1337,7 +1337,7 @@ async function enviarPalpiteMataModal(){
     const faseEnvio = FASES_MATA.find(f=>f.jogos.some(j=>j.id===jogoId));
     const jogoInfo = faseEnvio?.jogos.find(j=>j.id===jogoId);
     if(jogoInfo){
-      const srvTime = await fetch('/api/time').then(r=>r.json()).catch(()=>({now:Date.now()}));
+      const srvTime = await Promise.race([fetch('/api/time').then(r=>r.json()),new Promise(r=>setTimeout(()=>r({now:Date.now()}),2000))]).catch(()=>({now:Date.now()}));
       const agora = new Date(srvTime.now);
       const [d,m] = jogoInfo.date.split('/');
       const tRaw = jogoInfo.time.replace('h',':');
