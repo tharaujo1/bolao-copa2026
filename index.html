@@ -1356,20 +1356,28 @@ async function enviarPalpiteMataModal(){
     }).catch(()=>{});
   }
 
-  if(palExist){
-    const {error} = await sb.from('palpites_mata')
-      .update({palpites:novosPalpites, ts:Date.now()})
-      .eq('whats', whatsLimpo);
-    if(error){ toast('Erro ao salvar. Tente novamente.','err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
-    palExist.palpites = novosPalpites;
-  } else {
+  // Tentar update primeiro — se não achar no banco, faz insert
+  const {error:errUp, count} = await sb.from('palpites_mata')
+    .update({palpites:novosPalpites, ts:Date.now()})
+    .eq('whats', whatsLimpo);
+
+  if(errUp){
+    toast('Erro ao salvar. Tente novamente.','err');
+    if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;}
+    return;
+  }
+
+  // Se update não encontrou nenhum registro, fazer insert
+  if(!palExist){
     let statusInicial='pendente';
     const partLocal = participantesData.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
     if(partLocal?.pago_mata||partLocal?.pago) statusInicial='ativo';
-    const {error} = await sb.from('palpites_mata')
+    const {error:errIns} = await sb.from('palpites_mata')
       .insert({nome, whats:whatsLimpo, palpites:novosPalpites, status:statusInicial, ts:Date.now()});
-    if(error){ toast('Erro ao salvar. Tente novamente.','err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
+    if(errIns){ toast('Erro ao salvar. Tente novamente.','err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
     palpitesMata.push({nome,whats:whatsLimpo,palpites:novosPalpites,status:statusInicial,ts:Date.now()});
+  } else {
+    palExist.palpites = novosPalpites;
   }
 
   toast(`✅ ${g1}×${g2} salvo!`,'ok');
