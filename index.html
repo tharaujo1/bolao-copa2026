@@ -1076,16 +1076,12 @@ let _mataModal = {jogoId:null, g1:0, g2:0, aberto:false, bonusTipo:null, bonusVe
 let _totalPagantesMata = 0; // carregado do banco
 window._placarVivo = {}; // sempre limpo ao iniciar
 
-// Handler global de erros — mostra qualquer erro JS não tratado na tela
+// Handler global de erros — só loga no console, não assusta o usuário
 window.addEventListener('error', function(e){
-  try{
-    toast('⚠️ Erro JS: '+(e.message||'desconhecido')+' (linha '+e.lineno+')','err');
-  }catch(_){}
+  console.error('[Erro JS]', e.message, 'linha', e.lineno);
 });
 window.addEventListener('unhandledrejection', function(e){
-  try{
-    toast('⚠️ Erro async: '+(e.reason?.message||e.reason||'desconhecido'),'err');
-  }catch(_){}
+  console.error('[Erro async]', e.reason);
 });
 // Re-renderizar lista de jogos a cada minuto para atualizar bloqueios
 setInterval(()=>{ try{ renderFormPalpite(); }catch(e){} }, 60000);
@@ -3491,7 +3487,7 @@ async function fetchLive(manual=false){
 }
 
 async function salvarApiKey(){
-  apiKey=document.getElementById('apiKeyInput').value.trim();
+  apiKey=document.getElementById('apiKeyInput')?.value.trim()||apiKey;
   if(!apiKey) return toast('Cole a API key primeiro','err');
   localStorage.setItem('apiKey',apiKey);
   const st=document.getElementById('apiStatus');
@@ -4050,7 +4046,7 @@ function loadCfgUnico(){
   document.getElementById('unicoPixNome').value=cfgUnico.pixNome||'';
   document.getElementById('unicoPixBanco').value=cfgUnico.pixBanco||'';
   document.getElementById('unicoBonusQ').value=cfgUnico.bonusQ||'';
-  document.getElementById('apiKeyInput').value=apiKey||'';
+  const apiKeyEl=document.getElementById('apiKeyInput');if(apiKeyEl)apiKeyEl.value=apiKey||'';
   const adminKeyEl=document.getElementById('apiKeyInputAdmin');if(adminKeyEl)adminKeyEl.value=apiKey||'';
   setT('tbU1',cfgUnico.tbGV);setT('tbU2',cfgUnico.tbTG);setT('tbU3',cfgUnico.tbGP);
   setT('tbUBonus',cfgUnico.tbBonus);setT('tbUOrdem',cfgUnico.tbOrdem);setT('tbUAceitar',cfgUnico.aceitar);
