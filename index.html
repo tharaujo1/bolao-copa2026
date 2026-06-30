@@ -655,6 +655,18 @@ select option{background:var(--bg);}
         </div>
         <button class="btn btn-amarelo mt8" onclick="salvarCfgMata()">Salvar Configurações</button>
         <button class="btn mt8" style="background:var(--card);border:1px solid var(--border)" onclick="gerarMsgFaltam()">📋 Gerar mensagem — faltam palpitar</button>
+        <div id="apuracaoPendenteCard" style="display:none;background:rgba(255,60,60,0.08);border:1.5px solid rgba(255,60,60,0.4);border-radius:10px;padding:12px;margin-top:8px">
+          <div style="font-size:12px;font-weight:700;color:#FF6B6B;margin-bottom:8px">⚠️ Apuração aguardando confirmação</div>
+          <div id="apuracaoPendenteInfo" style="font-size:12px;color:var(--txt2);margin-bottom:10px"></div>
+          <div style="display:flex;gap:8px;margin-bottom:6px">
+            <button onclick="confirmarApuracao('home','prorrogacao')" class="btn" style="flex:1;font-size:11px;background:var(--card);border:1px solid var(--border)">🏠 Prorrogação</button>
+            <button onclick="confirmarApuracao('away','prorrogacao')" class="btn" style="flex:1;font-size:11px;background:var(--card);border:1px solid var(--border)">✈️ Prorrogação</button>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button onclick="confirmarApuracao('home','penaltis')" class="btn" style="flex:1;font-size:11px;background:var(--card);border:1px solid var(--border)">🏠 Pênaltis</button>
+            <button onclick="confirmarApuracao('away','penaltis')" class="btn" style="flex:1;font-size:11px;background:var(--card);border:1px solid var(--border)">✈️ Pênaltis</button>
+          </div>
+        </div>
         <button class="btn btn-danger" onclick="limparMata()">⚠️ Limpar palpites</button>
         <div class="divider"></div>
         <div id="admVencedoresMata"></div>
@@ -1460,6 +1472,23 @@ async function verificarResultadosMata(){
             tipo: duration==='PENALTY_SHOOTOUT' ? 'penaltis' : 'prorrogacao',
             venc: winner==='HOME_TEAM' ? 'home' : 'away'
           } : null;
+
+          // Se empate mas winner ainda null — pedir confirmação manual no Admin
+          if(g1===g2 && duration!=='REGULAR' && !winner){
+            await sb.from('config').upsert({
+              id:'apuracao_pendente',
+              dados:{
+                jogo_id:jogo.id, g1, g2, duration,
+                t1:jogo.t1, t2:jogo.t2,
+                pendente:true,
+                updated_at:new Date().toISOString()
+              },
+              updated_at:new Date().toISOString()
+            });
+            console.warn('Apuração pendente confirmação manual:', jogo.id);
+            continue;
+          }
+
           await sb.from('resultados_mata').upsert({
             jogo_id:jogo.id, g1, g2, bonus_res:bonusRes,
             updated_at:new Date().toISOString()
@@ -3533,7 +3562,7 @@ function adminMode(m){
   if(u2p) u2p.style.display='none'; // hidden — merged into unico
   const geralPanel=document.getElementById('admGeralPanel');
   if(geralPanel) geralPanel.style.display=m==='geral'?'block':'none';
-  if(m==='mata'){renderAdminPhase();loadCfgMata();renderResultadoSel();}
+  if(m==='mata'){renderAdminPhase();loadCfgMata();renderResultadoSel();verificarApuracaoPendente();}
   else if(m==='unico'){renderAdminUnicoUnificado();}
   else if(m==='geral'){
     const base=window.location.href.split('?')[0];
@@ -3698,6 +3727,39 @@ async function salvarCfgMata(){
   };
   await sb.from('config').upsert({id:'mata',dados:cfgMata,updated_at:new Date().toISOString()});
   updateHeader();updatePixDisplay();renderFormPalpite();toast('Configurações salvas!','ok');
+}
+
+async function confirmarApuracao(venc, tipo){
+  const {data:cfg} = await sb.from('config').select('dados').eq('id','apuracao_pendente').single();
+  if(!cfg?.dados) return toast('Nenhuma apuração pendente','err');
+  const {jogo_id,g1,g2} = cfg.dados;
+  const bonusRes = {tipo, venc};
+  await sb.from('resultados_mata').upsert({
+    jogo_id, g1, g2, bonus_res:bonusRes,
+    updated_at:new Date().toISOString()
+  });
+  await sb.from('config').upsert({
+    id:'apuracao_pendente',
+    dados:{...cfg.dados, pendente:false},
+    updated_at:new Date().toISOString()
+  });
+  resultadosMata[jogo_id]={g1,g2,bonusRes};
+  document.getElementById('apuracaoPendenteCard').style.display='none';
+  renderRanking();
+  toast(`✅ Apuração confirmada: ${g1}×${g2} — ${venc==='home'?'Time 1':'Time 2'} nos ${tipo}`,'ok');
+}
+
+async function verificarApuracaoPendente(){
+  const {data:cfg} = await sb.from('config').select('dados').eq('id','apuracao_pendente').maybeSingle();
+  if(!cfg?.dados?.pendente) return;
+  const card = document.getElementById('apuracaoPendenteCard');
+  const info = document.getElementById('apuracaoPendenteInfo');
+  if(card && info){
+    const fase = FASES_MATA.find(f=>f.jogos.some(j=>j.id===cfg.dados.jogo_id));
+    const jogo = fase?.jogos.find(j=>j.id===cfg.dados.jogo_id);
+    info.textContent = `${jogo?.t1||''} ${cfg.dados.g1} × ${cfg.dados.g2} ${jogo?.t2||''} — ${cfg.dados.duration} — Quem avançou?`;
+    card.style.display='block';
+  }
 }
 
 async function gerarMsgFaltam(){
