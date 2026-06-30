@@ -1143,7 +1143,7 @@ async function loadAll(){
     if(cfgGeral.apiKey){ apiKey=cfgGeral.apiKey; localStorage.setItem('apiKey',apiKey); }
     palpitesMata = pm||[];
     palpitesUnico = pu||[];
-    resultadosMata = Object.fromEntries((rm||[]).map(r=>[r.jogo_id,{g1:r.g1,g2:r.g2}]));
+    resultadosMata = Object.fromEntries((rm||[]).map(r=>[r.jogo_id,{g1:r.g1,g2:r.g2,bonusRes:r.bonus_res||null}]));
     resultadoUnico = ru||null;
     feedList = feed||[];
     try{ updateHeader(); }catch(e1){ console.error('updateHeader:',e1); }
@@ -2113,7 +2113,7 @@ function setupRealtime(){
     })
     .on('postgres_changes',{event:'*',schema:'public',table:'resultados_mata'},()=>{
       sb.from('resultados_mata').select('*').then(({data})=>{
-        resultadosMata=Object.fromEntries((data||[]).map(r=>[r.jogo_id,{g1:r.g1,g2:r.g2}]));
+        resultadosMata=Object.fromEntries((data||[]).map(r=>[r.jogo_id,{g1:r.g1,g2:r.g2,bonusRes:r.bonus_res||null}]));
         if(document.getElementById('screen-ranking').classList.contains('active')) renderRanking();
       });
     })
