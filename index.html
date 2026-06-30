@@ -2912,6 +2912,7 @@ function renderRanking(){
     const temResultados = Object.keys(resultadosMata).length>0;
     const ranked=todosPartic.map(p=>{
       let total=0,exatos=0,venc=0,diff=0;
+      const detalhes=[];
       for(const [jid,res] of Object.entries(resultadosMata)){
         const pal=p.palpites?.[jid];if(!pal) continue;
         // Só calcular pontos de jogos que já terminaram (têm resultado real no banco)
@@ -2926,10 +2927,19 @@ function renderRanking(){
         const rp=pal.g1>pal.g2?1:pal.g1<pal.g2?-1:0,rr=res.g1>res.g2?1:res.g1<res.g2?-1:0;
         if(rp===rr) venc++;
         diff+=Math.abs(pal.g1-res.g1)+Math.abs(pal.g2-res.g2);
+        detalhes.push({
+          jogoId:jid,
+          t1:jogoInfo?.t1||'', t2:jogoInfo?.t2||'',
+          f1:jogoInfo?.f1||'', f2:jogoInfo?.f2||'',
+          palG1:pal.g1, palG2:pal.g2,
+          resG1:res.g1, resG2:res.g2,
+          pts, mult
+        });
       }
+      detalhes.sort((a,b)=>a.jogoId.localeCompare(b.jogoId));
       const fp=p.palpites?.['F1'],fr=resultadosMata['F1'];
       const campeao=fp&&fr&&fp.g1===fr.g1&&fp.g2===fr.g2?1:0;
-      return{...p,total,exatos,venc,diff,campeao};
+      return{...p,total,exatos,venc,diff,campeao,detalhes};
     }).sort((a,b)=>{
       if(b.total!==a.total) return b.total-a.total;
       if(b.exatos!==a.exatos) return b.exatos-a.exatos;
