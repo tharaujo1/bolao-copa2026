@@ -2609,13 +2609,19 @@ function atualizarBonusEmpate(){
   const div = document.getElementById('bonusEmpateDiv');
   if(!div) return;
   const isEmpate = _mataModal.g1 === _mataModal.g2;
-  div.style.display = isEmpate ? 'block' : 'none';
-  // So apaga a escolha se realmente deixou de ser empate.
-  // Se continua empate (so mudou o placar, ex: 1x1 -> 2x2), mantem a escolha.
+
   if(!isEmpate){
-    _mataModal.bonusTipo=null; _mataModal.bonusVenc=null;
+    // Saiu do empate: esconde o campo E limpa dados do bônus sempre
+    div.style.display = 'none';
+    _mataModal.bonusTipo = null;
+    _mataModal.bonusVenc = null;
+    // Limpar destaque visual dos botões
+    document.querySelectorAll('.btn-bonus-tipo').forEach(b=>{ b.style.background='var(--card)'; b.style.borderColor='var(--border)'; b.style.color='var(--txt)'; });
+    document.querySelectorAll('.btn-bonus-venc').forEach(b=>{ b.style.background='var(--card)'; b.style.borderColor='var(--border)'; });
   } else {
-    // Reaplicar destaque visual nos botoes, caso ja exista escolha salva
+    // Entrou ou continua no empate: mostra o campo
+    div.style.display = 'block';
+    // Reaplicar destaque visual se já tinha escolha (ex: voltou ao empate com escolha anterior)
     if(_mataModal.bonusTipo){
       const btnT = document.getElementById(_mataModal.bonusTipo==='prorrogacao'?'btnProrr':'btnPen');
       if(btnT){
