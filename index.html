@@ -2599,7 +2599,27 @@ function atualizarBonusEmpate(){
   if(!div) return;
   const isEmpate = _mataModal.g1 === _mataModal.g2;
   div.style.display = isEmpate ? 'block' : 'none';
-  if(!isEmpate){ _mataModal.bonusTipo=null; _mataModal.bonusVenc=null; }
+  // So apaga a escolha se realmente deixou de ser empate.
+  // Se continua empate (so mudou o placar, ex: 1x1 -> 2x2), mantem a escolha.
+  if(!isEmpate){
+    _mataModal.bonusTipo=null; _mataModal.bonusVenc=null;
+  } else {
+    // Reaplicar destaque visual nos botoes, caso ja exista escolha salva
+    if(_mataModal.bonusTipo){
+      const btnT = document.getElementById(_mataModal.bonusTipo==='prorrogacao'?'btnProrr':'btnPen');
+      if(btnT){
+        document.querySelectorAll('.btn-bonus-tipo').forEach(b=>{ b.style.background='var(--card)'; b.style.borderColor='var(--border)'; b.style.color='var(--txt)'; });
+        btnT.style.background='rgba(254,223,0,0.2)'; btnT.style.borderColor='var(--amarelo)'; btnT.style.color='var(--amarelo)';
+      }
+    }
+    if(_mataModal.bonusVenc){
+      const btnV = document.getElementById(_mataModal.bonusVenc==='home'?'btnVencHome':'btnVencAway');
+      if(btnV){
+        document.querySelectorAll('.btn-bonus-venc').forEach(b=>{ b.style.background='var(--card)'; b.style.borderColor='var(--border)'; });
+        btnV.style.background='rgba(61,122,255,0.2)'; btnV.style.borderColor='#3D7AFF';
+      }
+    }
+  }
 }
 
 function ajustarPlacar(id, delta){
