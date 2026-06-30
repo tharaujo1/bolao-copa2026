@@ -1356,7 +1356,11 @@ async function enviarPalpiteMataModal(){
     }).catch(()=>{});
   }
 
-  // Atualizar memória local imediatamente
+  // Feedback imediato — antes de qualquer operação
+  toast(`✅ ${g1}×${g2} salvo!`,'ok');
+  if(btn){btn.textContent='⚽ Enviar palpite';btn.disabled=false;}
+
+  // Atualizar memória local
   if(palExist){
     palExist.palpites = novosPalpites;
   } else {
@@ -1366,13 +1370,11 @@ async function enviarPalpiteMataModal(){
     palpitesMata.push({nome,whats:whatsLimpo,palpites:novosPalpites,status:statusInicial,ts:Date.now()});
   }
 
-  // Gravar no banco em background — sem await, sem travar
+  // Gravar no banco em background
   sb.from('palpites_mata')
     .upsert({nome, whats:whatsLimpo, palpites:novosPalpites, ts:Date.now()},
             {onConflict:'whats'})
-    .then(({error})=>{ if(error) console.error('Erro upsert palpite:', error); });
-
-  toast(`✅ ${g1}×${g2} salvo!`,'ok');
+    .then(({error})=>{ if(error) console.error('Erro upsert:', error); });
 
   // Verificar próximo jogo sem palpite
   const fase = FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
