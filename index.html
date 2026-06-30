@@ -1425,6 +1425,15 @@ async function verificarResultadosMata(){
   const fase = FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
   if(!fase) return;
 
+  // Buscar resultados frescos do banco antes de decidir o que falta apurar
+  // (evita reapurar jogos corrigidos manualmente via SQL que a memoria local nao viu)
+  try{
+    const {data:rmFresh} = await sb.from('resultados_mata').select('*');
+    if(rmFresh){
+      resultadosMata = Object.fromEntries(rmFresh.map(r=>[r.jogo_id,{g1:r.g1,g2:r.g2,bonusRes:r.bonus_res}]));
+    }
+  }catch(e){}
+
   const jogosAtivos = cfgMata.jogosAtivos
     .map(id=>fase.jogos.find(j=>j.id===id))
     .filter(Boolean)
