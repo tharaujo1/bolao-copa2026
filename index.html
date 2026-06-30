@@ -1228,8 +1228,10 @@ function abrirModalMata(jogoId){
 
   const g1init = palAtual?.g1??0;
   const g2init = palAtual?.g2??0;
-  const bonusTipoInit = palAtual?.bonus?.tipo||null;
-  const bonusVencInit = palAtual?.bonus?.venc||null;
+  // Só carregar bônus salvo se o palpite for empate — descarta bônus residual inválido
+  const _palEhEmpate = g1init === g2init;
+  const bonusTipoInit = _palEhEmpate ? (palAtual?.bonus?.tipo||null) : null;
+  const bonusVencInit = _palEhEmpate ? (palAtual?.bonus?.venc||null) : null;
   _mataModal = {jogoId, g1:g1init, g2:g2init, aberto:true, bonusTipo:bonusTipoInit, bonusVenc:bonusVencInit};
 
   // Pular jogos já bloqueados (já começaram)
