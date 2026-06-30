@@ -1320,9 +1320,10 @@ function proximoJogoModal(jogoId){
 }
 
 async function enviarPalpiteMataModal(){
-  const nome = document.getElementById('mNome')?.value.trim() || localStorage.getItem('bolao_nome');
-  const whats = document.getElementById('mWhats')?.value.trim() || localStorage.getItem('bolao_whats');
-  if(!nome||!whats) return toast('Faça login primeiro','err');
+  // Usar SEMPRE localStorage como fonte primária — mais confiável que elementos DOM
+  const nome = localStorage.getItem('bolao_nome') || document.getElementById('mNome')?.value.trim();
+  const whats = localStorage.getItem('bolao_whats') || document.getElementById('mWhats')?.value.trim();
+  if(!nome||!whats){ toast('❌ DEBUG: sem nome/whats — Faça login primeiro','err'); return; }
   const whatsLimpo = whats.replace(/\D/g,'');
   const jogoId = _mataModal.jogoId;
   const g1 = _mataModal.g1;
@@ -1334,11 +1335,13 @@ async function enviarPalpiteMataModal(){
   // Verificar bloqueio pelo horário local (já corrigido com replace('h',':'))
   const faseEnvio = FASES_MATA.find(f=>f.jogos.some(j=>j.id===jogoId));
   const jogoInfo = faseEnvio?.jogos.find(j=>j.id===jogoId);
+  console.log('[ENVIO] jogoInfo:', jogoInfo, 'jaComecou:', jogoInfo?jogoJaComecou(jogoInfo):'N/A');
   if(jogoInfo && jogoJaComecou(jogoInfo)){
     toast('⏱ Jogo já começou — palpites encerrados','err');
     if(btn){btn.textContent='⚽ Enviar palpite';btn.disabled=false;}
     return;
   }
+  console.log('[ENVIO] Passou bloqueio, prosseguindo');
 
   // Buscar palpite existente em memória
   const palExist = palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
