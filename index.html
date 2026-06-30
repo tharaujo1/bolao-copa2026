@@ -1352,6 +1352,12 @@ function enviarPalpiteMataModal(){
     return;
   }
 
+  // Empate exige escolher time + tipo (prorrogacao/penaltis) - obrigatorio
+  if(g1===g2 && (!_mataModal.bonusTipo || !_mataModal.bonusVenc)){
+    toast('Empate? Escolha quem avanca e se e prorrogacao ou penaltis!','err');
+    return;
+  }
+
   const palExist = palpitesMata.find(p=>(p.whats||'').replace(/\D/g,'')===whatsLS);
   const bonusAtual = (_mataModal.bonusTipo||_mataModal.bonusVenc)
     ? {tipo:_mataModal.bonusTipo, venc:_mataModal.bonusVenc}
