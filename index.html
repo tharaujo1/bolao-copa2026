@@ -1265,7 +1265,7 @@ function abrirModalMata(jogoId){
           </div>
         </div>
       </div>
-      <div id="bonusEmpateDiv" style="display:none;background:rgba(254,223,0,0.06);border:1px solid rgba(254,223,0,0.3);border-radius:10px;padding:12px;margin-bottom:12px">
+      <div id="bonusEmpateDiv" style="display:${g1init===g2init?'block':'none'};background:rgba(254,223,0,0.06);border:1px solid rgba(254,223,0,0.3);border-radius:10px;padding:12px;margin-bottom:12px">
         <div style="font-size:11px;color:var(--amarelo);font-weight:700;letter-spacing:1px;margin-bottom:10px">⏱ EMPATE — Quem avança?</div>
         <div style="display:flex;gap:6px;margin-bottom:8px">
           <button onclick="setBonusTipo('prorrogacao',this)" id="btnProrr" class="btn-bonus-tipo" style="flex:1;background:var(--card);border:1.5px solid var(--border);color:var(--txt);border-radius:8px;padding:8px;font-size:11px;font-weight:700;cursor:pointer">⏱ Prorrogação</button>
