@@ -1356,23 +1356,21 @@ async function enviarPalpiteMataModal(){
     }).catch(()=>{});
   }
 
+  // Atualizar memória local imediatamente
   if(palExist){
-    // Atualizar memória imediatamente — gravar banco em background (fire and forget)
     palExist.palpites = novosPalpites;
-    sb.from('palpites_mata')
-      .update({palpites:novosPalpites, ts:Date.now()})
-      .eq('whats', whatsLimpo)
-      .then(({error})=>{ if(error) console.error('Erro update palpite:', error); });
   } else {
-    // Primeiro palpite — precisa de insert síncrono
     let statusInicial='pendente';
     const partLocal = participantesData.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo);
     if(partLocal?.pago_mata||partLocal?.pago) statusInicial='ativo';
-    const {error:errIns} = await sb.from('palpites_mata')
-      .insert({nome, whats:whatsLimpo, palpites:novosPalpites, status:statusInicial, ts:Date.now()});
-    if(errIns){ toast('Erro ao salvar. Tente novamente.','err'); if(btn){btn.textContent='⚽ Tentar de novo';btn.disabled=false;} return; }
     palpitesMata.push({nome,whats:whatsLimpo,palpites:novosPalpites,status:statusInicial,ts:Date.now()});
   }
+
+  // Gravar no banco em background — sem await, sem travar
+  sb.from('palpites_mata')
+    .upsert({nome, whats:whatsLimpo, palpites:novosPalpites, ts:Date.now()},
+            {onConflict:'whats'})
+    .then(({error})=>{ if(error) console.error('Erro upsert palpite:', error); });
 
   toast(`✅ ${g1}×${g2} salvo!`,'ok');
 
