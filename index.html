@@ -1560,22 +1560,67 @@ async function verificarVencedoresMata(){
   if(adminUnlocked) renderPagamentoVencedoresMata();
 }
 
+function abrirDetalhesPontuacao(idx){
+  const ranked = window._rankedMataCache||[];
+  const p = ranked[idx];
+  if(!p) return;
+
+  const overlay = document.createElement('div');
+  overlay.className='mata-modal-overlay';
+  overlay.id='detalhesPontuacaoOverlay';
+  overlay.onclick=(e)=>{ if(e.target===overlay) overlay.remove(); };
+
+  const linhas = (p.detalhes||[]).map(d=>{
+    const corPts = d.pts>=10?'#3ECF8E':d.pts>=6?'#FEDF00':d.pts>0?'#FFA500':'#FF6B6B';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1">
+        <div style="font-size:11px;color:var(--txt2)">${d.f1} ${d.t1} × ${d.t2} ${d.f2}</div>
+        <div style="font-size:10px;color:var(--txt3);margin-top:2px">Você: ${d.palG1}×${d.palG2} · Real: ${d.resG1}×${d.resG2}${d.mult>1?' · ×'+d.mult:''}</div>
+      </div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:${corPts};min-width:40px;text-align:right">${d.pts}</div>
+    </div>`;
+  }).join('');
+
+  overlay.innerHTML=`
+    <div class="mata-modal-box">
+      <div style="font-size:14px;font-weight:800;color:var(--txt);margin-bottom:4px">${p.nome}</div>
+      <div style="font-size:11px;color:var(--txt3);margin-bottom:14px">Detalhamento de pontuação · Total: <strong style="color:var(--amarelo)">${p.total} pts</strong></div>
+      <div style="max-height:50vh;overflow-y:auto">
+        ${linhas || '<div style="text-align:center;color:var(--txt3);font-size:12px;padding:20px 0">Nenhum jogo apurado ainda</div>'}
+      </div>
+      <button onclick="document.getElementById('detalhesPontuacaoOverlay').remove()" class="btn" style="background:var(--card);border:1px solid var(--border);margin-top:14px">Fechar</button>
+    </div>`;
+
+  document.body.appendChild(overlay);
+}
+
 function calcularRankingMata(ativos){
   return ativos.map(p=>{
     let total=0, exatos=0, venc=0, diff=0;
+    const detalhes=[];
     for(const [jid,res] of Object.entries(resultadosMata)){
       const pal=p.palpites?.[jid]; if(!pal) continue;
       const fase=FASES_MATA.find(f=>f.jogos.some(j=>j.id===jid));
+      const jogoInfo=fase?.jogos.find(j=>j.id===jid);
       const mult=fase?.mult||1;
-      const pts=calcMata(pal.g1,pal.g2,res.g1,res.g2,mult);
+      const pts=calcMata(pal.g1,pal.g2,res.g1,res.g2,mult,pal.bonus||null,res.bonusRes||null);
       total+=pts;
       if(pal.g1===res.g1&&pal.g2===res.g2) exatos++;
       const rp=pal.g1>pal.g2?1:pal.g1<pal.g2?-1:0;
       const rr=res.g1>res.g2?1:res.g1<res.g2?-1:0;
       if(rp===rr) venc++;
       diff+=Math.abs(pal.g1-res.g1)+Math.abs(pal.g2-res.g2);
+      detalhes.push({
+        jogoId:jid,
+        t1:jogoInfo?.t1||'', t2:jogoInfo?.t2||'',
+        f1:jogoInfo?.f1||'', f2:jogoInfo?.f2||'',
+        palG1:pal.g1, palG2:pal.g2,
+        resG1:res.g1, resG2:res.g2,
+        pts, mult
+      });
     }
-    return{...p,total,exatos,venc,diff};
+    detalhes.sort((a,b)=>a.jogoId.localeCompare(b.jogoId));
+    return{...p,total,exatos,venc,diff,detalhes};
   }).sort((a,b)=>{
     if(b.total!==a.total) return b.total-a.total;       // 1. Maior pontuação
     if(b.exatos!==a.exatos) return b.exatos-a.exatos;   // 2. Mais placares exatos
@@ -2905,15 +2950,16 @@ function renderRanking(){
       premCard.style.display='block';
     } else premCard.style.display='none';
     const pc=['p1','p2','p3'],pp=['g','s','b'],md=['🥇','🥈','🥉'];
+    window._rankedMataCache = ranked;
     container.innerHTML=ranked.map((p,i)=>{
       const isPend = p.status!=='ativo';
       const _myW1 = localStorage.getItem('bolao_whats')?.replace(/\D/g,'')||'';
       const _isMine1 = p.whats?.replace(/\D/g,'')===_myW1;
-      return `<div class="rank-item ${pc[i]||''}" style="${isPend?'opacity:0.5':''}${_isMine1?';border:2px solid var(--amarelo);background:rgba(254,223,0,0.06)':''}">
+      return `<div class="rank-item ${pc[i]||''}" style="${isPend?'opacity:0.5':''}${_isMine1?';border:2px solid var(--amarelo);background:rgba(254,223,0,0.06)':''}" onclick="abrirDetalhesPontuacao(${i})">
         <div class="rank-pos ${pp[i]||''}">${i+1}</div>
         <div class="rank-info">
           <div class="rank-name">${p.nome} ${md[i]||''}${isPend?' <span style="font-size:10px;color:var(--warning)">⏳ pendente</span>':''}</div>
-          <div class="rank-sub">${temResultados?`🎯 ${p.exatos} exatos · ✅ ${p.venc} venc · ${p.total} pts`:'Aguardando jogos...'}</div>
+          <div class="rank-sub">${temResultados?`🎯 ${p.exatos} exatos · ✅ ${p.venc} venc · ${p.total} pts <span style="color:var(--amarelo);text-decoration:underline">ver detalhes</span>`:'Aguardando jogos...'}</div>
           ${(()=>{
             // Mostrar palpites dos jogos em andamento
             const fase = FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
