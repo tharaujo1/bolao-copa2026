@@ -1128,7 +1128,7 @@ async function loadAll(){
       sb.from('resultados_mata').select('*'),
       sb.from('resultado_unico').select('*').eq('id',1).maybeSingle(),
       sb.from('feed').select('*').order('created_at',{ascending:false}).limit(30),
-      sb.from('participantes').select('pago,pago_mata,pago_unico,pago_unico2,nome,whats'),
+      sb.from('participantes').select('pago,pago_mata,pago_unico,pago_unico2,pago_unico_jogo_id,pago_unico2_jogo_id,nome,whats'),
     ]);
     if(partsData){ participantesData=partsData; _totalPagantesMata=partsData.filter(p=>p.pago_mata||p.pago).length; }
     cfgMata = cfgs?.find(c=>c.id==='mata')?.dados||{valor:20,p1:60,p2:25,p3:15,pixChave:'',pixNome:'',pixBanco:'',pixTipo:'CPF',faseAtiva:'dezesseis',jogosAtivos:[],adminPwd:'copa2026'};
@@ -1157,7 +1157,7 @@ async function loadAll(){
     console.error('loadAll erro geral:',e);
   }
   // Carregar participantes — fonte única de verdade para bolada
-  sb.from('participantes').select('pago,pago_mata,pago_unico,pago_unico2,nome,whats')
+  sb.from('participantes').select('pago,pago_mata,pago_unico,pago_unico2,pago_unico_jogo_id,pago_unico2_jogo_id,nome,whats')
     .then(({data})=>{ 
       if(data){ 
         participantesData=data; 
