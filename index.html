@@ -4319,6 +4319,22 @@ async function togglePago(id, whats, campo, valor){
   try{
     const update = { [campo]: valor };
     if(campo==='pago_mata'||campo==='pago') update.pago = valor; // keep backward compat
+    // Gravar jogo_id junto com o pagamento — essencial para conciliação por jogo
+    if(campo==='pago_unico' && valor){
+      const jogoIdU1 = cfgUnico.jogoAtivo?.id
+        || (cfgUnico.jogoAtivo?.t1+'x'+cfgUnico.jogoAtivo?.t2).replace(/\s/g,'')
+        || null;
+      if(jogoIdU1) update.pago_unico_jogo_id = String(jogoIdU1);
+    }
+    if(campo==='pago_unico2' && valor){
+      const jogoIdU2 = cfgUnico2.jogoAtivo?.id
+        || (cfgUnico2.jogoAtivo?.t1+'x'+cfgUnico2.jogoAtivo?.t2).replace(/\s/g,'')
+        || null;
+      if(jogoIdU2) update.pago_unico2_jogo_id = String(jogoIdU2);
+    }
+    // Ao desmarcar pagamento, limpar o jogo_id também
+    if(campo==='pago_unico' && !valor) update.pago_unico_jogo_id = null;
+    if(campo==='pago_unico2' && !valor) update.pago_unico2_jogo_id = null;
     const r = await fetch('/api/participantes', {
       method: 'PATCH',
       headers: { 'x-master-key': 'tharaujo2026', 'Content-Type': 'application/json' },
