@@ -2272,14 +2272,40 @@ function updateHeader(){
     if(cfgUnico.jogoAtivo) jogosAtivos2.push({j:cfgUnico.jogoAtivo, slot:'jogo1', cfg:cfgUnico, res:resultadoUnico});
     if(cfgUnico2.jogoAtivo) jogosAtivos2.push({j:cfgUnico2.jogoAtivo, slot:'jogo2', cfg:cfgUnico2, res:null});
     jogosAtivos2.forEach(({j,slot,cfg,res})=>{
-      // Deduplica por whats — conta só 1 por pessoa
+      // ID do jogo ativo para conciliacao de pagamento
+      const _jogoIdAtivo = String(j.id||(j.t1+j.t2+j.date).replace(/[^a-zA-Z0-9]/g,'').toLowerCase());
+
+      // Quem pagou este jogo especifico (com ou sem palpite)
+      const _pagaramEsteJogo = new Set(
+        participantesData
+          .filter(p=>{
+            const jid = slot==='jogo1' ? String(p.pago_unico_jogo_id||'') : String(p.pago_unico2_jogo_id||'');
+            return jid === _jogoIdAtivo;
+          })
+          .map(p=>p.whats?.replace(/\D/g,''))
+          .filter(Boolean)
+      );
+
+      // Regra 1: só pagou (sem palpite) → ativo
+      // Regra 2: só palpitou → pendente
+      // Regra 3: palpitou e pagou → ativo
       const _vistosA={}, _vistosP={};
-      const ativosSlot = palpitesUnico
+
+      // Ativos = quem está em palpitesUnico com status ativo OU quem só pagou sem palpitar
+      const ativosComPalpite = palpitesUnico
         .filter(p=>p.status==='ativo'&&(p.jogo_extra_id||'jogo1')===slot)
         .filter(p=>{ const w=p.whats?.replace(/\D/g,''); if(_vistosA[w]) return false; _vistosA[w]=true; return true; });
+
+      // Quem pagou mas não tem palpite ativo neste slot
+      const soPayWhats = [..._pagaramEsteJogo].filter(w=>!_vistosA[w]);
+      const totalAtivos = ativosComPalpite.length + soPayWhats.length;
+
       const pendSlot = palpitesUnico
         .filter(p=>p.status==='pendente'&&(p.jogo_extra_id||'jogo1')===slot)
-        .filter(p=>{ const w=p.whats?.replace(/\D/g,''); if(_vistosP[w]||_vistosA[w]) return false; _vistosP[w]=true; return true; });
+        .filter(p=>{ const w=p.whats?.replace(/\D/g,''); if(_vistosP[w]||_vistosA[w]||_pagaramEsteJogo.has(w)) return false; _vistosP[w]=true; return true; });
+
+      // Para calculo de bolada: só quem pagou
+      const ativosSlot = {length: totalAtivos};
       const encerrado = res&&res.g1!==null;
       const badgeHTML = encerrado?'<span class="badge badge-amarelo">Encerrado</span>':
                         !cfg.aceitar?'<span class="badge badge-danger">Fechado</span>':
@@ -2297,8 +2323,8 @@ function updateHeader(){
         </div>
         <div style="font-size:12px;color:var(--txt2);margin-bottom:8px">${j.f1} ${j.t1} × ${j.t2} ${j.f2} — ${j.date} · ${j.time}</div>
         <div class="stats-row">
-          <div class="stat"><div class="stat-val">${ativosSlot.length+pendSlot.length||'—'}</div><div class="stat-lbl">Total</div></div>
-          <div class="stat"><div class="stat-val">${ativosSlot.length||'—'}</div><div class="stat-lbl">Ativos</div></div>
+          <div class="stat"><div class="stat-val">${totalAtivos+pendSlot.length||'—'}</div><div class="stat-lbl">Total</div></div>
+          <div class="stat"><div class="stat-val">${totalAtivos||'—'}</div><div class="stat-lbl">Ativos</div></div>
           <div class="stat"><div class="stat-val">${pendSlot.length||'—'}</div><div class="stat-lbl">Pendentes</div></div>
           <div class="stat"><div class="stat-val" style="color:var(--amarelo)">R$${bolada}</div><div class="stat-lbl">Bolada</div></div>
         </div>`;
