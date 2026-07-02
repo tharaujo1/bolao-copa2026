@@ -2401,7 +2401,10 @@ function renderFormPalpite(){
 
     // Coletar jogos extras ativos
     const jogosExtras=[];
-    if(cfgUnico.jogoAtivo&&!resultadoUnico&&cfgUnico.aceitar)
+    // Resultado só bloqueia se pertencer ao jogo ATUAL — não a jogos anteriores
+    const _resEhDoJogoAtual = resultadoUnico && resultadoUnico.jogo_extra_id === 'jogo1' &&
+      cfgUnico.jogoAtivo && (resultadoUnico.jogoId === cfgUnico.jogoAtivo.id || !resultadoUnico.jogoId);
+    if(cfgUnico.jogoAtivo&&!_resEhDoJogoAtual&&cfgUnico.aceitar)
       jogosExtras.push({j:cfgUnico.jogoAtivo,slot:'jogo1',cfg:cfgUnico,idG1:'uG1',idG2:'uG2',fn:'enviarUnico'});
     if(cfgUnico2.jogoAtivo&&cfgUnico2.aceitar)
       jogosExtras.push({j:cfgUnico2.jogoAtivo,slot:'jogo2',cfg:cfgUnico2,idG1:'uG1b',idG2:'uG2b',fn:'enviarUnico2'});
