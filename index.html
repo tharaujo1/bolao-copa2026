@@ -4509,9 +4509,13 @@ async function ativarJogoExtra(gi){
     return;
   }
 
+  // Gerar id unico e estavel baseado nos times e data — garante conciliacao por jogo
+  const _jogoId = j.id || (j.t1+j.t2+j.date).replace(/[^a-zA-Z0-9]/g,'').toLowerCase();
+  const _jogoComId = {...j, id: _jogoId};
+
   // Activate in first available slot + resetar pago do slot correspondente
   if(!cfgUnico.jogoAtivo){
-    cfgUnico.jogoAtivo={...j}; cfgUnico.aceitar=true;
+    cfgUnico.jogoAtivo=_jogoComId; cfgUnico.aceitar=true;
     await sb.from('config').upsert({id:'unico',dados:cfgUnico,updated_at:new Date().toISOString()});
     // RESET pago_unico para todos — pagamento do jogo anterior não vale para este novo
     await fetch('/api/participantes',{
@@ -4524,7 +4528,7 @@ async function ativarJogoExtra(gi){
       .not('jogo_extra_id','eq','jogo2')
       .catch(()=>{});
   } else {
-    cfgUnico2.jogoAtivo={...j}; cfgUnico2.aceitar=true;
+    cfgUnico2.jogoAtivo=_jogoComId; cfgUnico2.aceitar=true;
     await sb.from('config').upsert({id:'unico2',dados:cfgUnico2,updated_at:new Date().toISOString()});
     // RESET pago_unico2 para todos — pagamento do jogo anterior não vale para este novo
     await fetch('/api/participantes',{
