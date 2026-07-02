@@ -4355,6 +4355,17 @@ async function togglePago(id, whats, campo, valor){
         const u2Pend = palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo&&p.jogo_extra_id==='jogo2'&&p.status==='pendente');
         if(u2Pend){ await sb.from('palpites_unico').update({status:'ativo'}).eq('id',u2Pend.id); }
       }
+    } else {
+      // Ao desmarcar pagamento: rebaixar palpite ativo para pendente
+      const whatsLimpo = whats.replace(/\D/g,'');
+      if(campo==='pago_unico'){
+        const u1Ativo = palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo&&(p.jogo_extra_id||'jogo1')==='jogo1'&&p.status==='ativo');
+        if(u1Ativo){ await sb.from('palpites_unico').update({status:'pendente'}).eq('id',u1Ativo.id); }
+      }
+      if(campo==='pago_unico2'){
+        const u2Ativo = palpitesUnico.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo&&p.jogo_extra_id==='jogo2'&&p.status==='ativo');
+        if(u2Ativo){ await sb.from('palpites_unico').update({status:'pendente'}).eq('id',u2Ativo.id); }
+      }
     }
     await carregarParticipantes();
     toast(valor ? '✓ Pagamento confirmado!' : 'Pagamento desmarcado','ok');
