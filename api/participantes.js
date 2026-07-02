@@ -40,10 +40,22 @@ export default async function handler(req, res) {
       const allowed = ['pago_unico', 'pago_unico2'];
       if (!allowed.includes(field)) return res.status(400).json({ error: 'Campo nao permitido' });
       try {
+        // Zerar boolean E limpar jogo_id — ambos precisam ser resetados
+        const resetBody = { [field]: false };
+        if (field === 'pago_unico') resetBody.pago_unico_jogo_id = null;
+        if (field === 'pago_unico2') resetBody.pago_unico2_jogo_id = null;
         await fetch(`${SUPA_URL}/rest/v1/participantes?id=neq.00000000-0000-0000-0000-000000000000`, {
           method: 'PATCH',
           headers: { 'apikey': SERVICE_KEY, 'Authorization': `Bearer ${SERVICE_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ [field]: false })
+          body: JSON.stringify(resetBody)
+        });
+        // Deletar palpites do slot correspondente via Service Key (bypassa RLS)
+        const slotFilter = field === 'pago_unico'
+          ? `jogo_extra_id=neq.jogo2`
+          : `jogo_extra_id=eq.jogo2`;
+        await fetch(`${SUPA_URL}/rest/v1/palpites_unico?${slotFilter}`, {
+          method: 'DELETE',
+          headers: { 'apikey': SERVICE_KEY, 'Authorization': `Bearer ${SERVICE_KEY}` }
         });
         return res.status(200).json({ reset: field });
       } catch(e) { return res.status(500).json({ error: e.message }); }
