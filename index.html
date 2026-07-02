@@ -1465,22 +1465,47 @@ async function verificarResultadosMata(){
 
         if(match){
           // Usar regularTime se disponível (tempo normal), fallback fullTime
-          const sReg = match.score?.regularTime;
           const sFull = match.score?.fullTime||{};
-          const s = (sReg?.home!=null) ? sReg : sFull;
-          const g1=s.home??0, g2=s.away??0;
-          // Capturar prorrogação/pênaltis da API
+          const sReg = match.score?.regularTime||{};
+          const sExtra = match.score?.extraTime||{};
+          const sPen = match.score?.penalties||{};
           const duration = match.score?.duration||'REGULAR';
-          // winner pode ser null na API para PENALTY_SHOOTOUT — inferir pelo placar de pênaltis
           let winner = match.score?.winner||null;
-          if(!winner && duration==='PENALTY_SHOOTOUT'){
-            const pen = match.score?.penalties||{};
-            if(pen.home!=null && pen.away!=null){
-              winner = pen.home>pen.away ? 'HOME_TEAM' : pen.away>pen.home ? 'AWAY_TEAM' : null;
+
+          // Calcular placar do tempo normal com maxima robustez:
+          // 1) Usar regularTime se vier preenchido
+          // 2) Se regularTime vier null mas tiver extraTime, subtrair fullTime - extraTime
+          // 3) Fallback: fullTime direto (jogo sem prorrogacao/penaltis)
+          let g1, g2;
+          if(sReg.home!=null && sReg.away!=null){
+            g1 = sReg.home; g2 = sReg.away;
+          } else if(sExtra.home!=null && sExtra.away!=null && sFull.home!=null){
+            g1 = sFull.home - sExtra.home;
+            g2 = sFull.away - sExtra.away;
+          } else {
+            g1 = sFull.home??0; g2 = sFull.away??0;
+          }
+
+          // Detectar prorrogacao mesmo quando API retorna duration='REGULAR' incorretamente
+          const houveExtra = sExtra.home!=null && (sExtra.home>0 || sExtra.away>0);
+          const durReal = duration==='PENALTY_SHOOTOUT' ? 'PENALTY_SHOOTOUT'
+                        : (duration==='EXTRA_TIME'||houveExtra) ? 'EXTRA_TIME'
+                        : 'REGULAR';
+
+          // Inferir winner se vier null
+          if(!winner && durReal==='PENALTY_SHOOTOUT'){
+            if(sPen.home!=null && sPen.away!=null){
+              winner = sPen.home>sPen.away ? 'HOME_TEAM' : sPen.away>sPen.home ? 'AWAY_TEAM' : null;
             }
           }
+          if(!winner && durReal==='EXTRA_TIME'){
+            if(sFull.home!=null && sFull.home!==sFull.away){
+              winner = sFull.home>sFull.away ? 'HOME_TEAM' : 'AWAY_TEAM';
+            }
+          }
+
           const bonusRes = (g1===g2 && winner && winner!=='DRAW') ? {
-            tipo: duration==='PENALTY_SHOOTOUT' ? 'penaltis' : 'prorrogacao',
+            tipo: durReal==='PENALTY_SHOOTOUT' ? 'penaltis' : 'prorrogacao',
             venc: winner==='HOME_TEAM' ? 'home' : 'away'
           } : null;
 
