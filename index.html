@@ -2643,9 +2643,20 @@ function renderBarraConsenso(slot, j, palpites){
 
 
 function jogoJaComecou(jogo){
-  // SIMPLES E À PROVA DE ERRO: usa timestamp UTC fixo pré-calculado, sem parsing de string
-  if(!jogo?.utcDate) return false;
-  return Date.now() >= new Date(jogo.utcDate).getTime();
+  // Usa utcDate fixo se disponível (jogos do mata-mata)
+  if(jogo?.utcDate) return Date.now() >= new Date(jogo.utcDate).getTime();
+  // Fallback para jogos extras (vêm do banco sem utcDate): parse de date+time
+  if(!jogo?.date || !jogo?.time) return false;
+  try{
+    const [d,m] = jogo.date.split('/');
+    const tRaw = jogo.time.replace('h',':').replace(':00h','').replace(/:/g,':');
+    // Normalizar formatos como '17:00h', '17h', '17h30', '17:00'
+    const tClean = jogo.time.replace(/h$/,'').replace('h',':');
+    const parts = tClean.includes(':') ? tClean.split(':') : [tClean,'00'];
+    const hh = parts[0].padStart(2,'0'), mm = (parts[1]||'00').padStart(2,'0');
+    const dt = new Date('2026-'+m+'-'+d+'T'+hh+':'+mm+':00-03:00');
+    return !isNaN(dt.getTime()) && Date.now() >= dt.getTime();
+  }catch(e){ return false; }
 }
 
 
