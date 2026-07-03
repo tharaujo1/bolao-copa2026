@@ -1663,7 +1663,7 @@ function calcularRankingMata(ativos){
         pts, mult
       });
     }
-    detalhes.sort((a,b)=>a.jogoId.localeCompare(b.jogoId));
+    detalhes.sort((a,b)=>parseInt(a.jogoId.replace(/\D/g,''))-parseInt(b.jogoId.replace(/\D/g,'')));
     return{...p,total,exatos,venc,diff,detalhes};
   }).sort((a,b)=>{
     if(b.total!==a.total) return b.total-a.total;       // 1. Maior pontuação
@@ -3050,7 +3050,7 @@ function renderRanking(){
           pts, mult
         });
       }
-      detalhes.sort((a,b)=>a.jogoId.localeCompare(b.jogoId));
+      detalhes.sort((a,b)=>parseInt(a.jogoId.replace(/\D/g,''))-parseInt(b.jogoId.replace(/\D/g,'')));
       const fp=p.palpites?.['F1'],fr=resultadosMata['F1'];
       const campeao=fp&&fr&&fp.g1===fr.g1&&fp.g2===fr.g2?1:0;
       return{...p,total,exatos,venc,diff,campeao,detalhes};
