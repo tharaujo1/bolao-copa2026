@@ -3003,12 +3003,9 @@ function renderRanking(){
 
   if(isMata){
     resCard.style.display='none';
-    // Verificar se algum jogo já começou
-    const fase = FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
-    const algumJogoComecou = (cfgMata.jogosAtivos||[])
-      .map(id=>fase?.jogos.find(j=>j.id===id))
-      .filter(Boolean)
-      .some(j=>jogoJaComecou(j));
+    // Verificar se algum jogo já começou — em QUALQUER fase, não só a ativa
+    const algumJogoComecou = Object.keys(resultadosMata).length > 0 ||
+      FASES_MATA.some(f=>f.jogos.some(j=>jogoJaComecou(j)));
 
     if(!algumJogoComecou){
       container.innerHTML='';
