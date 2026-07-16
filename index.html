@@ -1176,8 +1176,11 @@ async function loadAll(){
 // MODAL PALPITE MATA-MATA
 // ═══════════════════════════════════════
 function abrirModalMata(jogoId){
-  const fase = FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
-  const jogosAtivos = (cfgMata.jogosAtivos||[]).map(id=>fase?.jogos.find(j=>j.id===id)).filter(Boolean);
+  const _fasesModal = getFasesAtivas();
+  const jogosAtivos = (cfgMata.jogosAtivos||[]).map(id=>{
+    for(const f of _fasesModal){ const j=f.jogos.find(jj=>jj.id===id); if(j) return j; }
+    return null;
+  }).filter(Boolean);
   const j = jogosAtivos.find(x=>x.id===jogoId);
   if(!j) return;
 
@@ -1393,13 +1396,13 @@ function enviarPalpiteMataModal(){
   }
 
   let proximoJogo = null;
-  const faseAtiva = FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
-  const jogosDaFase = faseAtiva ? faseAtiva.jogos : [];
+  const _fasesEnvio = getFasesAtivas();
   const idsAtivos = cfgMata.jogosAtivos || [];
   for(const id of idsAtivos){
     if(id===jogoId) continue;
     if(novosPalpites[id]) continue;
-    const info = jogosDaFase.find(j=>j.id===id);
+    let info = null;
+    for(const f of _fasesEnvio){ info=f.jogos.find(j=>j.id===id); if(info) break; }
     if(!info) continue;
     if(jogoJaComecou(info)) continue;
     proximoJogo = info;
@@ -1424,8 +1427,8 @@ function iniciarPollingMata(){
 
 async function verificarResultadosMata(){
   if(!apiKey || !cfgMata.jogosAtivos?.length) return;
-  const fase = FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
-  if(!fase) return;
+  const _fasesPoll = getFasesAtivas();
+  if(!_fasesPoll.length) return;
 
   // Buscar resultados frescos do banco antes de decidir o que falta apurar
   // (evita reapurar jogos corrigidos manualmente via SQL que a memoria local nao viu)
@@ -1436,8 +1439,12 @@ async function verificarResultadosMata(){
     }
   }catch(e){}
 
+  // Buscar jogos em todas as fases ativas
   const jogosAtivos = cfgMata.jogosAtivos
-    .map(id=>fase.jogos.find(j=>j.id===id))
+    .map(id=>{
+      for(const f of _fasesPoll){ const j=f.jogos.find(jj=>jj.id===id); if(j) return j; }
+      return null;
+    })
     .filter(Boolean)
     .filter(j=>!resultadosMata[j.id]); // so busca jogos sem resultado
 
@@ -1556,7 +1563,8 @@ async function verificarResultadosMata(){
 
 async function verificarVencedoresMata(){
   // So verifica vencedores se for a fase final
-  if(cfgMata.faseAtiva !== 'final') return;
+  const _fasesAtv = getFasesAtivas().map(f=>f.id);
+  if(!_fasesAtv.includes('final')) return;
 
   const ativos = palpitesMata.filter(p=>p.status==='ativo');
   if(!ativos.length) return;
@@ -1942,8 +1950,8 @@ async function toggleVerPalpitesMata(){
   el.innerHTML='<div style="color:var(--txt3);font-size:12px;padding:8px">Carregando...</div>';
 
   const todos = participantesData.filter(p=>p.pago_mata||p.pago);
-  const fase = FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
-  const jogosAtivos = fase?.jogos?.filter(j=>cfgMata.jogosAtivos?.includes(j.id))||[];
+  const _fasesAdm = getFasesAtivas();
+  const jogosAtivos = (cfgMata.jogosAtivos||[]).map(id=>{ for(const f of _fasesAdm){ const j=f.jogos.find(jj=>jj.id===id); if(j) return j; } return null; }).filter(Boolean);
 
   // Deduplica palpites mata por whats
   const vistos = {};
@@ -2187,12 +2195,13 @@ function updateHeader(){
 
   // Header central
   if(isMata){
-    const fase=FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
+    const _fasesHdr=getFasesAtivas();
+    const _labelHdr=_fasesHdr.map(f=>f.label).join(' + ')||'—';
     document.getElementById('hFlag1').textContent='🏆';
     document.getElementById('hTeam1').textContent='Mata-Mata';
     document.getElementById('hFlag2').textContent='⚽';
     document.getElementById('hTeam2').textContent='Copa 2026';
-    document.getElementById('hScore').textContent=fase?fase.label:'—';
+    document.getElementById('hScore').textContent=_labelHdr;
     document.getElementById('hScoreLbl').textContent='Fase Ativa';
     document.getElementById('hDate').textContent=`${(cfgMata.jogosAtivos||[]).length} jogos abertos`;
   } else {
@@ -2340,8 +2349,12 @@ function renderFormPalpite(){
   const card=document.getElementById('formCard');
   const isMata=modo==='mata';
   if(isMata){
-    const fase=FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
-    const jogosAtivos=(cfgMata.jogosAtivos||[]).map(id=>fase?.jogos.find(j=>j.id===id)).filter(Boolean);
+    // Suporta múltiplas fases ativas (fasesAtivas array) ou fase única (faseAtiva string)
+    const _fasesRender=getFasesAtivas();
+    const jogosAtivos=(cfgMata.jogosAtivos||[]).map(id=>{
+      for(const f of _fasesRender){ const j=f.jogos.find(jj=>jj.id===id); if(j) return j; }
+      return null;
+    }).filter(Boolean);
     if(cfgMata.inscricoesAbertas===false && !palpitesMata.find(p=>p.status==='pendente'||p.status==='ativo')){
       card.innerHTML=`<div class="modo-tag mata">🏆 Bolão Mata-Mata</div><div class="empty"><div class="empty-icon">🔒</div><div class="empty-text">Inscrições encerradas.<br>O grupo do mata-mata está fechado.</div></div>`;
       return;
@@ -2562,8 +2575,8 @@ async function enviarMata(){
   if(cfgMata.inscricoesAbertas===false) return toast('Inscrições encerradas! O grupo do mata-mata já está fechado.','err');
   if(palpitesMata.find(p=>p.whats?.replace(/\D/g,'')===whatsLimpo)) return toast('Este WhatsApp já está cadastrado!','err');
   if(palpitesMata.find(p=>p.nome.toLowerCase()===nome.toLowerCase())) return toast('Este nome já está cadastrado!','err');
-  const fase=FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
-  const jogosAtivos=(cfgMata.jogosAtivos||[]).map(id=>fase?.jogos.find(j=>j.id===id)).filter(Boolean);
+  const _fasesCad=getFasesAtivas();
+  const jogosAtivos=(cfgMata.jogosAtivos||[]).map(id=>{ for(const f of _fasesCad){ const j=f.jogos.find(jj=>jj.id===id); if(j) return j; } return null; }).filter(Boolean);
   const palpites={};
   for(const j of jogosAtivos){
     palpites[j.id]={g1:parseInt(document.getElementById(`p_${j.id}_1`)?.value)||0,g2:parseInt(document.getElementById(`p_${j.id}_2`)?.value)||0};
@@ -2641,6 +2654,36 @@ function renderBarraConsenso(slot, j, palpites){
   </div>`;
 }
 
+
+// Helper: retorna array de fases ativas — compatível com faseAtiva (string) e fasesAtivas (array)
+function getFasesAtivas(){
+  if(Array.isArray(cfgMata.fasesAtivas) && cfgMata.fasesAtivas.length){
+    return FASES_MATA.filter(f=>cfgMata.fasesAtivas.includes(f.id));
+  }
+  if(cfgMata.faseAtiva){
+    const f = FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
+    return f ? [f] : [];
+  }
+  return [];
+}
+
+// Helper: retorna todos os jogos de todas as fases ativas
+function getJogosAtivos(){
+  const ids = cfgMata.jogosAtivos||[];
+  const fases = getFasesAtivas();
+  return ids.map(id=>{
+    for(const fase of fases){
+      const j = fase.jogos.find(j=>j.id===id);
+      if(j) return {jogo:j, fase};
+    }
+    // buscar em todas as fases se não achou nas ativas
+    for(const fase of FASES_MATA){
+      const j = fase.jogos.find(j=>j.id===id);
+      if(j) return {jogo:j, fase};
+    }
+    return null;
+  }).filter(Boolean);
+}
 
 function jogoJaComecou(jogo){
   // Usa utcDate fixo se disponível (jogos do mata-mata)
@@ -3083,9 +3126,9 @@ function renderRanking(){
           <div class="rank-sub">${temResultados?`🎯 ${p.exatos} exatos · ✅ ${p.venc} venc · ${p.total} pts <span style="color:var(--amarelo);text-decoration:underline">ver detalhes</span>`:'Aguardando jogos...'}</div>
           ${(()=>{
             // Mostrar palpites dos jogos em andamento
-            const fase = FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
+            const _fasesRnk2=getFasesAtivas();
             const jogosEmAndamento = (cfgMata.jogosAtivos||[])
-              .map(id=>fase?.jogos.find(j=>j.id===id))
+              .map(id=>{ for(const f of _fasesRnk2){ const j=f.jogos.find(jj=>jj.id===id); if(j) return j; } return null; })
               .filter(j=>j&&jogoJaComecou(j)&&!resultadosMata[j.id]);
             if(!jogosEmAndamento.length) return '';
             return jogosEmAndamento.map(j=>{
@@ -3738,7 +3781,8 @@ function adminMode(m){
 // ── MATA-MATA ADMIN ──
 function renderAdminPhase(){
   const c=document.getElementById('admPhaseTabs');
-  c.innerHTML=FASES_MATA.map(f=>`<button class="ptab ${selectedFase===f.id?'active':''}" onclick="selFase('${f.id}',this)">${f.label}${f.mult>1?' ×'+f.mult:''}</button>`).join('');
+  const _fasAtv=(cfgMata.fasesAtivas||[cfgMata.faseAtiva].filter(Boolean));
+  c.innerHTML=FASES_MATA.map(f=>`<button class="ptab ${selectedFase===f.id?'active':''}" onclick="selFase('${f.id}',this)">${f.label}${f.mult>1?' ×'+f.mult:''}${_fasAtv.includes(f.id)?' ✓':''}</button>`).join('');
   renderAdminMatchList();
   const msl=document.getElementById('mataShareLink');
   if(msl) msl.textContent=getMataLink();
@@ -3776,14 +3820,19 @@ function toggleJogoMata(id,el){
 }
 
 async function ativarFase(){
-  cfgMata.faseAtiva=selectedFase;
   const n = cfgMata.jogosAtivos?.length||0;
   if(n===0){
     toast('Selecione pelo menos 1 jogo antes de abrir!','err');
     return;
   }
+  // Suporta múltiplas fases simultâneas
+  if(!cfgMata.fasesAtivas) cfgMata.fasesAtivas = cfgMata.faseAtiva ? [cfgMata.faseAtiva] : [];
+  if(!cfgMata.fasesAtivas.includes(selectedFase)){
+    cfgMata.fasesAtivas.push(selectedFase);
+  }
+  cfgMata.faseAtiva = selectedFase; // manter compatibilidade
   await sb.from('config').upsert({id:'mata',dados:cfgMata,updated_at:new Date().toISOString()});
-  updateHeader();renderFormPalpite();
+  renderAdminPhase();updateHeader();renderFormPalpite();
   await addFeed('🏟️',`Fase ${selectedFase} aberta — ${n} jogos`);
   toast(`✓ ${n} jogos abertos para palpite!`,'ok');
 }
@@ -3811,10 +3860,11 @@ async function limparSelecaoJogos(){
 }
 
 function renderResultadoSel(){
-  const fase=FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
+  const _fasesRes=getFasesAtivas();
   const sel=document.getElementById('resMatchSel');
-  if(!sel||!fase) return;
-  sel.innerHTML=fase.jogos.map(j=>`<option value="${j.id}">${j.f1} ${j.t1} × ${j.t2} ${j.f2} (${j.date})</option>`).join('');
+  if(!sel||!_fasesRes.length) return;
+  const _todosJogosRes=_fasesRes.flatMap(f=>f.jogos);
+  sel.innerHTML=_todosJogosRes.map(j=>`<option value="${j.id}">${j.f1} ${j.t1} × ${j.t2} ${j.f2} (${j.date})</option>`).join('');
   onResMatchChange();
   const nRes=Object.keys(resultadosMata).length;
   document.getElementById('resMataStatus').textContent=nRes?`${nRes} resultado(s) inserido(s)`:'Nenhum resultado ainda';
@@ -3923,13 +3973,13 @@ async function verificarApuracaoPendente(){
 }
 
 async function gerarMsgFaltam(){
-  const fase = FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
-  if(!fase){ toast('Nenhuma fase ativa','err'); return; }
+  const _faseMsg = getFasesAtivas();
+  if(!_faseMsg.length){ toast('Nenhuma fase ativa','err'); return; }
 
   // Jogos ativos de hoje (BRT)
   const agora = new Date();
   const jogosHoje = (cfgMata.jogosAtivos||[])
-    .map(id=>fase.jogos.find(j=>j.id===id))
+    .map(id=>{ for(const f of _faseMsg){ const j=f.jogos.find(jj=>jj.id===id); if(j) return j; } return null; })
     .filter(Boolean)
     .filter(j=>{
       const [d,m]=j.date.split('/');
@@ -4076,8 +4126,8 @@ function getMataLink(){
 
 function shareWAMata(){
   const link=getMataLink();
-  const fase=FASES_MATA.find(f=>f.id===cfgMata.faseAtiva);
-  const faseLabel=fase?fase.label:'Mata-Mata';
+  const _fasesShr=getFasesAtivas();
+  const faseLabel=_fasesShr.map(f=>f.label).join(' + ')||'Mata-Mata';
   const p1=cfgMata.p1||60, p2=cfgMata.p2||25, p3=cfgMata.p3||15;
   const msg=`🏆 *Bolão Copa 2026 — Mata-Mata* ⚽
 
