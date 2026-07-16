@@ -2395,7 +2395,7 @@ function renderFormPalpite(){
         <div style="height:100%;width:${pctProgress}%;background:${completo?'var(--verde)':'var(--amarelo)'};border-radius:2px;transition:width 0.4s"></div>
       </div>
       ${completo?'<div style="background:var(--success-pale);border:1px solid var(--verde);border-radius:10px;padding:10px;text-align:center;margin-bottom:12px;font-size:13px;font-weight:700;color:var(--success-light)">✅ Todos os palpites enviados! Boa sorte! 🇧🇷</div>':''}
-      <div style="font-size:11px;color:var(--txt3);margin-bottom:10px;letter-spacing:0.5px">${fase?.label||''} · ${totalJogos} jogos · toque para palpitar</div>
+      <div style="font-size:11px;color:var(--txt3);margin-bottom:10px;letter-spacing:0.5px">${getFasesAtivas().map(f=>f.label).join(' + ')||''} · ${totalJogos} jogos · toque para palpitar</div>
       ${jogosAtivos.map((j,idx)=>{
         const pal = palJogos[j.id];
         const temPalpite = pal!==undefined && pal!==null;
