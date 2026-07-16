@@ -3825,16 +3825,25 @@ async function ativarFase(){
     toast('Selecione pelo menos 1 jogo antes de abrir!','err');
     return;
   }
-  // Suporta múltiplas fases simultâneas
-  if(!cfgMata.fasesAtivas) cfgMata.fasesAtivas = cfgMata.faseAtiva ? [cfgMata.faseAtiva] : [];
-  if(!cfgMata.fasesAtivas.includes(selectedFase)){
-    cfgMata.fasesAtivas.push(selectedFase);
-  }
-  cfgMata.faseAtiva = selectedFase; // manter compatibilidade
+  // Buscar estado atual do banco para nao perder fases ja ativas
+  const {data:cfgAtual} = await sb.from('config').select('dados').eq('id','mata').single();
+  const dadosAtuais = cfgAtual?.dados || cfgMata;
+
+  // Montar array de fases ativas a partir do banco
+  let fasesAtivas = dadosAtuais.fasesAtivas || (dadosAtuais.faseAtiva ? [dadosAtuais.faseAtiva] : []);
+  if(!fasesAtivas.includes(selectedFase)) fasesAtivas.push(selectedFase);
+
+  // Unificar jogosAtivos: manter os ja existentes + adicionar os novos
+  const jogosJaAtivos = dadosAtuais.jogosAtivos || [];
+  const jogosNovos = cfgMata.jogosAtivos || [];
+  const jogosUnificados = [...new Set([...jogosJaAtivos, ...jogosNovos])];
+
+  const novosDados = {...dadosAtuais, ...cfgMata, fasesAtivas, faseAtiva:selectedFase, jogosAtivos:jogosUnificados};
+  cfgMata = novosDados;
   await sb.from('config').upsert({id:'mata',dados:cfgMata,updated_at:new Date().toISOString()});
   renderAdminPhase();updateHeader();renderFormPalpite();
   await addFeed('🏟️',`Fase ${selectedFase} aberta — ${n} jogos`);
-  toast(`✓ ${n} jogos abertos para palpite!`,'ok');
+  toast(`\u2713 ${n} jogos abertos para palpite!`,'ok');
 }
 
 async function fecharPalpitesMata(){
