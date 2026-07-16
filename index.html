@@ -1147,7 +1147,7 @@ async function loadAll(){
     resultadoUnico = ru||null;
     feedList = feed||[];
     try{ updateHeader(); }catch(e1){ console.error('updateHeader:',e1); }
-    try{ renderFormPalpite(); }catch(e2){ console.error('renderFormPalpite:',e2); }
+    try{ renderFormPalpite(); }catch(e2){ console.error('renderFormPalpite:',e2); toast('Erro ao carregar: '+e2.message,'err'); document.getElementById('formCard').innerHTML='<div style="padding:16px;color:#FF6B6B">Erro: '+e2.message+'</div>'; }
     try{ renderPtsBody(); }catch(e3){ console.error('renderPtsBody:',e3); }
     try{ renderTbBody(); }catch(e4){ console.error('renderTbBody:',e4); }
     try{ renderFeed(); }catch(e5){ console.error('renderFeed:',e5); }
@@ -2145,7 +2145,7 @@ function setupRealtime(){
       });
     })
     .on('postgres_changes',{event:'*',schema:'public',table:'resultado_unico'},()=>{
-      sb.from('resultado_unico').select('*').eq('id',1).single().then(({data})=>{
+      sb.from('resultado_unico').select('*').eq('id',1).maybeSingle().then(({data})=>{
         resultadoUnico=data;updateHeader();renderFormPalpite();
         if(document.getElementById('screen-ranking').classList.contains('active')) renderRanking();
       });
